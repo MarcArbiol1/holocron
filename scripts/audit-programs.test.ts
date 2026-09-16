@@ -3,7 +3,7 @@
  * Prints violations per profile. Run: npx vitest run scripts/audit-programs
  */
 import { expect, it } from 'vitest'
-import { writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 const LINES: string[] = []
 const log = (m: string) => LINES.push(m)
 import { buildProgram, healthDay } from '../src/engine/program'
@@ -92,6 +92,7 @@ const h = healthDay(base)
 log(`\nhealth day: ~${estMinutes(h, base)} min [${h.blocks.map((b) => b.exerciseId).join(', ')}] + ${h.cardioMinutes} cardio`)
 log(`\nTOTAL VIOLATIONS: ${violations}`)
 
+mkdirSync('scratch', { recursive: true })
 writeFileSync('scratch/audit-report.txt', LINES.join('\n'))
 expect(violations, 'see scratch/audit-report.txt').toBe(0)
 })
