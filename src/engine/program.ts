@@ -16,7 +16,7 @@ import { ageBracket, preferLowImpact, proteinTarget, weeklyCardioTarget } from '
 import { warmupMinutes } from './warmup'
 
 /** Bump when any rule below changes; the app rebuilds stored programs that carry an older number. */
-export const PROGRAM_VERSION = 3
+export const PROGRAM_VERSION = 4
 
 /* ---------- 1. equipment ---------- */
 
@@ -139,8 +139,8 @@ type Template = { id: DayId; patterns: Pattern[]; muscles: Muscle[] }
 
 const T: Record<string, Template> = {
   fullA: { id: 'fullA', patterns: ['squat', 'pushH', 'pullH', 'hinge', 'pullV', 'coreAnti', 'calf'], muscles: ['quads', 'glutes', 'chest', 'lats', 'upperBack', 'hamstrings', 'abs'] },
-  fullB: { id: 'fullB', patterns: ['hinge', 'pushV', 'pullV', 'lunge', 'coreFlex', 'triceps', 'sideDelt'], muscles: ['hamstrings', 'glutes', 'frontDelts', 'sideDelts', 'lats', 'quads', 'abs'] },
-  fullC: { id: 'fullC', patterns: ['squat', 'pushH', 'pullH', 'glute', 'coreLateral', 'sideDelt', 'rearDelt'], muscles: ['quads', 'glutes', 'chest', 'lats', 'upperBack', 'abs'] },
+  fullB: { id: 'fullB', patterns: ['hinge', 'pushH', 'pullH', 'lunge', 'pushV', 'coreFlex', 'sideDelt'], muscles: ['hamstrings', 'glutes', 'chest', 'frontDelts', 'sideDelts', 'lats', 'upperBack', 'quads', 'abs'] },
+  fullC: { id: 'fullC', patterns: ['squat', 'pushH', 'pullV', 'glute', 'coreLateral', 'sideDelt', 'rearDelt'], muscles: ['quads', 'glutes', 'chest', 'lats', 'abs'] },
   upper: { id: 'upper', patterns: ['pushH', 'pullH', 'pushV', 'pullV', 'pushH', 'sideDelt', 'biceps', 'triceps'], muscles: ['chest', 'lats', 'upperBack', 'frontDelts', 'sideDelts', 'biceps', 'triceps'] },
   lower: { id: 'lower', patterns: ['squat', 'hinge', 'lunge', 'glute', 'calf', 'coreAnti', 'hamIso'], muscles: ['quads', 'hamstrings', 'glutes', 'calves', 'abs'] },
   push: { id: 'push', patterns: ['pushH', 'pushV', 'pushH', 'sideDelt', 'triceps', 'triceps', 'coreAnti'], muscles: ['chest', 'frontDelts', 'sideDelts', 'triceps'] },
@@ -221,8 +221,22 @@ function buildDay(key: string, tpl: Template, profile: Profile, opts: { cardio?:
 function rotation(profile: Profile): { split: Program['split']; label: string; keys: [string, string][] } {
   const d = profile.daysPerWeek
   const exp = profile.experience
+  const withCardio = profile.cardioDay ?? true
   if (d <= 1) return { split: 'fullbody', label: 'Full body', keys: [['fullA', 'fullA']] }
   if (d === 2) return { split: 'fullbody', label: 'Full body, two versions', keys: [['fullA', 'fullA'], ['fullB', 'fullB']] }
+  // A dedicated cardio day (Gorzelitz 2022: aerobic activity plus 1-2 lifting sessions a week carries the lowest
+  // mortality; a 30-40 min session covers a third to a half of the weekly aerobic target in one visit).
+  // The lifting days that remain are laid out so every muscle is still trained twice a week.
+  if (withCardio && d >= 3) {
+    if (d === 3) return { split: 'fullbody', label: 'Full body twice, plus a cardio day', keys: [['fullA', 'fullA'], ['fullB', 'fullB'], ['cardio', 'cardio-1']] }
+    if (d === 4) {
+      if (exp === 'novice') return { split: 'fullbody', label: 'Full body three times, plus a cardio day', keys: [['fullA', 'fullA'], ['fullB', 'fullB'], ['fullC', 'fullC'], ['cardio', 'cardio-1']] }
+      return { split: 'upperlower', label: 'Upper / lower / full body, plus a cardio day', keys: [['upper', 'upper-1'], ['lower', 'lower-1'], ['fullA', 'full-1'], ['cardio', 'cardio-1']] }
+    }
+    if (d === 5) return { split: 'upperlower', label: 'Upper / lower, twice, plus a cardio day', keys: [['upper', 'upper-1'], ['lower', 'lower-1'], ['upper', 'upper-2'], ['lower', 'lower-2'], ['cardio', 'cardio-1']] }
+    if (exp === 'novice') return { split: 'upperlower', label: 'Upper / lower, twice, plus cardio and mobility days', keys: [['upper', 'upper-1'], ['lower', 'lower-1'], ['cardio', 'cardio-1'], ['upper', 'upper-2'], ['lower', 'lower-2'], ['mobility', 'mobility-1']] }
+    return { split: 'ulppl', label: 'Push / pull / legs + upper / lower, plus a cardio day', keys: [['push', 'push-1'], ['pull', 'pull-1'], ['legs', 'legs-1'], ['upper', 'upper-1'], ['lower', 'lower-1'], ['cardio', 'cardio-1']] }
+  }
   if (d === 3) {
     if (exp === 'novice') return { split: 'fullbody', label: 'Full body, three versions', keys: [['fullA', 'fullA'], ['fullB', 'fullB'], ['fullC', 'fullC']] }
     return { split: 'upperlower', label: 'Upper / lower / full body', keys: [['upper', 'upper-1'], ['lower', 'lower-1'], ['fullA', 'full-1']] }
@@ -246,7 +260,7 @@ export function setsTarget(exp: Experience): [number, number] {
 export function buildProgram(profile: Profile): Program {
   const rot = rotation(profile)
   const OPTS: Record<string, Parameters<typeof buildDay>[3]> = {
-    cardio: { cardio: profile.goal === 'fatloss' ? 30 : 25, minCardio: 20, minBlocks: 0 },
+    cardio: { cardio: profile.goal === 'fatloss' ? 40 : 35, minCardio: 25, minBlocks: 0 },
     mobility: { cardio: 0, minBlocks: 4 },
   }
   const days = rot.keys.map(([tpl, key]) => buildDay(key, T[tpl], profile, OPTS[tpl]))
@@ -254,6 +268,7 @@ export function buildProgram(profile: Profile): Program {
   const notes: string[] = []
   notes.push(`${rot.label}: with ${profile.daysPerWeek} day${profile.daysPerWeek > 1 ? 's' : ''} a week this is the layout that trains every muscle at least twice a week when volume allows (Schoenfeld 2016).`)
   notes.push(`Each day is time-boxed to your ${profile.sessionMinutes} minutes including the warm-up. Big lifts are filled first, small ones only if time remains (Iversen 2021).`)
+  if ((profile.cardioDay ?? true) && profile.daysPerWeek >= 3) notes.push(`One visit a week is a cardio day. Aerobic fitness is one of the strongest predictors of a long life, and lifting plus aerobic work beats either alone (Gorzelitz 2022). ${profile.daysPerWeek === 3 ? 'With three visits that leaves two lifting days, so muscle-growth volume runs below the usual target; add a day or switch the cardio day off if physique is the priority.' : ''}`)
   notes.push(`Aim for ${setsTarget(profile.experience)[0]} to ${setsTarget(profile.experience)[1]} hard sets per muscle per week. Growth starts near 4 and each extra set buys less (Pelland 2026).`)
   notes.push(`Rest ${profile.experience === 'novice' ? '1.5' : profile.goal === 'strength' ? '3' : profile.experience === 'advanced' ? '2.5' : '2'} minutes on the big lifts, about a minute on the small ones (Schoenfeld 2016, Grgic 2018).`)
   notes.push(`Finish sets ${profile.goal === 'strength' ? '2 to 3' : '1 to 3'} reps short of failure; going all the way adds little and costs recovery (Refalo 2023, Robinson 2024).`)

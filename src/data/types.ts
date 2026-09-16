@@ -62,6 +62,8 @@ export interface Profile {
   sessionMinutes: 30 | 45 | 60 | 75
   equipment: EquipmentAccess
   goal: Goal
+  /** One weekly visit is a dedicated cardio day (Mount Doom). Default true; needs 3+ days. */
+  cardioDay?: boolean
   createdAt: string
 }
 

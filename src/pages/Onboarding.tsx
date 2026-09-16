@@ -91,6 +91,14 @@ export default function Onboarding() {
             ]} />
           </div>
         </div>
+          <div>
+            <label className="label">Separate cardio day</label>
+            <Choice<'yes' | 'no'> value={(p.cardioDay ?? true) ? 'yes' : 'no'} onChange={(v) => up('cardioDay', v === 'yes')} options={[
+              { v: 'yes', label: 'Yes, one visit is cardio', hint: 'Mount Doom: 30 to 40 min, lifting days still hit every muscle twice' },
+              { v: 'no', label: 'No, short finishers only', hint: 'All visits are lifting days' },
+            ]} />
+            <p className="text-[11px] text-dim mt-1.5">Needs 3 or more days. Aerobic work plus lifting carries the lowest mortality risk in the big cohorts.</p>
+          </div>
 
         <div className="aether-rise rise-3 space-y-2">
           <button className="btn-primary w-full" disabled={!valid} type="submit">{existing ? 'Save and rebuild plan' : 'Build my plan'}</button>

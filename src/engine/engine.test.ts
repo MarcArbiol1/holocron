@@ -39,7 +39,7 @@ describe('buildProgram', () => {
       const p = buildProgram({ ...base, ...v })
       expect(p.days.length).toBe(v.daysPerWeek ?? base.daysPerWeek)
       for (const d of p.days) {
-        expect(d.blocks.length).toBeGreaterThanOrEqual(3)
+        if (d.muscles.length) expect(d.blocks.length).toBeGreaterThanOrEqual(3)
         for (const b of d.blocks) {
           expect(EXERCISE_BY_ID[b.exerciseId]).toBeDefined()
           expect(b.sets).toBeGreaterThan(0)
@@ -53,6 +53,7 @@ describe('buildProgram', () => {
     for (const age of [15, 70]) {
       const p = buildProgram({ ...base, age })
       for (const d of p.days) for (const b of d.blocks) {
+        if (EXERCISE_BY_ID[b.exerciseId].category === 'cardio') continue
         expect(b.rir).toBeGreaterThanOrEqual(2)
         expect(EXERCISE_BY_ID[b.exerciseId].level).toBeLessThan(3)
       }
@@ -102,17 +103,18 @@ describe('recommend', () => {
     expect(r.day.id).toBe('health')
   })
   it('does not put you back on the same muscles within 48 hours', () => {
-    const p4 = buildProgram({ ...base, daysPerWeek: 4, experience: 'intermediate' })
+    const p4 = buildProgram({ ...base, daysPerWeek: 4, experience: 'intermediate', cardioDay: false })
     // Did lower yesterday and upper the day before -> next in rotation is upper-2 (fine, >48h)
     const s1 = session('upper-1', '2026-09-08T18:00:00.000Z', ['benchPress', 'barbellRow', 'overheadPress', 'pullUp'], 8, 60)
     const s2 = session('lower-1', '2026-09-09T18:00:00.000Z', ['backSquat', 'deadlift', 'splitSquat'], 8, 80)
-    const r = recommend({ ...base, daysPerWeek: 4, experience: 'intermediate' }, p4, [s1, s2], now)
+    const r = recommend({ ...base, daysPerWeek: 4, experience: 'intermediate', cardioDay: false }, p4, [s1, s2], now)
     expect(r.day.id).toBe('upper')
     // Did upper 20 hours ago -> the rotation would say lower... which is fine; but if lower was 20h ago too, recovery mode
     const s3 = session('upper-2', '2026-09-10T00:00:00.000Z', ['benchPress', 'barbellRow', 'overheadPress', 'pullUp'], 8, 60)
     const s4 = session('lower-2', '2026-09-10T10:00:00.000Z', ['backSquat', 'deadlift', 'splitSquat'], 8, 80)
     const r2 = recommend({ ...base, daysPerWeek: 6, experience: 'intermediate' }, buildProgram({ ...base, daysPerWeek: 6, experience: 'intermediate' }), [s1, s2, s3, s4], now)
-    expect(['recovery', 'cardio', 'done']).toContain(r2.mode)
+    // nothing lifted is recovered: either a recovery/cardio verdict or the rotation's own cardio day
+    expect(['recovery', 'cardio', 'done'].includes(r2.mode) || r2.day.id === 'cardio').toBe(true)
   })
   it('hands out cardio once the planned week is done', () => {
     const s = [1, 2, 3].map((i) => session(program.days[i - 1].key, `2026-09-0${6 + i}T18:00:00.000Z`, ['gobletSquat']))

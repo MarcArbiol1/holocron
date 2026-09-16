@@ -58,8 +58,9 @@ for (const over of profiles) {
       if (ex.category === 'compound' && seenIso) say('order', `${d.key}: compound ${ex.id} after an isolation move`)
       if (ex.category === 'isolation') seenIso = true
       if (p.experience === 'novice' && ex.level === 3) say('level', `${d.key}: level-3 ${ex.id} for a novice`)
-      if (p.age < 18 && b.rir < 3) say('youth', `${d.key}: ${ex.id} rir ${b.rir} < 3`)
-      if (p.age >= 65 && (b.rir < 2 || b.sets > 3 || ex.highImpact)) say('older', `${d.key}: ${ex.id} sets ${b.sets} rir ${b.rir} impact ${!!ex.highImpact}`)
+      const lifting = ex.category !== 'cardio' && ex.category !== 'mobility' && ex.category !== 'balance'
+      if (lifting && p.age < 18 && b.rir < 3) say('youth', `${d.key}: ${ex.id} rir ${b.rir} < 3`)
+      if (p.age >= 65 && ((lifting && (b.rir < 2 || b.sets > 3)) || ex.highImpact)) say('older', `${d.key}: ${ex.id} sets ${b.sets} rir ${b.rir} impact ${!!ex.highImpact}`)
       if (bmi(p) >= 30 && ex.highImpact) say('impact', `${d.key}: high-impact ${ex.id} at BMI ${bmi(p).toFixed(0)}`)
       if (ex.category === 'compound' || ex.category === 'isolation' || ex.category === 'core') {
         for (const m of ex.primary) { weeklySets[m] += b.sets; hit.add(m) }
@@ -67,20 +68,22 @@ for (const over of profiles) {
       }
     }
     for (const m of hit) freq[m]++
-    if (p.age >= 65 && !d.blocks.some((b) => EXERCISE_BY_ID[b.exerciseId].category === 'balance')) say('balance', `${d.key}: no balance exercise for 65+`)
+    if (p.age >= 65 && d.muscles.length > 0 && !d.blocks.some((b) => EXERCISE_BY_ID[b.exerciseId].category === 'balance')) say('balance', `${d.key}: no balance exercise for 65+`)
     const t = estMinutes(d, p)
     const flag = t > p.sessionMinutes * 1.1 ? ' OVER' : ''
     log(`  ${d.key.padEnd(9)} ${d.blocks.length} ex, ${d.blocks.reduce((a, b) => a + b.sets, 0)} sets, ~${t} min of ${p.sessionMinutes}${flag}  [${d.blocks.map((b) => b.exerciseId).join(', ')}]`)
     if (flag) say('time', `${d.key}: ~${t} min for a ${p.sessionMinutes}-min session`)
   }
   const [lo, hi] = prog.setsPerMuscleTarget
+  const liftingDays = prog.days.filter((d) => d.muscles.length > 0).length
   for (const m of BIG) {
     if (p.daysPerWeek >= 3 && freq[m] < 2) say('freq', `${m} trained directly ${freq[m]}x/week`)
     // Tolerances (documented in docs/AUDIT.md):
     //  - under target only counts for sessions of 60 min or more; shorter sessions cannot fit the volume and say so in the plan notes
     //  - over target: 1.5x the high end; 2.2x for glutes/hamstrings, which collect half-credit from every squat, lunge and hip thrust
     const overCap = m === 'glutes' || m === 'hamstrings' ? hi * 2.2 : hi * 1.5
-    if (p.daysPerWeek >= 3 && p.sessionMinutes >= 60 && weeklySets[m] < lo * 0.75) say('volume', `${m} ${weeklySets[m]} sets/week < target ${lo}`)
+    // a cardio day that leaves only two lifting days cannot reach growth targets; the plan notes say so
+    if (liftingDays >= 3 && p.sessionMinutes >= 60 && weeklySets[m] < lo * 0.75) say('volume', `${m} ${weeklySets[m]} sets/week < target ${lo}`)
     if (weeklySets[m] > overCap) say('volume', `${m} ${weeklySets[m]} sets/week > ${hi}`)
   }
   log('  sets/wk: ' + BIG.map((m) => `${m} ${weeklySets[m]}(${freq[m]}x)`).join(', '))
