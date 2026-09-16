@@ -25,6 +25,13 @@ npm run build      # production build in dist/
 
 To use it on your phone on the same Wi-Fi: `npm run dev -- --host`, open the LAN address it prints, then "Add to Home Screen".
 
+Optional Python server (FastAPI) that serves the built app and hosts an API for future server-side features:
+
+```bash
+python3 -m venv backend/.venv && backend/.venv/bin/pip install -r backend/requirements.txt
+npm run build && npm run api     # http://localhost:8000/holocron/
+```
+
 To publish: push to `main` on GitHub with Pages set to "GitHub Actions" (see `.github/workflows/pages.yml`). The app is served at `https://<user>.github.io/holocron/`.
 
 ## How the code is organised

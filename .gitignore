@@ -5,3 +5,5 @@ scratch/
 *.local
 .DS_Store
 .gstack/
+backend/.venv/
+__pycache__/

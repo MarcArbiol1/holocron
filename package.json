@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "anims": "node scripts/render-anims.ts",
-    "check-anims": "node scripts/check-anims.ts"
+    "check-anims": "node scripts/check-anims.ts",
+    "api": "backend/.venv/bin/uvicorn app:app --app-dir backend --host 0.0.0.0 --port 8000 --reload"
   },
   "dependencies": {
     "react": "^19.2.8",

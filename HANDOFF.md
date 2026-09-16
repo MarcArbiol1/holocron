@@ -7,6 +7,7 @@ Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 - **Built and verified locally**: onboarding -> plan -> THE FORGE -> session logger (rest timer, suggestions, swap, cardio) -> XP screen -> recap. Driven end to end in a headless phone-sized browser with zero console errors. 29 engine tests pass (`npm test -- --run`). Production build passes (`npm run build`, ~124 kB gzipped JS).
 - **79 exercises, 78 stick-figure animations**, every one rendered to a contact sheet and checked for correct form (`npm run anims -- <ids>` writes `scratch/anim-preview/sheet.svg.png`; `OUT=dir` changes the folder; `PER_ROW=2` is the default layout).
 - **Audited 16 Sep**: `docs/AUDIT.md`. The program builder is now time-boxed and versioned (`PROGRAM_VERSION`), muscle maps were rebalanced, 65+ get a balance block, novices never get 5-6 lifting days, bodyweight users get a single-leg RDL, and 16 technique-text fixes landed. `scripts/audit-programs.test.ts` is a regression test over 81 profiles and must stay at zero violations.
+- **FastAPI backend added 16 Sep** at `backend/app.py` (venv in `backend/.venv`, `npm run api`). It only serves `dist/` and `/api/health` so far; Marc asked for it before describing how he wants the app. The static PWA path still works without it.
 - **Not yet done**: pushed to GitHub, installed on Marc's iPhone, used in a real gym session, UI restyle (Marc will send designs; keep every feature).
 
 ## Decisions and why
