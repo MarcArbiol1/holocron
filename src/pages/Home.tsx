@@ -6,7 +6,7 @@ import { addDays, cardioMinutes, inRange, weekStart, weekStreak } from '../engin
 import { useRecommendation } from '../store/hooks'
 import { useStore } from '../store/store'
 import { NAMES } from '../theme/names'
-import { DAY_COLOR, LevelPill, LiquidDock, ProfileButton, dayName, fmtDate, fmtDuration, todayLabel } from '../components/ui'
+import { DAY_COLOR, LevelPill, LiquidDock, ProfileButton, dayTitle, fmtDate, fmtDuration, todayLabel } from '../components/ui'
 import { Figure } from '../components/Figure'
 import { HapticSwitch, haptic } from '../lib/haptics'
 import type { RoutineDay } from '../data/types'
@@ -149,10 +149,10 @@ export default function Home() {
             <h2 id="alt-title" className="text-lg font-semibold">Or choose another day</h2>
             <div className="mt-3 grid grid-cols-2 gap-3">
               {rec.alternatives.map((d) => (
-                <button key={d.key} onClick={() => start(d, dayName(d.id), 'Chosen manually.', 0)} className="workout-row relative rounded-2xl p-4 text-left">
+                <button key={d.key} onClick={() => start(d, dayTitle(d), 'Chosen manually.', 0)} className="workout-row relative rounded-2xl p-4 text-left">
                   <HapticSwitch />
                   <span className="block text-[11px] font-semibold uppercase tracking-wider" style={{ color: DAY_COLOR[d.id] }}>{d.key.replace('-', ' ')}</span>
-                  <span className="mt-1 block text-sm font-semibold">{dayName(d.id)}</span>
+                  <span className="mt-1 block text-sm font-semibold">{dayTitle(d)}</span>
                   <span className="mt-0.5 block text-xs text-dim">{d.blocks.length} exercises · ~{d.minutes} min</span>
                 </button>
               ))}

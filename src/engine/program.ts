@@ -16,7 +16,7 @@ import { ageBracket, preferLowImpact, proteinTarget, weeklyCardioTarget } from '
 import { warmupMinutes } from './warmup'
 
 /** Bump when any rule below changes; the app rebuilds stored programs that carry an older number. */
-export const PROGRAM_VERSION = 2
+export const PROGRAM_VERSION = 3
 
 /* ---------- 1. equipment ---------- */
 
@@ -62,8 +62,12 @@ const POOLS: Record<Pattern, Pools> = {
 
 const LOW_IMPACT_CARDIO = ['bike', 'inclineWalk', 'rower', 'elliptical', 'stairClimber']
 
-/** First exercise in the pool the user can do (and that fits their level), plus the alternatives. */
-export function pick(pattern: Pattern, profile: Profile, exclude: string[] = []): { id: string; alternatives: string[] } | null {
+/**
+ * First exercise in the pool the user can do (and that fits their level), plus the alternatives.
+ * `variant` 2 takes the second option when there is one, so the second upper/lower/push/pull/legs
+ * day of the week uses different exercises (same patterns, different angles).
+ */
+export function pick(pattern: Pattern, profile: Profile, exclude: string[] = [], variant = 1): { id: string; alternatives: string[] } | null {
   const bracket = ageBracket(profile.age)
   let pool = POOLS[pattern][profile.experience]
   if (pattern === 'cardio' && preferLowImpact(profile)) pool = [...LOW_IMPACT_CARDIO, ...pool]
@@ -77,7 +81,12 @@ export function pick(pattern: Pattern, profile: Profile, exclude: string[] = [])
     return true
   })
   if (!ok.length) return null
-  return { id: ok[0], alternatives: ok.slice(1, 4) }
+  // The second-visit alternative must be the same kind of exercise (compound stays compound,
+  // isolation stays isolation) so the compound-first order of the day is preserved.
+  const firstCat = EXERCISE_BY_ID[ok[0]].category
+  const altIdx = variant === 2 ? ok.findIndex((id, j) => j > 0 && EXERCISE_BY_ID[id].category === firstCat) : -1
+  const i = altIdx > 0 ? altIdx : 0
+  return { id: ok[i], alternatives: ok.filter((_, j) => j !== i).slice(0, 3) }
 }
 
 /* ---------- 3. prescriptions ---------- */
@@ -166,6 +175,7 @@ function plannedCardio(profile: Profile): number {
  */
 function buildDay(key: string, tpl: Template, profile: Profile, opts: { cardio?: number; minBlocks?: number; minCardio?: number } = {}): RoutineDay {
   const older = ageBracket(profile.age) === 'older'
+  const variant = key.endsWith('-2') ? 2 : 1
   const warm = warmupMinutes(profile)
   const cardioWanted = opts.cardio ?? plannedCardio(profile)
   const minCardio = opts.minCardio ?? 0
@@ -175,7 +185,7 @@ function buildDay(key: string, tpl: Template, profile: Profile, opts: { cardio?:
   const blocks: Block[] = []
   let time = 0
   for (const pattern of tpl.patterns) {
-    const choice = pick(pattern, profile, used)
+    const choice = pick(pattern, profile, used, variant)
     if (!choice) continue
     const ex = EXERCISE_BY_ID[choice.id]
     const p = prescribe(ex, profile)

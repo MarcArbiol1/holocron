@@ -6,7 +6,7 @@ import { plannedSetsPerMuscle } from '../engine/program'
 import { useRecommendation } from '../store/hooks'
 import { useStore } from '../store/store'
 import { NAMES } from '../theme/names'
-import { Bar, DAY_COLOR, Page, dayName } from '../components/ui'
+import { Bar, DAY_COLOR, Page, dayTitle, } from '../components/ui'
 import { Figure } from '../components/Figure'
 import { haptic } from '../lib/haptics'
 
@@ -43,12 +43,12 @@ export default function Routines() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="kicker" style={{ color: DAY_COLOR[d.id] }}>{d.key.replace('-', ' ')}</p>
-                  <h3 className="mt-1 text-xl font-bold leading-tight">{dayName(d.id)}</h3>
+                  <h3 className="mt-1 text-xl font-bold leading-tight">{dayTitle(d)}</h3>
                   <p className="mt-1 text-xs text-dim">about {d.minutes} min including warm-up</p>
                 </div>
                 {!active && rec && (
                   <button
-                    onClick={() => { haptic('success'); startSession(d, dayName(d.id), 'Chosen from the plan.', 0, rec.warmup); nav('/forge') }}
+                    onClick={() => { haptic('success'); startSession(d, dayTitle(d), 'Chosen from the plan.', 0, rec.warmup); nav('/forge') }}
                     className="primary-action flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold text-ice"
                   >
                     <Play className="size-4 fill-current text-glow" /> Start

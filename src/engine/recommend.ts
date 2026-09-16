@@ -11,7 +11,7 @@
  *   3. If nothing is recovered, or the week's planned sessions are already done,
  *      a cardio or mobility day so the visit still counts.
  */
-import { NAMES } from '../theme/names'
+import { dayTitle } from '../theme/names'
 import type { Profile, Program, RoutineDay, Session } from '../data/types'
 import { MUSCLES } from '../data/muscles'
 import { cardioDay, healthDay, mobilityDay } from './program'
@@ -33,7 +33,7 @@ export interface Recommendation {
 }
 
 export const RECOVERY_HOURS = 48
-const dayName = (d: RoutineDay) => NAMES.days[d.id]
+const dayName = (d: RoutineDay) => dayTitle(d)
 
 export function recommend(profile: Profile, program: Program, sessions: Session[], now = new Date()): Recommendation {
   const done = finished(sessions)

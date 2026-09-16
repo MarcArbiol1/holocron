@@ -56,5 +56,22 @@ export const NAMES = {
   ] as const,
 } as const
 
+/**
+ * When a day type appears twice in a week (upper/lower twice, push/pull/legs twice), the second
+ * visit gets different exercises and its own name. Keyed by rotation key.
+ */
+export const DAY_VARIANTS: Record<string, string> = {
+  'upper-2': 'The Watchtower',
+  'lower-2': 'Moria',
+  'legs-2': 'Moria',
+  'push-2': 'The Battering Ram',
+  'pull-2': 'The Grappling Hook',
+}
+
 export type DayId = keyof typeof NAMES.days
+
+/** Display name for a routine day: variant name if it has one, else the day type's name. */
+export function dayTitle(day: { key?: string; id: DayId }): string {
+  return (day.key && DAY_VARIANTS[day.key]) || NAMES.days[day.id]
+}
 export type LevelName = (typeof NAMES.levels)[number]

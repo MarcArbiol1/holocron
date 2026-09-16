@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { BookOpen, ChevronLeft, Dumbbell, Hexagon, Orbit, Settings2, Shield } from 'lucide-react'
-import { NAMES } from '../theme/names'
+import { NAMES, dayTitle } from '../theme/names'
 import { useStore } from '../store/store'
 import { levelFor, totalXp } from '../engine/levels'
 import { HapticSwitch, haptic } from '../lib/haptics'
@@ -74,16 +74,19 @@ export function LiquidDock() {
       cancelAnimationFrame(raf)
       raf = requestAnimationFrame(() => {
         const y = window.scrollY
+        const max = document.documentElement.scrollHeight - window.innerHeight
         const dy = y - lastY.current
-        if (y < 24 || dy < -6) setMin(false)
-        else if (dy > 6 && y > 80) setMin(true)
         lastY.current = y
+        if (y < 0 || y > max) return // rubber-band
+        if (y < 24 || dy < -6) setMin((m) => (m ? false : m))
+        else if (dy > 6 && y > 80) setMin((m) => (m ? m : true))
       })
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf) }
   }, [loc.pathname])
 
+  const Active = tabs[activeIndex].icon
   return (
     <>
       {active && loc.pathname !== '/session' && (
@@ -91,28 +94,39 @@ export function LiquidDock() {
           Session in progress
         </NavLink>
       )}
-      <nav
-        className="liquid-dock fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 z-30 grid h-[76px] w-[calc(100%-2.5rem)] max-w-[390px] -translate-x-1/2 grid-cols-5 p-1.5"
+      <div
+        className="dock-wrap fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 z-30 h-[68px] w-[calc(100%-2.5rem)] max-w-[390px] -translate-x-1/2"
         data-min={min ? 'true' : 'false'}
         data-sliding={sliding ? 'true' : 'false'}
-        aria-label="Primary navigation"
       >
-        <div aria-hidden="true" className="liquid-lens absolute bottom-1.5 top-1.5 w-[calc((100%_-_0.75rem)/5)]" style={{ '--nav-index': activeIndex } as React.CSSProperties} />
-        {tabs.map(({ to, label, icon: Icon }, i) => (
-          <button
-            key={to}
-            type="button"
-            onClick={() => { haptic(); if (min) { setMin(false); return } if (i !== activeIndex) nav(to) }}
-            aria-current={i === activeIndex ? 'page' : undefined}
-            aria-label={label}
-            className={`dock-tab relative z-10 flex flex-col items-center justify-center rounded-full ${i === activeIndex ? 'text-ice' : 'text-dim'}`}
-          >
-            <Icon className="dock-icon size-5" strokeWidth={i === activeIndex ? 2.4 : 1.8} />
-            <span className="dock-label mt-1 text-[10px] font-medium">{label}</span>
-            <HapticSwitch />
-          </button>
-        ))}
-      </nav>
+        <nav className="liquid-dock absolute inset-0 grid grid-cols-5 p-1.5" aria-label="Primary navigation">
+          <div aria-hidden="true" className="liquid-lens absolute bottom-1.5 top-1.5 w-[calc((100%_-_0.75rem)/5)]" style={{ '--nav-index': activeIndex } as React.CSSProperties} />
+          {tabs.map(({ to, label, icon: Icon }, i) => (
+            <button
+              key={to}
+              type="button"
+              onClick={() => { haptic(); if (i !== activeIndex) nav(to) }}
+              aria-current={i === activeIndex ? 'page' : undefined}
+              aria-label={label}
+              title={label}
+              className={`dock-tab relative z-10 flex items-center justify-center ${i === activeIndex ? 'text-ice' : 'text-dim'}`}
+            >
+              <Icon className="dock-icon size-[22px]" strokeWidth={i === activeIndex ? 2.4 : 1.8} />
+              <HapticSwitch />
+            </button>
+          ))}
+        </nav>
+        {/* Collapsed state: one circle with the active icon; tapping it reopens the bar (Apple HIG). */}
+        <button
+          type="button"
+          onClick={() => { haptic(); setMin(false) }}
+          aria-label="Show navigation"
+          className="dock-mini absolute left-1/2 top-1/2 grid size-[58px] -translate-x-1/2 -translate-y-1/2 place-items-center text-ice"
+        >
+          <Active className="size-[22px]" strokeWidth={2.4} />
+          <HapticSwitch />
+        </button>
+      </div>
     </>
   )
 }
@@ -162,6 +176,7 @@ export const DAY_COLOR: Record<string, string> = {
 }
 
 export const dayName = (id: keyof typeof NAMES.days) => NAMES.days[id]
+export { dayTitle }
 
 export function fmtDate(iso: string) {
   const d = new Date(iso)

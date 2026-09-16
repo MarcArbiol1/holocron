@@ -21,11 +21,11 @@
   --apple: cubic-bezier(0.32, 0.72, 0, 1);
   /* Apple's SwiftUI springs (duration 0.5 s; bounce 0 / 0.15 / 0.3) sampled from mass 1, k = (2π/d)², c = 4π(1−bounce)/d. */
   --spring-smooth-duration: 600ms;
-  --spring-smooth: linear(0.0, 0.0157, 0.0555, 0.1107, 0.1748, 0.2431, 0.3123, 0.3801, 0.4448, 0.5057, 0.562, 0.6135, 0.6603, 0.7024, 0.74, 0.7736, 0.8032, 0.8294, 0.8524, 0.8725, 0.89, 0.9053, 0.9186, 0.9301, 0.9401, 0.9487, 0.9561, 0.9625, 0.968, 0.9727, 0.9767, 0.9802, 0.9831, 0.9856, 0.9878, 0.9896, 0.9912, 0.9925, 0.9937, 0.9946, 1);
+  --spring-smooth: linear(0.0, 0.0042, 0.0157, 0.0332, 0.0555, 0.0816, 0.1107, 0.1419, 0.1748, 0.2086, 0.2431, 0.2777, 0.3123, 0.3465, 0.3801, 0.4129, 0.4448, 0.4758, 0.5057, 0.5344, 0.562, 0.5883, 0.6135, 0.6375, 0.6603, 0.6819, 0.7024, 0.7218, 0.74, 0.7573, 0.7736, 0.7888, 0.8032, 0.8167, 0.8294, 0.8412, 0.8524, 0.8627, 0.8725, 0.8816, 0.89, 0.8979, 0.9053, 0.9122, 0.9186, 0.9246, 0.9301, 0.9353, 0.9401, 0.9445, 0.9487, 0.9525, 0.9561, 0.9594, 0.9625, 0.9653, 0.968, 0.9704, 0.9727, 0.9748, 0.9767, 0.9785, 0.9802, 0.9817, 0.9831, 0.9844, 0.9856, 0.9868, 0.9878, 0.9888, 0.9896, 0.9905, 0.9912, 0.9919, 0.9925, 0.9931, 0.9937, 0.9942, 0.9946, 0.9951, 1);
   --spring-snappy-duration: 600ms;
-  --spring-snappy: linear(0.0, 0.016, 0.0574, 0.116, 0.1854, 0.2604, 0.3373, 0.4131, 0.486, 0.5545, 0.6177, 0.6751, 0.7267, 0.7724, 0.8125, 0.8472, 0.8771, 0.9025, 0.9239, 0.9417, 0.9564, 0.9684, 0.9781, 0.9858, 0.9918, 0.9964, 0.9999, 1.0024, 1.0041, 1.0053, 1.0059, 1.0062, 1.0063, 1.0061, 1.0058, 1.0054, 1.005, 1.0045, 1.004, 1.0035, 1);
+  --spring-snappy: linear(0.0, 0.0042, 0.016, 0.034, 0.0574, 0.085, 0.116, 0.1497, 0.1854, 0.2224, 0.2604, 0.2988, 0.3373, 0.3755, 0.4131, 0.4501, 0.486, 0.5209, 0.5545, 0.5868, 0.6177, 0.6471, 0.6751, 0.7017, 0.7267, 0.7503, 0.7724, 0.7931, 0.8125, 0.8305, 0.8472, 0.8628, 0.8771, 0.8903, 0.9025, 0.9137, 0.9239, 0.9332, 0.9417, 0.9495, 0.9564, 0.9628, 0.9684, 0.9735, 0.9781, 0.9822, 0.9858, 0.989, 0.9918, 0.9943, 0.9964, 0.9983, 0.9999, 1.0012, 1.0024, 1.0033, 1.0041, 1.0048, 1.0053, 1.0056, 1.0059, 1.0061, 1.0062, 1.0063, 1.0063, 1.0062, 1.0061, 1.006, 1.0058, 1.0056, 1.0054, 1.0052, 1.005, 1.0047, 1.0045, 1.0042, 1.004, 1.0038, 1.0035, 1.0033, 1);
   --spring-bouncy-duration: 600ms;
-  --spring-bouncy: linear(0.0, 0.0163, 0.0594, 0.1218, 0.197, 0.2799, 0.3659, 0.4517, 0.5347, 0.6129, 0.6851, 0.7503, 0.8081, 0.8585, 0.9017, 0.9378, 0.9676, 0.9914, 1.01, 1.024, 1.0339, 1.0405, 1.0443, 1.0459, 1.0457, 1.044, 1.0414, 1.0381, 1.0344, 1.0305, 1.0265, 1.0227, 1.019, 1.0156, 1.0125, 1.0097, 1.0073, 1.0052, 1.0034, 1.0019, 1);
+  --spring-bouncy: linear(0.0, 0.0042, 0.0163, 0.035, 0.0594, 0.0886, 0.1218, 0.1582, 0.197, 0.2378, 0.2799, 0.3227, 0.3659, 0.409, 0.4517, 0.4937, 0.5347, 0.5745, 0.6129, 0.6498, 0.6851, 0.7186, 0.7503, 0.7801, 0.8081, 0.8343, 0.8585, 0.881, 0.9017, 0.9206, 0.9378, 0.9535, 0.9676, 0.9802, 0.9914, 1.0013, 1.01, 1.0175, 1.024, 1.0294, 1.0339, 1.0376, 1.0405, 1.0428, 1.0443, 1.0454, 1.0459, 1.046, 1.0457, 1.045, 1.044, 1.0428, 1.0414, 1.0399, 1.0381, 1.0363, 1.0344, 1.0325, 1.0305, 1.0285, 1.0265, 1.0246, 1.0227, 1.0208, 1.019, 1.0172, 1.0156, 1.014, 1.0125, 1.011, 1.0097, 1.0084, 1.0073, 1.0062, 1.0052, 1.0042, 1.0034, 1.0026, 1.0019, 1.0013, 1);
 }
 
 html, body, #root { height: 100%; }
@@ -123,46 +123,43 @@ button { cursor: pointer; }
   .rise-1 { animation-delay: 60ms; } .rise-2 { animation-delay: 120ms; } .rise-3 { animation-delay: 180ms; } .rise-4 { animation-delay: 240ms; } .rise-5 { animation-delay: 300ms; }
 
   /* ---------- Liquid dock (bottom bar) ---------- */
-  /* Apple's iOS 26 tab bar: a floating glass capsule; the selected tab sits under a lens that slides
-     with a "snappy" spring; scrolling down minimises the bar to a small circle holding only the
-     active icon; scrolling up, reaching the top, or tapping expands it again. Refraction of the
-     content beneath cannot be done on iOS Safari (no SVG backdrop filters), so it is blur + saturate
-     + specular hairlines. */
-  .liquid-dock {
-    overflow: hidden;
+  /* Apple's iOS 26 tab bar: floating glass capsule, a lens that slides to the active tab with the
+     "snappy" spring and stretches while moving, and a collapse to a single-icon circle on scroll-down.
+     Everything that moves is transform/opacity only (no width, height, layout or filter animation),
+     because iOS re-rasterises blurred layers on every frame otherwise. */
+  .dock-wrap { pointer-events: none; }
+  .dock-wrap > * { pointer-events: auto; }
+  .liquid-dock, .dock-mini {
     border-radius: 2.25rem;
-    background: color-mix(in oklab, var(--panel) 52%, transparent);
+    background: color-mix(in oklab, var(--panel) 58%, transparent);
     border: 1px solid color-mix(in oklab, var(--ice) 16%, transparent);
-    -webkit-backdrop-filter: blur(30px) saturate(150%);
-    backdrop-filter: blur(30px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    backdrop-filter: blur(18px) saturate(150%);
     box-shadow: inset 0 1.5px 0 color-mix(in oklab, var(--ice) 22%, transparent), inset 0 -1px 0 color-mix(in oklab, var(--night) 55%, transparent), 0 20px 52px color-mix(in oklab, var(--night) 82%, transparent), 0 0 0 1px color-mix(in oklab, var(--night) 25%, transparent);
-    animation: dock-settle 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
-    transition: width var(--spring-smooth-duration) var(--spring-smooth), height var(--spring-smooth-duration) var(--spring-smooth), grid-template-columns var(--spring-smooth-duration) var(--spring-smooth);
+    transform: translateZ(0);
+    transition: transform var(--spring-smooth-duration) var(--spring-smooth), opacity 260ms ease, visibility 0s linear 0s;
   }
-  .liquid-dock::before {
-    content: ""; position: absolute; inset: 0; pointer-events: none;
+  .liquid-dock::before, .dock-mini::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
     background: linear-gradient(112deg, color-mix(in oklab, var(--ice) 13%, transparent), transparent 28%, transparent 72%, color-mix(in oklab, var(--glow) 8%, transparent));
   }
+  .liquid-dock { animation: dock-settle 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; overflow: hidden; }
+  .dock-mini { border-radius: 9999px; opacity: 0; visibility: hidden; transform: translateZ(0) scale(0.6); transition-delay: 0s, 0s, 260ms; }
+  .dock-wrap[data-min="true"] .liquid-dock { opacity: 0; visibility: hidden; transform: translateZ(0) scale(0.86); transition-delay: 0s, 0s, 260ms; }
+  .dock-wrap[data-min="true"] .dock-mini { opacity: 1; visibility: visible; transform: translateZ(0) scale(1); transition-delay: 0s, 0s, 0s; }
   .liquid-lens {
     left: 0.375rem;
     border-radius: 1.8rem;
     background: color-mix(in oklab, var(--ice) 10%, transparent);
     border: 1px solid color-mix(in oklab, var(--ice) 12%, transparent);
     box-shadow: inset 0 1px 0 color-mix(in oklab, var(--ice) 14%, transparent), 0 7px 20px color-mix(in oklab, var(--night) 45%, transparent), 0 0 18px color-mix(in oklab, var(--glow) 8%, transparent);
-    transform: translateX(calc(var(--nav-index) * 100%));
-    transition: transform var(--spring-snappy-duration) var(--spring-snappy), width var(--spring-smooth-duration) var(--spring-smooth);
+    transform: translate3d(calc(var(--nav-index) * 100%), 0, 0);
+    transition: transform var(--spring-snappy-duration) var(--spring-snappy);
   }
-  /* While the lens travels the glass stretches and the icons smear, like the real thing. */
-  .liquid-dock[data-sliding="true"] .liquid-lens { animation: lens-stretch 520ms var(--apple); }
-  .liquid-dock[data-sliding="true"] .dock-icon { animation: icon-smear 420ms var(--apple); }
-  .dock-tab { transition: color 300ms ease, transform 160ms var(--apple), background 200ms ease; border-radius: 9999px; }
-  .dock-tab:active { transform: scale(0.92); background: radial-gradient(circle at center, color-mix(in oklab, var(--ice) 12%, transparent), transparent 72%); }
-  .dock-label { transition: opacity 200ms ease; }
-  /* Minimised: a 58px circle with only the active icon. */
-  .liquid-dock[data-min="true"] { width: 58px; height: 58px; grid-template-columns: 1fr; padding: 0.25rem; }
-  .liquid-dock[data-min="true"] .dock-tab:not([aria-current="page"]) { display: none; }
-  .liquid-dock[data-min="true"] .dock-label { display: none; }
-  .liquid-dock[data-min="true"] .liquid-lens { left: 0.25rem; top: 0.25rem; bottom: 0.25rem; width: calc(100% - 0.5rem); transform: none; }
+  .dock-wrap[data-sliding="true"] .liquid-lens { animation: lens-stretch 520ms var(--apple); }
+  .dock-wrap[data-sliding="true"] .dock-icon { animation: icon-squash 420ms var(--apple); }
+  .dock-tab { transition: color 300ms ease, transform 160ms var(--apple); border-radius: 9999px; }
+  .dock-tab:active { transform: scale(0.9); }
 }
 
 @keyframes aether-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
@@ -170,12 +167,12 @@ button { cursor: pointer; }
 @keyframes aether-pulse { 0%, 100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.35); } }
 @keyframes dock-settle { from { opacity: 0; translate: 0 16px; scale: 0.97; } to { opacity: 1; translate: 0 0; scale: 1; } }
 @keyframes lens-stretch { 0% { scale: 1 1; } 35% { scale: 1.22 0.92; } 70% { scale: 0.96 1.04; } 100% { scale: 1 1; } }
-@keyframes icon-smear { 0% { filter: blur(0); } 40% { filter: blur(0.8px); transform: scaleX(1.12); } 100% { filter: blur(0); } }
+@keyframes icon-squash { 0% { transform: scale(1); } 40% { transform: scale(1.14, 0.9); } 100% { transform: scale(1); } }
 
 @media (prefers-reduced-motion: reduce) {
   .aether-rise, .liquid-dock { animation: none; }
-  .liquid-lens, .liquid-dock { transition: none; }
-  .liquid-dock[data-sliding="true"] .liquid-lens, .liquid-dock[data-sliding="true"] .dock-icon { animation: none; }
+  .liquid-lens, .liquid-dock, .dock-mini { transition: none; }
+  .dock-wrap[data-sliding="true"] .liquid-lens, .dock-wrap[data-sliding="true"] .dock-icon { animation: none; }
   .aether-sheen::after { display: none; }
 }
 
