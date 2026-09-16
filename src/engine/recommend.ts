@@ -51,7 +51,9 @@ export function recommend(profile: Profile, program: Program, sessions: Session[
     // If the week is behind on cardio and this day has little, add a finisher.
     const daysLeft = 7 - ((now.getDay() + 6) % 7)
     const needPerDay = cardioGap / Math.max(1, Math.min(daysLeft, profile.daysPerWeek - thisWeek.length || 1))
-    const extraCardio = mode === 'cardio' || done.length === 0 ? 0 : Math.min(10, Math.max(0, Math.round(needPerDay - day.cardioMinutes)))
+    // Never push the session past the time the user said they have (plus a small grace).
+    const room = Math.max(0, profile.sessionMinutes + 5 - day.minutes)
+    const extraCardio = mode === 'cardio' || done.length === 0 ? 0 : Math.min(10, room, Math.max(0, Math.round(needPerDay - day.cardioMinutes)))
     return { mode, day, title: dayName(day), reason, extraCardio, warmup: buildWarmup(day, profile, sessions), alternatives }
   }
 
