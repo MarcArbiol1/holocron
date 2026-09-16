@@ -86,7 +86,7 @@ export default function Settings() {
       </section>
 
       <p className="aether-rise rise-5 px-1 text-[11px] leading-relaxed text-dim">
-        {NAMES.app} is a hobby project and not medical advice. Names of pages and levels are nods to films and books; no affiliation. All exercise animations are drawn by the app itself. The science behind every rule is listed in the repo (docs/EVIDENCE.md).
+        {NAMES.app} is a hobby project and not medical advice. Names of pages and levels are nods to films and books; no affiliation. All exercise animations are drawn by the app itself. The science behind every rule is listed in the repo (docs/EVIDENCE.md), and in the app under <Link to="/codex" className="text-glow">The Codex</Link>.
       </p>
     </Page>
   )

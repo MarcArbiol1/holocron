@@ -31,7 +31,7 @@ export default function Routines() {
               <li key={n} className="flex gap-2"><span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-glow/80" /><span>{n}</span></li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-dim">Every rule is traced to a paper in docs/EVIDENCE.md in the repo.</p>
+          <p className="mt-3 text-xs text-dim">Every rule and its paper: <Link to="/codex" className="text-glow font-semibold">open The Codex</Link></p>
         </div>
       </section>
 

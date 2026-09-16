@@ -15,6 +15,7 @@ import Library from './pages/Library'
 import ExerciseDetail from './pages/ExerciseDetail'
 import Order from './pages/Order'
 import Settings from './pages/Settings'
+import Codex from './pages/Codex'
 
 function Shell() {
   const profile = useStore((s) => s.profile)
@@ -43,6 +44,7 @@ function Shell() {
         <Route path="/exercise/:id" element={<ExerciseDetail />} />
         <Route path="/order" element={<Order />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/codex" element={<Codex />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       {!hideNav && <LiquidDock />}

@@ -19,6 +19,7 @@ export const NAMES = {
     library: 'The Archive',    // exercise library with animations
     order: 'The Order',        // levels and XP
     routines: 'The War Room',  // your routine days
+    codex: 'The Codex',        // the evidence behind every rule, in plain words
     settings: 'Settings',
   },
 
