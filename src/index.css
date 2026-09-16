@@ -144,9 +144,10 @@ button { cursor: pointer; }
     background: linear-gradient(112deg, color-mix(in oklab, var(--ice) 13%, transparent), transparent 28%, transparent 72%, color-mix(in oklab, var(--glow) 8%, transparent));
   }
   .liquid-dock { animation: dock-settle 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; overflow: hidden; }
-  .dock-mini { border-radius: 9999px; opacity: 0; visibility: hidden; transform: translateZ(0) scale(0.6); transition-delay: 0s, 0s, 260ms; }
+  /* Centred by its own transform (the stylesheet transform replaces Tailwind's translate utilities). */
+  .dock-mini { border-radius: 9999px; opacity: 0; visibility: hidden; transform: translate3d(-50%, -50%, 0) scale(0.6); transition-delay: 0s, 0s, 260ms; }
   .dock-wrap[data-min="true"] .liquid-dock { opacity: 0; visibility: hidden; transform: translateZ(0) scale(0.86); transition-delay: 0s, 0s, 260ms; }
-  .dock-wrap[data-min="true"] .dock-mini { opacity: 1; visibility: visible; transform: translateZ(0) scale(1); transition-delay: 0s, 0s, 0s; }
+  .dock-wrap[data-min="true"] .dock-mini { opacity: 1; visibility: visible; transform: translate3d(-50%, -50%, 0) scale(1); transition-delay: 0s, 0s, 0s; }
   .liquid-lens {
     left: 0.375rem;
     border-radius: 1.8rem;
