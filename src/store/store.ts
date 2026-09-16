@@ -14,6 +14,8 @@ import type { WarmupPlan } from '../engine/warmup'
 export interface Settings {
   restTimer: boolean
   sound: boolean
+  /** Show the rest countdown on the lock screen / Dynamic Island via a Now Playing card (opt-in, iOS is fragile). */
+  liveTimer: boolean
 }
 
 export interface State {
@@ -56,7 +58,7 @@ export const useStore = create<State>()(
     (set, get) => ({
       sessions: [],
       forged: false,
-      settings: { restTimer: true, sound: false },
+      settings: { restTimer: true, sound: false, liveTimer: false },
 
       setProfile: (profile) => set({ profile, program: buildProgram(profile) }),
 

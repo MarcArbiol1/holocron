@@ -1,92 +1,154 @@
-/** Small shared pieces: page shell, bottom nav, badges, progress bars. */
-import type { ReactNode } from 'react'
+/** Shared shell in the Aether skin: page header, liquid dock, bars, chips. */
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { BookOpen, ChevronLeft, Dumbbell, Hexagon, Orbit, Settings2, Shield } from 'lucide-react'
 import { NAMES } from '../theme/names'
 import { useStore } from '../store/store'
 import { levelFor, totalXp } from '../engine/levels'
+import { HapticSwitch, haptic } from '../lib/haptics'
 
-export function Page({ title, sub, children, back, right }: { title: string; sub?: string; children: ReactNode; back?: boolean; right?: ReactNode }) {
+/** Standard page: kicker line, big title, optional back button and right slot. Content is centred at phone width. */
+export function Page({ title, sub, children, back, right, kicker }: { title: string; sub?: string; children: ReactNode; back?: boolean; right?: ReactNode; kicker?: string }) {
   const nav = useNavigate()
   return (
-    <div className="min-h-full pb-24">
-      <header className="safe-top sticky top-0 z-20 bg-ink-900/90 backdrop-blur border-b border-white/5">
-        <div className="max-w-xl mx-auto px-4 py-3 flex items-center gap-3">
-          {back && (
-            <button onClick={() => nav(-1)} className="h-9 w-9 rounded-full bg-ink-700 flex items-center justify-center text-slate-300" aria-label="Back">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-            </button>
-          )}
-          <div className="flex-1 min-w-0">
-            <h1 className="font-display font-bold text-lg leading-tight truncate">{title}</h1>
-            {sub && <p className="text-xs text-slate-400 truncate">{sub}</p>}
+    <main className="relative min-h-dvh overflow-x-hidden bg-night text-ice">
+      <div className="relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col px-6 pb-36 pt-[max(1.5rem,env(safe-area-inset-top))]">
+        <header className="aether-rise flex items-end justify-between gap-3">
+          <div className="min-w-0 flex items-end gap-3">
+            {back && (
+              <button onClick={() => { haptic(); nav(-1) }} aria-label="Back" className="profile-orbit grid size-11 shrink-0 place-items-center rounded-full bg-panel text-glow transition-transform active:scale-95">
+                <ChevronLeft className="size-5" />
+              </button>
+            )}
+            <div className="min-w-0">
+              <p className="kicker truncate">{kicker ?? sub ?? ''}</p>
+              <h1 className="mt-1 text-[28px] font-bold leading-[1.05] break-words">{title}</h1>
+              {kicker && sub && <p className="mt-1.5 text-xs text-dim">{sub}</p>}
+            </div>
           </div>
           {right}
-        </div>
-      </header>
-      <main className="max-w-xl mx-auto px-4 pt-4 space-y-4">{children}</main>
-    </div>
+        </header>
+        <div className="mt-6 space-y-6">{children}</div>
+      </div>
+    </main>
   )
 }
 
-const tabs: { to: string; label: string; icon: ReactNode }[] = [
-  { to: '/', label: 'Home', icon: <path d="M12 3l8 4.6v8.8L12 21l-8-4.6V7.6z" /> },
-  { to: '/routines', label: 'Plan', icon: <path d="M4 5h16M4 12h10M4 19h7" /> },
-  { to: '/palantir', label: 'Recap', icon: <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3" /></> },
-  { to: '/library', label: 'Archive', icon: <path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 00-3 3V4zM5 17h14" /> },
-  { to: '/order', label: 'Order', icon: <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" /> },
+const tabs = [
+  { to: '/', label: 'Home', icon: Hexagon },
+  { to: '/routines', label: 'Plan', icon: Dumbbell },
+  { to: '/palantir', label: 'Recap', icon: Orbit },
+  { to: '/library', label: 'Archive', icon: BookOpen },
+  { to: '/order', label: 'Order', icon: Shield },
 ]
 
-export function BottomNav() {
-  const active = useStore((s) => s.active)
+/**
+ * The floating glass tab bar. The lens slides with a spring, stretches while
+ * moving, and the whole capsule slims down while you scroll down the page.
+ */
+export function LiquidDock() {
   const loc = useLocation()
+  const nav = useNavigate()
+  const active = useStore((s) => s.active)
+  // Detail pages light up the tab they belong to.
+  const section = loc.pathname.startsWith('/exercise') ? '/library' : loc.pathname.startsWith('/history') ? '/palantir' : loc.pathname
+  const activeIndex = Math.max(0, tabs.findIndex((t) => (t.to === '/' ? section === '/' : section.startsWith(t.to))))
+  const [sliding, setSliding] = useState(false)
+  const [min, setMin] = useState(false)
+  const lastY = useRef(0)
+  const prevIndex = useRef(activeIndex)
+
+  useEffect(() => {
+    if (prevIndex.current !== activeIndex) {
+      prevIndex.current = activeIndex
+      setSliding(true)
+      const t = setTimeout(() => setSliding(false), 540)
+      return () => clearTimeout(t)
+    }
+  }, [activeIndex])
+
+  useEffect(() => {
+    lastY.current = window.scrollY
+    let raf = 0
+    const onScroll = () => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => {
+        const y = window.scrollY
+        const dy = y - lastY.current
+        if (y < 24 || dy < -6) setMin(false)
+        else if (dy > 6 && y > 80) setMin(true)
+        lastY.current = y
+      })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf) }
+  }, [loc.pathname])
+
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-30 bg-ink-900/95 backdrop-blur border-t border-white/5 safe-bottom">
-      <div className="max-w-xl mx-auto grid grid-cols-5">
-        {tabs.map((t) => (
-          <NavLink key={t.to} to={t.to} end={t.to === '/'} className={({ isActive }) => `flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold ${isActive ? 'text-gold-400' : 'text-slate-500'}`}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{t.icon}</svg>
-            {t.label}
-          </NavLink>
-        ))}
-      </div>
+    <>
       {active && loc.pathname !== '/session' && (
-        <NavLink to="/session" className="absolute -top-11 inset-x-0 mx-auto w-max btn-primary py-2 px-4 text-sm shadow-lg">
+        <NavLink to="/session" onClick={() => haptic()} className="fixed bottom-[max(6.5rem,calc(env(safe-area-inset-bottom)+5.5rem))] left-1/2 z-20 -translate-x-1/2 aether-action rounded-full px-4 py-2 text-sm">
           Session in progress
         </NavLink>
       )}
-    </nav>
+      <nav
+        className="liquid-dock fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 z-30 grid h-[76px] w-[calc(100%-2.5rem)] max-w-[390px] -translate-x-1/2 grid-cols-5 p-1.5"
+        data-min={min ? 'true' : 'false'}
+        data-sliding={sliding ? 'true' : 'false'}
+        aria-label="Primary navigation"
+      >
+        <div aria-hidden="true" className="liquid-lens absolute bottom-1.5 top-1.5 w-[calc((100%_-_0.75rem)/5)]" style={{ '--nav-index': activeIndex } as React.CSSProperties} />
+        {tabs.map(({ to, label, icon: Icon }, i) => (
+          <button
+            key={to}
+            type="button"
+            onClick={() => { haptic(); if (min) { setMin(false); return } if (i !== activeIndex) nav(to) }}
+            aria-current={i === activeIndex ? 'page' : undefined}
+            aria-label={label}
+            className={`dock-tab relative z-10 flex flex-col items-center justify-center rounded-full ${i === activeIndex ? 'text-ice' : 'text-dim'}`}
+          >
+            <Icon className="dock-icon size-5" strokeWidth={i === activeIndex ? 2.4 : 1.8} />
+            <span className="dock-label mt-1 text-[10px] font-medium">{label}</span>
+            <HapticSwitch />
+          </button>
+        ))}
+      </nav>
+    </>
   )
 }
 
-export function Bar({ value, max, color = '#f5b84a', className = '' }: { value: number; max: number; color?: string; className?: string }) {
+/** Kept for App.tsx compatibility. */
+export const BottomNav = LiquidDock
+
+export function Bar({ value, max, color = 'var(--glow)', className = '' }: { value: number; max: number; color?: string; className?: string }) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0
   return (
-    <div className={`h-2 rounded-full bg-ink-600 overflow-hidden ${className}`}>
-      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+    <div className={`h-2 rounded-full overflow-hidden ${className}`} style={{ background: 'color-mix(in oklab, var(--ice) 8%, transparent)' }}>
+      <div className="h-full rounded-full transition-all duration-700 ease-apple" style={{ width: `${pct}%`, background: color }} />
     </div>
+  )
+}
+
+/** Level + settings button pair for the home header. */
+export function ProfileButton() {
+  return (
+    <NavLink to="/settings" onClick={() => haptic()} aria-label="Profile and settings" className="profile-orbit grid size-11 shrink-0 place-items-center rounded-full bg-panel text-glow transition-transform active:scale-95">
+      <Settings2 className="size-5" />
+    </NavLink>
   )
 }
 
 export function LevelPill() {
   const sessions = useStore((s) => s.sessions)
   const lv = levelFor(totalXp(sessions))
-  return (
-    <div className="flex items-center gap-2">
-      <NavLink to="/order" className="chip bg-gold-400/15 text-gold-300 border border-gold-400/20">
-        {lv.name} · {lv.totalXp} XP
-      </NavLink>
-      <NavLink to="/settings" aria-label="Settings" className="h-8 w-8 rounded-full bg-ink-700 flex items-center justify-center text-slate-300">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z" /></svg>
-      </NavLink>
-    </div>
-  )
+  return <NavLink to="/order" onClick={() => haptic()} className="chip-glow">{lv.name} · {lv.totalXp} XP</NavLink>
 }
 
-export function Section({ title, children, right }: { title: string; children: ReactNode; right?: ReactNode }) {
+export function Section({ title, children, right, className = '' }: { title: string; children: ReactNode; right?: ReactNode; className?: string }) {
   return (
-    <section className="space-y-2">
+    <section className={`space-y-3 ${className}`}>
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">{title}</h2>
+        <h2 className="text-lg font-semibold">{title}</h2>
         {right}
       </div>
       {children}
@@ -95,8 +157,8 @@ export function Section({ title, children, right }: { title: string; children: R
 }
 
 export const DAY_COLOR: Record<string, string> = {
-  legs: '#e0553f', lower: '#e0553f', push: '#f08a3c', pull: '#3fa7e0', upper: '#f5b84a',
-  fullA: '#9b6cf0', fullB: '#9b6cf0', fullC: '#9b6cf0', health: '#3fd0a4', cardio: '#3fd0a4', core: '#9b6cf0', mobility: '#8fd13f', custom: '#94a3b8',
+  legs: '#e0553f', lower: '#e0553f', push: '#f08a3c', pull: '#3fa7e0', upper: '#d9b480',
+  fullA: '#5cdcce', fullB: '#5cdcce', fullC: '#5cdcce', health: '#66b79c', cardio: '#66b79c', core: '#9b6cf0', mobility: '#8fd13f', custom: '#94a3b8',
 }
 
 export const dayName = (id: keyof typeof NAMES.days) => NAMES.days[id]
@@ -109,4 +171,7 @@ export function fmtDuration(startIso: string, endIso?: string) {
   const ms = (endIso ? new Date(endIso).getTime() : Date.now()) - new Date(startIso).getTime()
   const m = Math.max(0, Math.round(ms / 6e4))
   return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`
+}
+export function todayLabel() {
+  return new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })
 }

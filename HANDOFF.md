@@ -2,7 +2,24 @@
 
 Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 
-## State as of 16 Sep 2026 (evening: audited)
+## State as of 16 Sep 2026 (night: Aether skin)
+
+- **Restyled to the Lovable "Aether" design** (repo MarcArbiol1/liquid-hero-gym, private). Design system in
+  `src/index.css` + `tailwind.config.js` (tokens night/panel/ice/dim/glow/soft/sand, Space Grotesk/Space Mono bundled
+  via @fontsource, glass utilities, Apple spring curves generated from the WWDC23 formula). Shell in
+  `src/components/ui.tsx` (`Page`, `LiquidDock`). Every feature kept; `docs/AUDIT.md` unchanged.
+- **Dock physics** follow Apple's documented iOS 26 tab bar: lens slides with the "snappy" spring and stretches while
+  moving, bar minimises to a 58 px circle with only the active icon on scroll-down, expands on scroll-up / top / tap.
+  Real refraction is impossible on iOS Safari (no SVG backdrop filters, WebKit bug 245510), so it is blur + saturate +
+  specular hairlines.
+- **Haptics**: `src/lib/haptics.ts`. iOS: `<HapticSwitch/>` (a real invisible `<input type=checkbox switch>` under the
+  finger; scripted toggles died in iOS 26.5). Android: `navigator.vibrate`. Placed on dock tabs, home CTA, set-done,
+  Finish, Forge buttons.
+- **Live timer**: `src/lib/live.ts`. Media Session "Now Playing" card + silent loop for the rest countdown (opt-in
+  `settings.liveTimer`), background-capable beep, Screen Wake Lock on the session page. Live Activities are native-only;
+  the native route would be Capacitor + a Live Activities plugin + Apple Developer Program (99 USD/yr).
+
+## Earlier: 16 Sep 2026 (evening: audited)
 
 - **Built and verified locally**: onboarding -> plan -> THE FORGE -> session logger (rest timer, suggestions, swap, cardio) -> XP screen -> recap. Driven end to end in a headless phone-sized browser with zero console errors. 29 engine tests pass (`npm test -- --run`). Production build passes (`npm run build`, ~124 kB gzipped JS).
 - **79 exercises, 78 stick-figure animations**, every one rendered to a contact sheet and checked for correct form (`npm run anims -- <ids>` writes `scratch/anim-preview/sheet.svg.png`; `OUT=dir` changes the folder; `PER_ROW=2` is the default layout).

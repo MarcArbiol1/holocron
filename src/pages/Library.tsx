@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
+import { Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { EXERCISES } from '../data/exercises'
 import { MUSCLES } from '../data/muscles'
 import { NAMES } from '../theme/names'
 import { Figure } from '../components/Figure'
 import { Page } from '../components/ui'
+import { haptic } from '../lib/haptics'
 
 const FILTERS = [
   { key: 'all', label: 'All' }, { key: 'push', label: 'Push' }, { key: 'pull', label: 'Pull' }, { key: 'legs', label: 'Legs' }, { key: 'core', label: 'Core' },
@@ -22,21 +24,27 @@ export default function Library() {
     return l
   }, [q, f])
   return (
-    <Page title={NAMES.pages.library} sub={`${EXERCISES.length} exercises, every one animated`}>
-      <input className="input" placeholder="Search by name or muscle" value={q} onChange={(e) => setQ(e.target.value)} />
-      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4">
-        {FILTERS.map((x) => <button key={x.key} onClick={() => setF(x.key)} className={`chip shrink-0 ${f === x.key ? 'bg-gold-400 text-ink-950' : 'bg-ink-700 text-slate-300'}`}>{x.label}</button>)}
+    <Page title={NAMES.pages.library} kicker={`${EXERCISES.length} exercises, every one animated`}>
+      <div className="aether-rise rise-1 relative">
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-dim" />
+        <input className="input pl-10" placeholder="Search by name or muscle" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
-      <ul className="grid grid-cols-2 gap-2">
+      <div className="aether-rise rise-2 -mx-6 flex gap-1.5 overflow-x-auto px-6 pb-1">
+        {FILTERS.map((x) => (
+          <button key={x.key} onClick={() => { haptic(); setF(x.key) }} className={`chip shrink-0 transition-colors duration-300 ${f === x.key ? 'bg-glow text-night' : 'chip-dim'}`}>{x.label}</button>
+        ))}
+      </div>
+      <ul className="aether-rise rise-3 grid grid-cols-2 gap-3">
         {list.map((e) => (
           <li key={e.id}>
-            <Link to={`/exercise/${e.id}`} className="card p-2 block">
-              <Figure animId={e.anim} size="100%" playing={false} className="rounded-xl w-full h-auto" />
-              <div className="mt-1.5 text-sm font-semibold leading-tight">{e.name}</div>
-              <div className="text-[11px] text-slate-400 truncate">{e.primary.map((m) => MUSCLES[m].label).join(', ')}</div>
+            <Link to={`/exercise/${e.id}`} onClick={() => haptic()} className="metric-panel block p-2 transition-transform active:scale-[0.985]">
+              <Figure animId={e.anim} size="100%" playing={false} className="h-auto w-full rounded-xl" />
+              <div className="mt-2 px-1 text-sm font-semibold leading-tight">{e.name}</div>
+              <div className="mb-1 px-1 text-[11px] text-dim truncate">{e.primary.map((m) => MUSCLES[m].label).join(', ')}</div>
             </Link>
           </li>
         ))}
+        {list.length === 0 && <li className="col-span-2 py-8 text-center text-sm text-dim">Nothing matches.</li>}
       </ul>
     </Page>
   )

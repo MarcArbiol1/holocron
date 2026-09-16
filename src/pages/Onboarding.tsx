@@ -4,17 +4,28 @@ import type { EquipmentAccess, Experience, Goal, Profile, Sex } from '../data/ty
 import { useStore } from '../store/store'
 import { NAMES } from '../theme/names'
 import { Page } from '../components/ui'
+import { haptic } from '../lib/haptics'
+
+const SELECTED: React.CSSProperties = {
+  background: 'color-mix(in oklab, var(--glow) 12%, transparent)',
+  borderColor: 'color-mix(in oklab, var(--glow) 55%, transparent)',
+  boxShadow: 'inset 0 1px 0 color-mix(in oklab, var(--ice) 10%, transparent), 0 0 18px color-mix(in oklab, var(--glow) 10%, transparent)',
+}
 
 function Choice<T extends string | number>({ value, options, onChange }: { value: T; options: { v: T; label: string; hint?: string }[]; onChange: (v: T) => void }) {
   return (
     <div className="grid grid-cols-2 gap-2">
-      {options.map((o) => (
-        <button key={String(o.v)} type="button" onClick={() => onChange(o.v)}
-          className={`rounded-xl px-3 py-2.5 text-left border transition ${value === o.v ? 'border-gold-400 bg-gold-400/10 text-gold-200' : 'border-white/10 bg-ink-700 text-slate-200'}`}>
-          <div className="text-sm font-semibold">{o.label}</div>
-          {o.hint && <div className="text-[11px] text-slate-400 leading-snug">{o.hint}</div>}
-        </button>
-      ))}
+      {options.map((o) => {
+        const on = value === o.v
+        return (
+          <button key={String(o.v)} type="button" onClick={() => { haptic(); onChange(o.v) }}
+            className={`rounded-2xl border px-3 py-2.5 text-left transition ${on ? 'text-ice' : 'workout-row text-ice'}`}
+            style={on ? SELECTED : undefined} aria-pressed={on}>
+            <div className="text-sm font-semibold">{o.label}</div>
+            {o.hint && <div className="text-[11px] leading-snug text-dim">{o.hint}</div>}
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -30,26 +41,26 @@ export default function Onboarding() {
   const valid = p.age >= 12 && p.age <= 99 && p.heightCm >= 120 && p.heightCm <= 230 && p.weightKg >= 30 && p.weightKg <= 250
 
   return (
-    <Page title={existing ? 'Edit your profile' : `Welcome to ${NAMES.app}`} sub={existing ? 'The plan rebuilds when you save.' : 'Six honest answers build your plan.'} back={!!existing}>
-      <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); if (!valid) return; setProfile({ ...p, createdAt: existing?.createdAt ?? new Date().toISOString() }); nav('/') }}>
-        <div className="card p-4 space-y-3">
+    <Page title={existing ? 'Edit your profile' : `Welcome to ${NAMES.app}`} kicker={existing ? 'The plan rebuilds when you save.' : 'Six honest answers build your plan.'} back={!!existing}>
+      <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); if (!valid) return; haptic('success'); setProfile({ ...p, createdAt: existing?.createdAt ?? new Date().toISOString() }); nav('/') }}>
+        <div className="metric-panel aether-rise rise-1 space-y-4 p-4">
           <div>
             <label className="label">Name</label>
             <input className="input" value={p.name} onChange={(e) => up('name', e.target.value)} placeholder="What should we call you?" />
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <div><label className="label">Age</label><input className="input" type="number" inputMode="numeric" value={p.age} onChange={(e) => up('age', Number(e.target.value))} /></div>
-            <div><label className="label">Height cm</label><input className="input" type="number" inputMode="numeric" value={p.heightCm} onChange={(e) => up('heightCm', Number(e.target.value))} /></div>
-            <div><label className="label">Weight kg</label><input className="input" type="number" inputMode="decimal" value={p.weightKg} onChange={(e) => up('weightKg', Number(e.target.value))} /></div>
+            <div><label className="label">Age</label><input className="input font-mono" type="number" inputMode="numeric" value={p.age} onChange={(e) => up('age', Number(e.target.value))} /></div>
+            <div><label className="label">Height cm</label><input className="input font-mono" type="number" inputMode="numeric" value={p.heightCm} onChange={(e) => up('heightCm', Number(e.target.value))} /></div>
+            <div><label className="label">Weight kg</label><input className="input font-mono" type="number" inputMode="decimal" value={p.weightKg} onChange={(e) => up('weightKg', Number(e.target.value))} /></div>
           </div>
           <div>
             <label className="label">Sex</label>
             <Choice<Sex> value={p.sex} onChange={(v) => up('sex', v)} options={[{ v: 'male', label: 'Male' }, { v: 'female', label: 'Female' }, { v: 'other', label: 'Other / skip' }]} />
-            <p className="text-[11px] text-slate-500 mt-1.5">Used only for the explanation page. The evidence says the plan should not change by sex.</p>
+            <p className="mt-2 text-[11px] leading-snug text-dim">Used only for the explanation page. The evidence says the plan should not change by sex.</p>
           </div>
         </div>
 
-        <div className="card p-4 space-y-3">
+        <div className="metric-panel aether-rise rise-2 space-y-4 p-4">
           <div>
             <label className="label">Lifting experience</label>
             <Choice<Experience> value={p.experience} onChange={(v) => up('experience', v)} options={[
@@ -61,7 +72,7 @@ export default function Onboarding() {
           <div>
             <label className="label">Days per week you will actually show up</label>
             <Choice<Profile['daysPerWeek']> value={p.daysPerWeek} onChange={(v) => up('daysPerWeek', v)} options={[1, 2, 3, 4, 5, 6].map((n) => ({ v: n as Profile['daysPerWeek'], label: `${n} day${n > 1 ? 's' : ''}`, hint: n <= 2 ? 'Full body each time' : n === 3 ? 'Full body or upper/lower/full' : n === 4 ? 'Upper / lower' : 'Push / pull / legs' }))} />
-            <p className="text-[11px] text-slate-500 mt-1.5">Be honest. The plan is built for the days you really have, and it adapts if you miss some.</p>
+            <p className="mt-2 text-[11px] leading-snug text-dim">Be honest. The plan is built for the days you really have, and it adapts if you miss some.</p>
           </div>
           <div>
             <label className="label">Session length</label>
@@ -81,8 +92,10 @@ export default function Onboarding() {
           </div>
         </div>
 
-        <button className="btn-primary w-full" disabled={!valid} type="submit">{existing ? 'Save and rebuild plan' : 'Build my plan'}</button>
-        {!valid && <p className="text-xs text-legs text-center">Check age, height and weight.</p>}
+        <div className="aether-rise rise-3 space-y-2">
+          <button className="btn-primary w-full" disabled={!valid} type="submit">{existing ? 'Save and rebuild plan' : 'Build my plan'}</button>
+          {!valid && <p className="text-center text-xs text-legs">Check age, height and weight.</p>}
+        </div>
       </form>
     </Page>
   )

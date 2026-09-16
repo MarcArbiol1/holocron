@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { PROGRAM_VERSION } from './engine/program'
 import { useStore } from './store/store'
-import { BottomNav } from './components/ui'
+import { LiquidDock } from './components/ui'
 import Home from './pages/Home'
 import Onboarding from './pages/Onboarding'
 import Forge from './pages/Forge'
@@ -25,7 +25,8 @@ function Shell() {
   useEffect(() => {
     if (profile && program?.version !== PROGRAM_VERSION) setProfile(profile)
   }, [profile, program?.version, setProfile])
-  const hideNav = ['/onboarding', '/forge', '/done'].includes(loc.pathname)
+  // Home renders its own dock inside its layout; other pages get it from here.
+  const hideNav = ['/', '/onboarding', '/forge', '/done'].includes(loc.pathname)
   if (!profile && loc.pathname !== '/onboarding') return <Navigate to="/onboarding" replace />
   return (
     <>
@@ -44,7 +45,7 @@ function Shell() {
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      {!hideNav && <BottomNav />}
+      {!hideNav && <LiquidDock />}
     </>
   )
 }

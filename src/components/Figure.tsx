@@ -52,7 +52,7 @@ export function Figure({ animId, size = 200, playing = true, className, fps = 30
   if (!anim) {
     return (
       <svg viewBox={`0 0 ${VIEW} ${VIEW}`} width={size} height={size} className={className}>
-        <rect width={VIEW} height={VIEW} rx={16} fill="#191c25" />
+        <rect width={VIEW} height={VIEW} rx={16} fill="#14181b" />
         <text x={VIEW / 2} y={VIEW / 2} fill="#64748b" fontSize={11} textAnchor="middle" fontFamily="sans-serif">animation coming</text>
       </svg>
     )
@@ -60,7 +60,7 @@ export function Figure({ animId, size = 200, playing = true, className, fps = 30
   const shapes = renderShapes(anim, poseAt(anim, playing ? t : 0))
   return (
     <svg viewBox={`0 0 ${VIEW} ${VIEW}`} width={size} height={size} className={className} aria-label={`${animId} demonstration`}>
-      <rect width={VIEW} height={VIEW} rx={16} fill="#191c25" />
+      <rect width={VIEW} height={VIEW} rx={16} fill="#14181b" />
       {shapes.map((s, i) => <ShapeEl key={i} s={s} />)}
     </svg>
   )

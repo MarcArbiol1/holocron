@@ -1,6 +1,6 @@
 /**
  * Front and back body map. Each muscle region is coloured by how much of its
- * weekly target it has received (0 = grey, 1+ = full colour).
+ * weekly target it has received (0 = faint glass, 1+ = full group colour).
  */
 import { GROUP_COLOR, MUSCLES, type Muscle } from '../data/muscles'
 
@@ -30,11 +30,15 @@ const BACK: Region[] = [
   { m: 'calves', el: 'ellipse', a: [47, 196, 6, 15] }, { m: 'calves', el: 'ellipse', a: [73, 196, 6, 15] },
 ]
 
+const SILHOUETTE = 'var(--panel)'
+const UNTRAINED = 'color-mix(in oklab, var(--ice) 8%, transparent)'
+const EDGE = '#080a0c'
+
 function Body({ regions, level, onPick }: { regions: Region[]; level: (m: Muscle) => number; onPick?: (m: Muscle) => void }) {
   return (
     <svg viewBox="0 0 120 220" className="w-full h-auto">
       {/* silhouette */}
-      <g fill="#232735">
+      <g fill={SILHOUETTE}>
         <circle cx={60} cy={18} r={12} />
         <rect x={54} y={28} width={12} height={10} />
         <path d="M30 42 Q60 34 90 42 L96 120 L84 122 L80 78 L76 110 L76 220 L64 220 L62 130 L58 130 L56 220 L44 220 L44 110 L40 78 L36 122 L24 120 Z" />
@@ -42,9 +46,9 @@ function Body({ regions, level, onPick }: { regions: Region[]; level: (m: Muscle
       {regions.map((r, i) => {
         const v = Math.min(1, level(r.m))
         const color = GROUP_COLOR[MUSCLES[r.m].group]
-        const fill = v <= 0 ? '#2f3446' : color
+        const fill = v <= 0 ? UNTRAINED : color
         const opacity = v <= 0 ? 1 : 0.35 + 0.65 * v
-        const common = { fill, opacity, stroke: '#0b0c10', strokeWidth: 0.6, onClick: () => onPick?.(r.m), style: { cursor: onPick ? 'pointer' : 'default' } }
+        const common = { fill, opacity, stroke: EDGE, strokeWidth: 0.6, onClick: () => onPick?.(r.m), style: { cursor: onPick ? 'pointer' : 'default' } }
         if (r.el === 'ellipse') { const [cx, cy, rx, ry] = r.a as number[]; return <ellipse key={i} cx={cx} cy={cy} rx={rx} ry={ry} {...common} /> }
         if (r.el === 'rect') { const [x, y, w, h, rx] = r.a as number[]; return <rect key={i} x={x} y={y} width={w} height={h} rx={rx} {...common} /> }
         return <path key={i} d={r.a as string} {...common} />
@@ -59,11 +63,11 @@ export function MuscleMap({ levels, onPick }: { levels: Partial<Record<Muscle, n
     <div className="grid grid-cols-2 gap-3">
       <div>
         <Body regions={FRONT} level={level} onPick={onPick} />
-        <p className="text-center text-[11px] text-slate-500 mt-1">front</p>
+        <p className="kicker mt-1 text-center text-[10px]">front</p>
       </div>
       <div>
         <Body regions={BACK} level={level} onPick={onPick} />
-        <p className="text-center text-[11px] text-slate-500 mt-1">back</p>
+        <p className="kicker mt-1 text-center text-[10px]">back</p>
       </div>
     </div>
   )

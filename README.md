@@ -4,6 +4,22 @@ A gym assistant that builds your routine from the published evidence, tells you 
 
 It is a phone-first web app with no server: install it from the browser, and everything lives on your phone and works offline in the gym.
 
+## Look and feel
+
+The interface follows the "Aether" liquid-glass design (dark night background, glass panels, a teal glow accent, a
+floating glass dock whose lens slides with Apple's own spring curves and which shrinks to a single icon while you
+scroll). Fonts are bundled so it looks identical offline. Motion respects "reduce motion".
+
+**iOS extras, honestly labelled**
+
+- **Haptics.** iOS Safari has no vibration API, so important buttons carry an invisible native switch under your
+  finger; the system plays its tick when you tap. Android uses the Vibration API. Nothing else is possible from a web app.
+- **Lock screen / Dynamic Island timer (beta, Settings).** A web app cannot create a Live Activity. When enabled, a
+  rest timer plays a silent audio loop and publishes the countdown as a "Now Playing" card, which iOS shows on the
+  lock screen and as the media pill in the Dynamic Island, and the end-of-rest beep sounds with the screen off.
+  iOS 26 has an open WebKit bug that sometimes mutes web-app audio after backgrounding, hence the beta label.
+- **Screen stays on** during a session (Wake Lock, iOS 18.4+ when installed to the home screen).
+
 ## What it does
 
 - **Builds a plan from six answers**: age, sex, height, weight, experience, and the days per week you will *actually* show up. One to two days gives full-body sessions, four gives upper/lower, six gives push/pull/legs. Every rule is traced to a paper in [docs/EVIDENCE.md](docs/EVIDENCE.md).

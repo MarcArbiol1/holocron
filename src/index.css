@@ -2,53 +2,185 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Aether visual system, ported from the design repo (liquid-hero-gym).
+ * Tokens as CSS variables so glass effects can use color-mix(); the same
+ * values live in tailwind.config.js as hex for utility classes.
+ */
 :root {
   color-scheme: dark;
   -webkit-tap-highlight-color: transparent;
+  --night: oklch(0.145 0.006 240);
+  --panel: oklch(0.225 0.008 240);
+  --ice: oklch(0.965 0.006 210);
+  --dim: oklch(0.62 0.015 220);
+  --glow: oklch(0.82 0.115 185);
+  --glow-soft: oklch(0.72 0.09 170);
+  --gold: oklch(0.79 0.08 75);
+  --spring: linear(0, 0.0772, 0.2473, 0.4431, 0.6252, 0.7746, 0.8857, 0.9608, 1.0063, 1.0296, 1.0379, 1.037, 1.0314, 1.024, 1.0167, 1.0105, 1.0057, 1.0024, 1.0003, 0.9991, 0.9986, 0.9985, 0.9987, 0.999, 0.9993, 0.9995, 0.9997, 0.9999, 1, 1, 1, 1.0001, 1);
+  --apple: cubic-bezier(0.32, 0.72, 0, 1);
+  /* Apple's SwiftUI springs (duration 0.5 s; bounce 0 / 0.15 / 0.3) sampled from mass 1, k = (2π/d)², c = 4π(1−bounce)/d. */
+  --spring-smooth-duration: 600ms;
+  --spring-smooth: linear(0.0, 0.0157, 0.0555, 0.1107, 0.1748, 0.2431, 0.3123, 0.3801, 0.4448, 0.5057, 0.562, 0.6135, 0.6603, 0.7024, 0.74, 0.7736, 0.8032, 0.8294, 0.8524, 0.8725, 0.89, 0.9053, 0.9186, 0.9301, 0.9401, 0.9487, 0.9561, 0.9625, 0.968, 0.9727, 0.9767, 0.9802, 0.9831, 0.9856, 0.9878, 0.9896, 0.9912, 0.9925, 0.9937, 0.9946, 1);
+  --spring-snappy-duration: 600ms;
+  --spring-snappy: linear(0.0, 0.016, 0.0574, 0.116, 0.1854, 0.2604, 0.3373, 0.4131, 0.486, 0.5545, 0.6177, 0.6751, 0.7267, 0.7724, 0.8125, 0.8472, 0.8771, 0.9025, 0.9239, 0.9417, 0.9564, 0.9684, 0.9781, 0.9858, 0.9918, 0.9964, 0.9999, 1.0024, 1.0041, 1.0053, 1.0059, 1.0062, 1.0063, 1.0061, 1.0058, 1.0054, 1.005, 1.0045, 1.004, 1.0035, 1);
+  --spring-bouncy-duration: 600ms;
+  --spring-bouncy: linear(0.0, 0.0163, 0.0594, 0.1218, 0.197, 0.2799, 0.3659, 0.4517, 0.5347, 0.6129, 0.6851, 0.7503, 0.8081, 0.8585, 0.9017, 0.9378, 0.9676, 0.9914, 1.01, 1.024, 1.0339, 1.0405, 1.0443, 1.0459, 1.0457, 1.044, 1.0414, 1.0381, 1.0344, 1.0305, 1.0265, 1.0227, 1.019, 1.0156, 1.0125, 1.0097, 1.0073, 1.0052, 1.0034, 1.0019, 1);
 }
 
-html, body, #root {
-  height: 100%;
-}
+html, body, #root { height: 100%; }
 
 body {
-  @apply bg-ink-900 text-slate-100 antialiased;
-  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  @apply bg-night text-ice antialiased font-sans;
+  margin: 0;
   overscroll-behavior-y: none;
+  touch-action: manipulation;
 }
 
-/* Safe-area padding for phones with a notch / home bar. */
+button { cursor: pointer; }
+
 .safe-top { padding-top: env(safe-area-inset-top); }
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
+/* ---------- glass surfaces ---------- */
 @layer components {
-  .card {
-    @apply rounded-2xl bg-ink-800 border border-white/5 shadow-card;
+  .glass {
+    background: color-mix(in oklab, var(--ice) 5%, transparent);
+    border: 1px solid color-mix(in oklab, var(--ice) 11%, transparent);
+    -webkit-backdrop-filter: blur(24px) saturate(135%);
+    backdrop-filter: blur(24px) saturate(135%);
+    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--ice) 10%, transparent), 0 20px 60px color-mix(in oklab, var(--night) 75%, transparent);
   }
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold transition active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100;
+  .metric-panel {
+    border-radius: 1.25rem;
+    background: color-mix(in oklab, var(--panel) 78%, transparent);
+    border: 1px solid color-mix(in oklab, var(--ice) 7%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--ice) 4%, transparent);
   }
-  .btn-primary {
-    @apply btn bg-gold-400 text-ink-950 hover:bg-gold-300;
+  .workout-row {
+    background: color-mix(in oklab, var(--panel) 72%, transparent);
+    border: 1px solid color-mix(in oklab, var(--ice) 7%, transparent);
+    transition: background 180ms ease, transform 180ms ease;
   }
-  .btn-ghost {
-    @apply btn bg-ink-700 text-slate-100 hover:bg-ink-600;
+  .workout-row:hover { background: color-mix(in oklab, var(--panel) 92%, transparent); }
+  .workout-row:active { transform: scale(0.985); }
+  .primary-action {
+    background: color-mix(in oklab, var(--panel) 82%, transparent);
+    border: 1px solid color-mix(in oklab, var(--glow) 16%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--ice) 7%, transparent);
+    transition: background 180ms ease, transform 180ms ease;
   }
-  .btn-danger {
-    @apply btn bg-legs/20 text-legs hover:bg-legs/30;
+  .primary-action:hover { background: color-mix(in oklab, var(--panel) 96%, transparent); }
+  .primary-action:active { transform: scale(0.985); }
+  .profile-orbit {
+    border: 1px solid color-mix(in oklab, var(--glow) 25%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--glow) 5%, transparent), inset 0 1px 0 color-mix(in oklab, var(--ice) 9%, transparent);
   }
+  /* The glowing call-to-action (solid glow fill). */
+  .aether-action {
+    @apply bg-glow text-night font-semibold;
+    box-shadow: 0 10px 35px color-mix(in oklab, var(--glow) 28%, transparent), inset 0 1px 0 color-mix(in oklab, var(--ice) 45%, transparent);
+    transition: transform 180ms var(--apple), box-shadow 220ms ease;
+  }
+  .aether-action:hover { box-shadow: 0 12px 44px color-mix(in oklab, var(--glow) 42%, transparent), inset 0 1px 0 color-mix(in oklab, var(--ice) 55%, transparent); }
+  .aether-action:active { transform: scale(0.98); }
+  .aether-sheen { position: relative; overflow: hidden; }
+  .aether-sheen::after {
+    content: ""; position: absolute; inset-block: 0; left: 0; width: 38%;
+    background: linear-gradient(100deg, transparent, color-mix(in oklab, var(--ice) 24%, transparent), transparent);
+    transform: translateX(-150%) skewX(-12deg);
+  }
+  .aether-sheen:hover::after, .aether-sheen:active::after { animation: aether-sheen 0.85s var(--apple); }
+
+  /* chips + inputs in the new skin */
+  .chip { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold; }
+  .chip-glow { @apply chip text-glow; background: color-mix(in oklab, var(--glow) 14%, transparent); }
+  .chip-ice { @apply chip text-ice; background: color-mix(in oklab, var(--ice) 9%, transparent); }
+  .chip-dim { @apply chip text-dim; background: color-mix(in oklab, var(--panel) 90%, transparent); border: 1px solid color-mix(in oklab, var(--ice) 7%, transparent); }
   .input {
-    @apply w-full rounded-xl bg-ink-700 border border-white/10 px-3 py-3 text-base text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-gold-400/60;
+    @apply w-full rounded-xl px-3 py-3 text-base text-ice placeholder:text-dim focus:outline-none;
+    background: color-mix(in oklab, var(--panel) 85%, transparent);
+    border: 1px solid color-mix(in oklab, var(--ice) 9%, transparent);
   }
-  .label {
-    @apply block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5;
+  .input:focus { border-color: color-mix(in oklab, var(--glow) 45%, transparent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--glow) 10%, transparent); }
+  .label { @apply block text-[11px] font-semibold uppercase tracking-[0.12em] text-dim mb-1.5; }
+  .kicker { @apply text-xs font-semibold uppercase tracking-[0.12em] text-dim; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3.5 font-semibold transition active:scale-[0.985] disabled:opacity-40 disabled:active:scale-100; }
+  .btn-primary { @apply btn aether-action; }
+  .btn-ghost { @apply btn primary-action text-ice; }
+  .btn-danger { @apply btn text-legs; background: color-mix(in oklab, #e0553f 14%, transparent); border: 1px solid color-mix(in oklab, #e0553f 25%, transparent); }
+  .card { @apply metric-panel; }
+  /* Legacy alias kept for components not yet restyled. */
+  .btn-glass { @apply btn glass text-ice; }
+
+  /* Activity rings */
+  .activity-ring { filter: drop-shadow(0 0 9px color-mix(in oklab, var(--glow) 34%, transparent)); }
+  .activity-ring-soft { filter: drop-shadow(0 0 7px color-mix(in oklab, var(--glow-soft) 22%, transparent)); }
+  .activity-ring-faint { opacity: 0.72; }
+
+  /* Entrance */
+  .aether-rise { animation: aether-rise 0.6s var(--apple) both; }
+  .rise-1 { animation-delay: 60ms; } .rise-2 { animation-delay: 120ms; } .rise-3 { animation-delay: 180ms; } .rise-4 { animation-delay: 240ms; } .rise-5 { animation-delay: 300ms; }
+
+  /* ---------- Liquid dock (bottom bar) ---------- */
+  /* Apple's iOS 26 tab bar: a floating glass capsule; the selected tab sits under a lens that slides
+     with a "snappy" spring; scrolling down minimises the bar to a small circle holding only the
+     active icon; scrolling up, reaching the top, or tapping expands it again. Refraction of the
+     content beneath cannot be done on iOS Safari (no SVG backdrop filters), so it is blur + saturate
+     + specular hairlines. */
+  .liquid-dock {
+    overflow: hidden;
+    border-radius: 2.25rem;
+    background: color-mix(in oklab, var(--panel) 52%, transparent);
+    border: 1px solid color-mix(in oklab, var(--ice) 16%, transparent);
+    -webkit-backdrop-filter: blur(30px) saturate(150%);
+    backdrop-filter: blur(30px) saturate(150%);
+    box-shadow: inset 0 1.5px 0 color-mix(in oklab, var(--ice) 22%, transparent), inset 0 -1px 0 color-mix(in oklab, var(--night) 55%, transparent), 0 20px 52px color-mix(in oklab, var(--night) 82%, transparent), 0 0 0 1px color-mix(in oklab, var(--night) 25%, transparent);
+    animation: dock-settle 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    transition: width var(--spring-smooth-duration) var(--spring-smooth), height var(--spring-smooth-duration) var(--spring-smooth), grid-template-columns var(--spring-smooth-duration) var(--spring-smooth);
   }
-  .chip {
-    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+  .liquid-dock::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(112deg, color-mix(in oklab, var(--ice) 13%, transparent), transparent 28%, transparent 72%, color-mix(in oklab, var(--glow) 8%, transparent));
   }
+  .liquid-lens {
+    left: 0.375rem;
+    border-radius: 1.8rem;
+    background: color-mix(in oklab, var(--ice) 10%, transparent);
+    border: 1px solid color-mix(in oklab, var(--ice) 12%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--ice) 14%, transparent), 0 7px 20px color-mix(in oklab, var(--night) 45%, transparent), 0 0 18px color-mix(in oklab, var(--glow) 8%, transparent);
+    transform: translateX(calc(var(--nav-index) * 100%));
+    transition: transform var(--spring-snappy-duration) var(--spring-snappy), width var(--spring-smooth-duration) var(--spring-smooth);
+  }
+  /* While the lens travels the glass stretches and the icons smear, like the real thing. */
+  .liquid-dock[data-sliding="true"] .liquid-lens { animation: lens-stretch 520ms var(--apple); }
+  .liquid-dock[data-sliding="true"] .dock-icon { animation: icon-smear 420ms var(--apple); }
+  .dock-tab { transition: color 300ms ease, transform 160ms var(--apple), background 200ms ease; border-radius: 9999px; }
+  .dock-tab:active { transform: scale(0.92); background: radial-gradient(circle at center, color-mix(in oklab, var(--ice) 12%, transparent), transparent 72%); }
+  .dock-label { transition: opacity 200ms ease; }
+  /* Minimised: a 58px circle with only the active icon. */
+  .liquid-dock[data-min="true"] { width: 58px; height: 58px; grid-template-columns: 1fr; padding: 0.25rem; }
+  .liquid-dock[data-min="true"] .dock-tab:not([aria-current="page"]) { display: none; }
+  .liquid-dock[data-min="true"] .dock-label { display: none; }
+  .liquid-dock[data-min="true"] .liquid-lens { left: 0.25rem; top: 0.25rem; bottom: 0.25rem; width: calc(100% - 0.5rem); transform: none; }
 }
 
-/* Hide number input spinners. */
-input[type=number]::-webkit-outer-spin-button,
-input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+@keyframes aether-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes aether-sheen { 0% { transform: translateX(-150%) skewX(-12deg); } 100% { transform: translateX(280%) skewX(-12deg); } }
+@keyframes aether-pulse { 0%, 100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.35); } }
+@keyframes dock-settle { from { opacity: 0; translate: 0 16px; scale: 0.97; } to { opacity: 1; translate: 0 0; scale: 1; } }
+@keyframes lens-stretch { 0% { scale: 1 1; } 35% { scale: 1.22 0.92; } 70% { scale: 0.96 1.04; } 100% { scale: 1 1; } }
+@keyframes icon-smear { 0% { filter: blur(0); } 40% { filter: blur(0.8px); transform: scaleX(1.12); } 100% { filter: blur(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .aether-rise, .liquid-dock { animation: none; }
+  .liquid-lens, .liquid-dock { transition: none; }
+  .liquid-dock[data-sliding="true"] .liquid-lens, .liquid-dock[data-sliding="true"] .dock-icon { animation: none; }
+  .aether-sheen::after { display: none; }
+}
+
+/* Invisible native switch laid over a button: the finger toggles it, iOS plays its tick. */
+.haptic-switch { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; z-index: 1; }
+
+input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 input[type=number] { -moz-appearance: textfield; }

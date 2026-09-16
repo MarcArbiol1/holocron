@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ChevronLeft, ChevronRight, Dumbbell, Flame } from 'lucide-react'
 import { Link, Navigate } from 'react-router-dom'
 import { EXERCISE_BY_ID } from '../data/exercises'
 import { MUSCLES, TARGET_MUSCLES, type Muscle } from '../data/muscles'
@@ -6,7 +7,8 @@ import { addDays, monthStart, nextMonth, periodRecap, weekStart, weekStreak } fr
 import { useStore } from '../store/store'
 import { NAMES } from '../theme/names'
 import { MuscleMap } from '../components/MuscleMap'
-import { DAY_COLOR, Page, Section, fmtDate, fmtDuration } from '../components/ui'
+import { Page, fmtDate, fmtDuration } from '../components/ui'
+import { haptic } from '../lib/haptics'
 
 export default function Palantir() {
   const profile = useStore((s) => s.profile)
@@ -28,86 +30,111 @@ export default function Palantir() {
     label = m.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
   }
   const r = periodRecap(sessions, profile, program, from, to, weeks)
+  // Month targets are scaled by fractional weeks; round them for display so no float noise leaks into the UI.
+  const planned = Math.round(r.plannedCount)
+  const targetLo = Math.round(r.setsTarget[0])
+  const targetHi = Math.round(r.setsTarget[1])
   const levels = Object.fromEntries(TARGET_MUSCLES.map((m) => [m, r.setsTarget[0] > 0 ? r.sets[m] / r.setsTarget[0] : 0])) as Partial<Record<Muscle, number>>
   const streak = weekStreak(sessions, profile, now)
   const history = [...r.sessions].reverse()
 
+  const toggle = (
+    <div className="glass flex rounded-full p-1 text-xs font-semibold">
+      {(['week', 'month'] as const).map((k) => (
+        <button key={k} onClick={() => { haptic(); setRange(k); setOffset(0) }} className={`rounded-full px-3 py-1.5 transition-colors duration-300 ${range === k ? 'bg-glow text-night' : 'text-dim'}`}>{k}</button>
+      ))}
+    </div>
+  )
+
   return (
-    <Page title={NAMES.pages.palantir} sub="What the archive shows." right={
-      <div className="flex rounded-lg bg-ink-700 p-0.5 text-xs font-semibold">
-        {(['week', 'month'] as const).map((k) => <button key={k} onClick={() => { setRange(k); setOffset(0) }} className={`px-3 py-1.5 rounded-md ${range === k ? 'bg-gold-400 text-ink-950' : 'text-slate-300'}`}>{k}</button>)}
-      </div>
-    }>
-      <div className="flex items-center justify-between">
-        <button className="btn-ghost py-1.5 px-3 text-sm" onClick={() => setOffset(offset - 1)}>‹</button>
-        <div className="font-bold">{label}</div>
-        <button className="btn-ghost py-1.5 px-3 text-sm" disabled={offset >= 0} onClick={() => setOffset(offset + 1)}>›</button>
+    <Page title={NAMES.pages.palantir} kicker="What the archive shows" right={toggle}>
+      <div className="aether-rise rise-1 flex items-center justify-between">
+        <button onClick={() => { haptic(); setOffset(offset - 1) }} aria-label="Previous period" className="primary-action grid size-9 place-items-center rounded-full text-ice"><ChevronLeft className="size-4" /></button>
+        <div className="font-semibold">{label}</div>
+        <button onClick={() => { haptic(); setOffset(offset + 1) }} disabled={offset >= 0} aria-label="Next period" className="primary-action grid size-9 place-items-center rounded-full text-ice disabled:opacity-30"><ChevronRight className="size-4" /></button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <Tile label="Sessions" value={`${r.count}`} sub={`of ${r.plannedCount} planned`} good={r.count >= r.plannedCount} />
-        <Tile label="Cardio min" value={`${r.cardio}`} sub={`of ${r.cardioTarget}`} good={r.cardio >= r.cardioTarget} />
+      <div className="aether-rise rise-2 grid grid-cols-3 gap-2">
+        <Tile label="Sessions" value={`${r.count}`} sub={`of ${planned} planned`} good={r.count >= planned} />
+        <Tile label="Cardio" value={`${r.cardio}`} sub={`of ${r.cardioTarget} min`} good={r.cardio >= r.cardioTarget} />
         <Tile label="XP" value={`${r.xp}`} sub={streak ? `${streak}-week streak` : 'no streak'} />
         <Tile label="Hard sets" value={`${Math.round(Object.values(r.sets).reduce((a, b) => a + b, 0))}`} sub="fractional" />
         <Tile label="Tonnage" value={r.tonnage >= 1000 ? `${(r.tonnage / 1000).toFixed(1)} t` : `${r.tonnage} kg`} sub="weight × reps" />
         <Tile label="Time" value={r.minutes >= 60 ? `${Math.floor(r.minutes / 60)} h ${r.minutes % 60}` : `${r.minutes} min`} sub="in the gym" />
       </div>
 
-      <Section title={`Sets per muscle vs target (${r.setsTarget[0]}–${r.setsTarget[1]})`}>
-        <div className="card p-4 space-y-3">
-          <MuscleMap levels={levels} onPick={setPicked} />
+      <section className="aether-rise rise-3" aria-labelledby="muscles-title">
+        <h2 id="muscles-title" className="text-lg font-semibold">Sets per muscle</h2>
+        <p className="mt-1 text-xs text-dim">versus the {targetLo}–{targetHi} target · tap a muscle</p>
+        <div className="metric-panel mt-3 space-y-3 p-4">
+          <MuscleMap levels={levels} onPick={(m) => { haptic(); setPicked(m) }} />
           {picked && (
-            <div className="text-sm text-center text-slate-300">{MUSCLES[picked].label}: {r.sets[picked]} sets ({Math.round((r.sets[picked] / r.setsTarget[0]) * 100)}% of the low target)</div>
+            <div className="text-center text-sm text-ice/90">{MUSCLES[picked].label}: {Math.round(r.sets[picked] * 10) / 10} sets ({Math.round((r.sets[picked] / r.setsTarget[0]) * 100)}% of the low target)</div>
           )}
           {r.count > 0 && offset < 0 && r.neglected.length > 0 && (
-            <p className="text-sm text-slate-300"><span className="text-legs font-semibold">Under-trained:</span> {r.neglected.map((m) => MUSCLES[m].label).join(', ')}.</p>
+            <p className="text-sm text-ice/90"><span className="font-semibold text-legs">Under-trained:</span> {r.neglected.map((m) => MUSCLES[m].label).join(', ')}.</p>
           )}
           {r.count > 0 && offset === 0 && r.neglected.length > 0 && r.neglected.length < TARGET_MUSCLES.length && (
-            <p className="text-sm text-slate-300"><span className="text-gold-300 font-semibold">Still to reach target:</span> {r.neglected.map((m) => MUSCLES[m].label).join(', ')}. The next sessions in your rotation cover these.</p>
+            <p className="text-sm text-ice/90"><span className="font-semibold text-sand">Still to reach target:</span> {r.neglected.map((m) => MUSCLES[m].label).join(', ')}. The next sessions in your rotation cover these.</p>
           )}
           {r.count > 0 && r.onTarget.length > 0 && (
-            <p className="text-sm text-slate-300"><span className="text-cardio font-semibold">On target:</span> {r.onTarget.map((m) => MUSCLES[m].label).join(', ')}.</p>
+            <p className="text-sm text-ice/90"><span className="font-semibold text-soft">On target:</span> {r.onTarget.map((m) => MUSCLES[m].label).join(', ')}.</p>
           )}
-          {r.count === 0 && <p className="text-sm text-slate-500 text-center">No sessions in this period.</p>}
+          {r.count === 0 && <p className="text-center text-sm text-dim">No sessions in this period.</p>}
         </div>
-      </Section>
+      </section>
 
       {r.prs.length > 0 && (
-        <Section title="New records (estimated 1RM)">
-          <ul className="card p-4 divide-y divide-white/5">
-            {r.prs.map((p) => <li key={p.exerciseId} className="py-1.5 flex justify-between text-sm"><span>{EXERCISE_BY_ID[p.exerciseId]?.name ?? p.exerciseId}</span><span className="text-gold-300 font-semibold">{p.e1rm} kg</span></li>)}
-          </ul>
-        </Section>
-      )}
-
-      <Section title="Sessions">
-        {history.length === 0 ? <p className="text-sm text-slate-500 px-1">Nothing here yet.</p> : (
-          <ul className="space-y-2">
-            {history.map((s) => (
-              <li key={s.id}>
-                <Link to={`/history/${s.id}`} className="card p-3 flex items-center gap-3">
-                  <span className="h-10 w-1.5 rounded-full" style={{ background: DAY_COLOR[s.dayId] }} />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold truncate">{s.title}</div>
-                    <div className="text-xs text-slate-400">{fmtDate(s.endedAt!)} · {fmtDuration(s.startedAt, s.endedAt)} · {s.exercises.reduce((a, e) => a + e.sets.filter((x) => x.done).length, 0)} sets</div>
-                  </div>
-                  <div className="text-gold-300 font-semibold text-sm">+{s.xp ?? 0}</div>
-                </Link>
+        <section className="aether-rise rise-4" aria-labelledby="prs-title">
+          <h2 id="prs-title" className="text-lg font-semibold">New records</h2>
+          <p className="mt-1 text-xs text-dim">estimated one-rep max</p>
+          <ul className="metric-panel mt-3 divide-y divide-ice/5 px-4">
+            {r.prs.map((p) => (
+              <li key={p.exerciseId} className="flex items-center justify-between py-2.5 text-sm">
+                <span>{EXERCISE_BY_ID[p.exerciseId]?.name ?? p.exerciseId}</span>
+                <span className="chip-glow">{p.e1rm} kg</span>
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      <section className="aether-rise rise-5" aria-labelledby="sessions-title">
+        <h2 id="sessions-title" className="text-lg font-semibold">Sessions</h2>
+        {history.length === 0 ? (
+          <p className="mt-3 text-sm text-dim">Nothing here yet.</p>
+        ) : (
+          <div className="mt-3 space-y-3">
+            {history.map((s) => {
+              const sets = s.exercises.reduce((a, e) => a + e.sets.filter((x) => x.done).length, 0)
+              const isCardio = s.dayId === 'cardio'
+              return (
+                <Link key={s.id} to={`/history/${s.id}`} onClick={() => haptic()} className="workout-row flex w-full items-center gap-4 rounded-2xl p-4 text-left">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-xl" style={{ background: isCardio ? 'color-mix(in oklab, var(--ice) 9%, transparent)' : 'color-mix(in oklab, var(--glow) 14%, transparent)', color: isCardio ? 'var(--ice)' : 'var(--glow)' }}>
+                    {isCardio ? <Flame className="size-5" /> : <Dumbbell className="size-5" />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold truncate">{s.title}</span>
+                    <span className="mt-1 block text-xs text-dim">{fmtDate(s.endedAt!)} · {fmtDuration(s.startedAt, s.endedAt)} · {sets} sets</span>
+                  </span>
+                  <span className="text-sm font-semibold text-glow">+{s.xp ?? 0}</span>
+                  <ChevronRight className="size-5 text-dim" />
+                </Link>
+              )
+            })}
+          </div>
         )}
-      </Section>
+      </section>
     </Page>
   )
 }
 
 function Tile({ label, value, sub, good }: { label: string; value: string; sub?: string; good?: boolean }) {
   return (
-    <div className="card p-3">
-      <div className="text-[10px] uppercase tracking-wider text-slate-500">{label}</div>
-      <div className={`font-display text-xl font-extrabold ${good ? 'text-cardio' : ''}`}>{value}</div>
-      {sub && <div className="text-[11px] text-slate-400">{sub}</div>}
+    <div className="metric-panel p-3.5">
+      <p className="text-xs font-semibold text-glow">{label}</p>
+      <p className={`mt-1 text-xl font-bold leading-tight ${good ? 'text-soft' : ''}`}>{value}</p>
+      {sub && <p className="mt-0.5 text-[11px] font-medium text-dim">{sub}</p>}
     </div>
   )
 }
