@@ -184,10 +184,15 @@ function buildDay(key: string, tpl: Template, profile: Profile, opts: { cardio?:
   const used: string[] = []
   const blocks: Block[] = []
   let time = 0
+  let isoSeen = false
   for (const pattern of tpl.patterns) {
     const choice = pick(pattern, profile, used, variant)
     if (!choice) continue
     const ex = EXERCISE_BY_ID[choice.id]
+    // Compound lifts come first (ACSM 2009, Simão 2012): once an isolation move is in, a late
+    // compound fallback (e.g. a hinge chosen for the hamstring slot) is skipped rather than misplaced.
+    if (ex.category === 'compound' && isoSeen) continue
+    if (ex.category === 'isolation') isoSeen = true
     const p = prescribe(ex, profile)
     const cost = blockMinutes(p, ex)
     if (blocks.length >= minBlocks && time + cost > budget) continue
