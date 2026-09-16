@@ -409,4 +409,21 @@ const FLOORP = FLOOR
 }
 
 // ---- END ----
+/* ---------------- WALL SQUAT HOLD ---------------- */
+{
+  // Back flat on a wall at x=60, thighs level, shins vertical; a 2 px breathing rise so it is not frozen.
+  const wallX = 62
+  const mk = (dy: number) => {
+    const hip: [number, number] = [wallX + 4, 132 + dy]
+    const p = pose({ hip, torso: 90, head: 90 })
+    p.legNear = legTo(hip, [wallX + 34, FLOOR_Y - 3], 1)
+    p.legFar = legTo(hip, [wallX + 36, FLOOR_Y - 3], 1)
+    const sh = shoulderOf(hip, 90)
+    p.armNear = armTo(sh, [sh[0] + 24, sh[1] + 30], -1)
+    p.armFar = armTo(sh, [sh[0] + 24, sh[1] + 30], -1)
+    return p
+  }
+  A.wallSit = rep('wallSit', 'side', mk(0), mk(-2), { props: [FLOOR, { type: 'wall', x: wallX - 2 }], durations: [1600], holds: [300, 300] })
+}
+
 export const CONDITIONING = A

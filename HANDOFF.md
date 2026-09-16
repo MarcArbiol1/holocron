@@ -2,7 +2,12 @@
 
 Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 
-## State as of 16 Sep 2026 (night: Aether skin)
+## State as of 16 Sep 2026 (late night: health + physique research encoded)
+
+- **Second research pass** (26 rules, `docs/EVIDENCE.md` part 2) encoded: dedicated cardio day (Mount Doom) in every plan of 3+ days with two alternating sessions (The Long Road steady / The Eruption 4x4 intervals, 65+ steady only), wall squat holds on the cardio day for the health goal (blood pressure), fat-loss protein 2 g/kg + 0.5-0.7%/week rate in profile facts, steps target, muscle-memory ramp-back in `progression.ts`, stretched-position cues, overhead triceps first, second-visit day variants, strength marker tile in the recap, and **The Codex** page (`/codex`, `src/data/codex.ts`, 42 rules) linked from Plan and Settings.
+- **Gotcha that cost an hour:** a stale `vite` process on the wildcard address kept serving an old module graph on :5173 ("Invalid hook call", blank root). `pkill -f vite` before starting a dev server.
+
+## Earlier: 16 Sep 2026 (night: Aether skin)
 
 - **Restyled to the Lovable "Aether" design** (repo MarcArbiol1/liquid-hero-gym, private). Design system in
   `src/index.css` + `tailwind.config.js` (tokens night/panel/ice/dim/glow/soft/sand, Space Grotesk/Space Mono bundled

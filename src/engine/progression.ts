@@ -49,6 +49,13 @@ export function suggest(block: Block, sessions: Session[]): Suggestion {
   }
   const sets = last.log.sets.filter(isHardSet)
   const weight = Math.max(...sets.map((s) => s.weightKg ?? 0))
+  // Muscle memory (Bosquet 2013, Ogasawara 2013, Halonen 2024): up to 3 weeks off costs almost nothing;
+  // longer breaks lose strength that comes back within a few weeks. Ramp back rather than guess.
+  const daysSince = (Date.now() - new Date(last.session.endedAt!).getTime()) / 864e5
+  if (daysSince > 21 && weight) {
+    const next = roundLoad(weight * (daysSince > 56 ? 0.8 : 0.9))
+    return { weightKg: next, reps: block.repMin, trend: 'down', note: `First time back after ${Math.round(daysSince / 7)} weeks. Start at ${next} kg; what you lost returns within a few weeks, faster than it was built.` }
+  }
   const reps = sets.map((s) => s.reps ?? 0)
   const step = isLowerCompound(block.exerciseId) ? 5 : 2.5
   const allTop = sets.length >= block.sets && reps.every((r) => r >= target)

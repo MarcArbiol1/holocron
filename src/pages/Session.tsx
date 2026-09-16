@@ -12,6 +12,7 @@ import { RestTimer } from '../components/RestTimer'
 import { Page, fmtDuration } from '../components/ui'
 import { HapticSwitch, haptic } from '../lib/haptics'
 import { keepAwake, liveActive, startLive, stopLive } from '../lib/live'
+import { cardioSessionFor } from '../engine/cardio'
 import type { Block, CardioLog } from '../data/types'
 
 const GLOW_TINT: React.CSSProperties = { background: 'color-mix(in oklab, var(--glow) 14%, transparent)' }
@@ -62,6 +63,7 @@ export default function Session() {
 
   const cardioOptions = EXERCISES.filter((e) => e.category === 'cardio' && isAvailable(e, profile.equipment))
   const plannedCardio = (day?.cardioMinutes ?? 0)
+  const cardioSession = day ? cardioSessionFor(day, sessions) : undefined
   const hardSets = active.exercises.reduce((a, e) => a + e.sets.filter((s) => s.done).length, 0)
 
   const finish = () => {
@@ -176,6 +178,17 @@ export default function Session() {
           <h2 className="font-semibold">Cardio</h2>
           <span className={plannedCardio > 0 ? 'chip-glow' : 'chip-dim'}>{plannedCardio > 0 ? `planned ${plannedCardio} min` : 'optional'}</span>
         </div>
+        {cardioSession && (
+          <div className="rounded-2xl p-3" style={{ background: 'color-mix(in oklab, var(--glow) 8%, transparent)', border: '1px solid color-mix(in oklab, var(--glow) 18%, transparent)' }}>
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-glow">{cardioSession.title}</span>
+              <span className="chip-glow">{cardioSession.style === 'intervals' ? '4 × 4 intervals' : 'steady'} · {cardioSession.minutes} min</span>
+            </div>
+            <ol className="mt-2 space-y-1 text-sm text-ice">
+              {cardioSession.steps.map((st, i) => <li key={i} className="flex gap-2"><span className="text-glow font-bold">{i + 1}</span><span>{st}</span></li>)}
+            </ol>
+          </div>
+        )}
         {(active.cardio.length ? active.cardio : [{ exerciseId: '', minutes: 0, intensity: 'moderate' as const }]).map((c, i) => (
           <div key={i} className="grid grid-cols-[1fr_72px_100px] gap-2">
             <select className="input py-2" value={c.exerciseId} onChange={(e) => updateCardio(i, { exerciseId: e.target.value, intensity: EXERCISE_BY_ID[e.target.value]?.intensity ?? c.intensity })}>

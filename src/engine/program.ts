@@ -9,14 +9,14 @@
  * The rules and the papers behind them are listed in docs/EVIDENCE.md.
  */
 import { EXERCISE_BY_ID } from '../data/exercises'
-import type { Block, Equipment, EquipmentAccess, Exercise, Experience, Goal, Pattern, Profile, Program, RoutineDay } from '../data/types'
+import type { Block, CardioSession, Equipment, EquipmentAccess, Exercise, Experience, Goal, Pattern, Profile, Program, RoutineDay } from '../data/types'
 import type { Muscle } from '../data/muscles'
 import type { DayId } from '../theme/names'
 import { ageBracket, preferLowImpact, proteinTarget, weeklyCardioTarget } from './profile'
 import { warmupMinutes } from './warmup'
 
 /** Bump when any rule below changes; the app rebuilds stored programs that carry an older number. */
-export const PROGRAM_VERSION = 4
+export const PROGRAM_VERSION = 5
 
 /* ---------- 1. equipment ---------- */
 
@@ -48,7 +48,8 @@ const POOLS: Record<Pattern, Pools> = {
   sideDelt: same(['lateralRaise']),
   rearDelt: same(['facePull', 'reverseFly', 'bandPullApart']),
   biceps: same(['dbCurl', 'barbellCurl', 'hammerCurl']),
-  triceps: same(['tricepsPushdown', 'overheadTricepsExt', 'skullCrusher', 'benchDip']),
+  // Overhead extension first: the long head grows ~40% more in its stretched position (Maeo 2023).
+  triceps: same(['overheadTricepsExt', 'tricepsPushdown', 'skullCrusher', 'benchDip']),
   quadIso: same(['legExtension', 'splitSquat', 'bodyweightSquat']),
   hamIso: same(['legCurl', 'romanianDeadlift', 'singleLegRdl', 'gluteBridge']),
   calf: same(['standingCalfRaise', 'seatedCalfRaise']),
@@ -213,7 +214,51 @@ function buildDay(key: string, tpl: Template, profile: Profile, opts: { cardio?:
   }
   let cardioMinutes = Math.max(minCardio, Math.min(cardioWanted, Math.round(profile.sessionMinutes - warm - time)))
   if (cardioMinutes < 5) cardioMinutes = minCardio
-  return { key, id: tpl.id, muscles: tpl.muscles, blocks, cardioMinutes, minutes: Math.round(warm + time + cardioMinutes), balance: older }
+  const day: RoutineDay = { key, id: tpl.id, muscles: tpl.muscles, blocks, cardioMinutes, minutes: Math.round(warm + time + cardioMinutes), balance: older }
+  if (tpl.id === 'cardio') {
+    day.cardioPlan = cardioPlans(profile, cardioMinutes)
+    // Health goal: isometric wall squats are the single most effective exercise for resting blood pressure
+    // (Edwards 2023, 270 RCTs): 4 x 2 min holds, 3 days a week. They ride on the cardio day.
+    if (profile.goal === 'health' && EXERCISE_BY_ID.wallSit) {
+      day.blocks.push({ exerciseId: 'wallSit', sets: 4, repMin: 0, repMax: 0, seconds: 120, restSec: 120, rir: 2, alternatives: [] })
+      day.minutes += 14
+    }
+  }
+  return day
+}
+
+/**
+ * The two Mount Doom sessions, alternated week by week:
+ *  - steady: moderate, continuous, low impact by default (counts once toward the WHO minutes)
+ *  - intervals: the 4x4 protocol that raised VO2max 7% in 8 weeks (Helgerud 2007), counted as vigorous.
+ * 65+ get the steady session only; everyone else alternates.
+ */
+function cardioPlans(profile: Profile, minutes: number): { steady: CardioSession; intervals?: CardioSession } {
+  const older = ageBracket(profile.age) === 'older'
+  const pickCardio = pick('cardio', profile)
+  const steadyId = pickCardio?.id ?? 'briskWalk'
+  const steady: CardioSession = {
+    style: 'steady', title: 'The Long Road', exerciseId: steadyId, minutes, intensity: 'moderate',
+    steps: [
+      `${minutes} minutes at a pace where you can talk but not sing.`,
+      'Keep it even; the last third should feel like work but not a race.',
+      'Any machine or a brisk outdoor walk counts. Low impact first if your knees complain.',
+    ],
+  }
+  if (older) return { steady }
+  // Intervals on a bike or rower where possible (cycling shows the least interference with lifting, Wilson 2012).
+  const intervalPool = ['bike', 'rower', 'inclineWalk', 'run', 'briskWalk', 'jumpingJacks']
+  const intervalId = intervalPool.find((id) => EXERCISE_BY_ID[id] && isAvailable(EXERCISE_BY_ID[id], profile.equipment)) ?? steadyId
+  const intervals: CardioSession = {
+    style: 'intervals', title: 'The Eruption', exerciseId: intervalId, minutes: 33, intensity: 'vigorous',
+    steps: [
+      '10 minutes easy to warm up.',
+      '4 rounds: 4 minutes hard (breathing too hard to speak more than a few words, about 90 to 95% of max heart rate), then 3 minutes easy.',
+      '5 minutes easy to cool down. About 33 minutes in all.',
+      'New to intervals? Start with 2 rounds and add one each week.',
+    ],
+  }
+  return { steady, intervals }
 }
 
 /* ---------- 5. split ---------- */
@@ -268,7 +313,9 @@ export function buildProgram(profile: Profile): Program {
   const notes: string[] = []
   notes.push(`${rot.label}: with ${profile.daysPerWeek} day${profile.daysPerWeek > 1 ? 's' : ''} a week this is the layout that trains every muscle at least twice a week when volume allows (Schoenfeld 2016).`)
   notes.push(`Each day is time-boxed to your ${profile.sessionMinutes} minutes including the warm-up. Big lifts are filled first, small ones only if time remains (Iversen 2021).`)
-  if ((profile.cardioDay ?? true) && profile.daysPerWeek >= 3) notes.push(`One visit a week is a cardio day. Aerobic fitness is one of the strongest predictors of a long life, and lifting plus aerobic work beats either alone (Gorzelitz 2022). ${profile.daysPerWeek === 3 ? 'With three visits that leaves two lifting days, so muscle-growth volume runs below the usual target; add a day or switch the cardio day off if physique is the priority.' : ''}`)
+  notes.push('Train the stretched position: full range of motion, or partial reps in the stretched half of the movement, never the shortened half only (Wolf 2023, Kassiano 2023, Maeo 2023).')
+  if (profile.goal === 'fatloss') notes.push('Fat loss: aim to lose 0.5 to 0.7% of body weight a week, eat about 2 g of protein per kg, and keep lifting; that is what keeps the muscle while the fat goes (Garthe 2011, Helms 2014, Sardeli 2018). Food does most of the work; exercise alone at guideline levels moves the scale 0 to 2 kg (Swift 2014).')
+  if ((profile.cardioDay ?? true) && profile.daysPerWeek >= 3) notes.push(`One visit a week is a cardio day, alternating a steady session with 4x4 intervals, the protocol that raised fitness most in head-to-head trials (Helgerud 2007). Aerobic fitness is the strongest modifiable predictor of a long life (Mandsager 2018), lifting plus aerobic work beats either alone (Gorzelitz 2022), and cardio does not blunt muscle or strength gains (Schumann 2022). ${profile.daysPerWeek === 3 ? 'With three visits that leaves two lifting days, so muscle-growth volume runs below the usual target; add a day or switch the cardio day off if physique is the priority.' : ''}`)
   notes.push(`Aim for ${setsTarget(profile.experience)[0]} to ${setsTarget(profile.experience)[1]} hard sets per muscle per week. Growth starts near 4 and each extra set buys less (Pelland 2026).`)
   notes.push(`Rest ${profile.experience === 'novice' ? '1.5' : profile.goal === 'strength' ? '3' : profile.experience === 'advanced' ? '2.5' : '2'} minutes on the big lifts, about a minute on the small ones (Schoenfeld 2016, Grgic 2018).`)
   notes.push(`Finish sets ${profile.goal === 'strength' ? '2 to 3' : '1 to 3'} reps short of failure; going all the way adds little and costs recovery (Refalo 2023, Robinson 2024).`)

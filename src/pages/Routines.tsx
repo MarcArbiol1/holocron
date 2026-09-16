@@ -74,6 +74,11 @@ export default function Routines() {
                     </li>
                   )
                 })}
+                {d.cardioPlan && (
+                  <li className="py-2 text-sm text-dim">
+                    Alternates <span className="text-soft font-semibold">{d.cardioPlan.steady.title}</span> ({d.cardioPlan.steady.minutes} min steady){d.cardioPlan.intervals ? <> and <span className="text-soft font-semibold">{d.cardioPlan.intervals.title}</span> (4 × 4 intervals)</> : ''} week by week.
+                  </li>
+                )}
                 {d.cardioMinutes > 0 && (
                   <li className="flex items-center justify-between rounded-2xl px-3 py-2 text-sm" style={{ background: 'color-mix(in oklab, var(--glow-soft) 10%, transparent)' }}>
                     <span className="font-semibold text-soft">Cardio finisher</span><span className="text-dim">{d.cardioMinutes} min</span>

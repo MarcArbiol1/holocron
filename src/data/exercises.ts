@@ -74,7 +74,7 @@ export const EXERCISES: Exercise[] = [
     id: 'romanianDeadlift', name: 'Romanian deadlift', pattern: 'hinge', category: 'compound',
     primary: ['hamstrings', 'glutes'], secondary: ['lowerBack', 'upperBack', 'forearms'], equipment: ['barbell', 'dumbbell'], level: 2, anim: 'romanianDeadlift',
     steps: ['Stand holding the bar at your hips, knees slightly bent.', 'Push your hips back and let the bar slide down your thighs, keeping your back flat.', 'Stop when you feel a strong stretch in the hamstrings (usually just below the knee).', 'Drive the hips forward to stand tall.'],
-    cues: ['Hips go back, not down', 'Bar touches the legs the whole way'],
+    cues: ['Hips go back, not down', 'Bar touches the legs the whole way', 'The stretch at the bottom is the point: control it, do not rush through it'],
     mistakes: ['Bending the knees into a squat', 'Rounding the back to go lower'],
   }),
   ex({
@@ -125,7 +125,7 @@ export const EXERCISES: Exercise[] = [
     id: 'dbBenchPress', name: 'Dumbbell bench press', pattern: 'pushH', category: 'compound',
     primary: ['chest', 'triceps'], secondary: ['frontDelts'], equipment: ['dumbbell', 'bench'], level: 1, anim: 'dbBenchPress',
     steps: ['Lie back with a dumbbell in each hand at chest level, palms forward.', 'Press both up until your arms are straight above your shoulders.', 'Lower with control until you feel a stretch across the chest.'],
-    cues: ['Slight arc: dumbbells come together at the top', 'Shoulder blades pinned'],
+    cues: ['Slight arc: dumbbells come together at the top', 'Shoulder blades pinned', 'Go for a full stretch at the bottom; that half of the rep does the most'],
     mistakes: ['Dropping the elbows too low and straining the shoulders', 'Clanking the dumbbells together'],
   }),
   ex({
@@ -273,7 +273,7 @@ export const EXERCISES: Exercise[] = [
     id: 'dbCurl', name: 'Dumbbell biceps curl', pattern: 'biceps', category: 'isolation',
     primary: ['biceps'], secondary: ['forearms'], equipment: ['dumbbell'], level: 1, anim: 'dbCurl',
     steps: ['Stand with a dumbbell in each hand, palms forward.', 'Curl the weights to your shoulders without moving the upper arms.', 'Lower slowly to straight arms.'],
-    cues: ['Elbows pinned to your sides'],
+    cues: ['Elbows pinned to your sides', 'Straighten fully at the bottom: the stretched half of the curl grows more than the top'],
     mistakes: ['Swinging the body', 'Stopping short of straight arms'],
   }),
   ex({
@@ -301,7 +301,7 @@ export const EXERCISES: Exercise[] = [
     id: 'overheadTricepsExt', name: 'Overhead triceps extension', pattern: 'triceps', category: 'isolation',
     primary: ['triceps'], secondary: [], equipment: ['dumbbell', 'cable'], level: 1, anim: 'overheadTricepsExt',
     steps: ['Hold one dumbbell overhead with both hands.', 'Bend the elbows to lower it behind your head.', 'Extend back to straight arms.'],
-    cues: ['Elbows point forward, close to the head'],
+    cues: ['Elbows point forward, close to the head', 'Overhead works the long head in its stretched position, which is why it beats pushdowns for size'],
     mistakes: ['Elbows flaring wide', 'Arching the lower back'],
   }),
   ex({
@@ -338,8 +338,8 @@ export const EXERCISES: Exercise[] = [
     id: 'standingCalfRaise', name: 'Standing calf raise', pattern: 'calf', category: 'isolation',
     primary: ['calves'], secondary: [], equipment: ['bodyweight', 'machine', 'dumbbell'], level: 1, anim: 'standingCalfRaise',
     steps: ['Stand with the balls of your feet on a step, heels hanging.', 'Rise as high as you can onto your toes.', 'Lower until you feel a stretch, and pause.'],
-    cues: ['Full stretch at the bottom, full squeeze at the top'],
-    mistakes: ['Bouncing'],
+    cues: ['Full stretch at the bottom, full squeeze at the top', 'The stretched bottom half is where the growth is: pause there'],
+    mistakes: ['Bouncing', 'Only doing the top half'],
   }),
   ex({
     id: 'seatedCalfRaise', name: 'Seated calf raise', pattern: 'calf', category: 'isolation',
@@ -419,6 +419,14 @@ export const EXERCISES: Exercise[] = [
     steps: ['Lie on your back, hands under your hips, legs straight.', 'Lift the legs to vertical.', 'Lower slowly, stopping before the back arches.'],
     cues: ['Lower back pressed down'],
     mistakes: ['Dropping the legs fast'],
+  }),
+
+  ex({
+    id: 'wallSit', name: 'Wall squat hold', pattern: 'coreAnti', category: 'core', timed: true,
+    primary: ['quads'], secondary: ['glutes', 'abs'], equipment: ['bodyweight'], level: 1, anim: 'wallSit',
+    steps: ['Back flat against a wall, feet about half a metre out, shoulder-width.', 'Slide down until your thighs are roughly level with the floor, knees over ankles.', 'Hold for 2 minutes breathing normally, rest 2 minutes, repeat 4 times. Three days a week is the studied dose.'],
+    cues: ['Breathe; never hold your breath', 'If 2 minutes is too much, sit a little higher and build up'],
+    mistakes: ['Holding the breath (raises blood pressure during the hold)', 'Knees drifting past the toes'],
   }),
 
   /* ================= CARDIO ================= */

@@ -98,3 +98,53 @@ Sources: Ramos-Campo 2024 JSCR 38:1330, DOI 10.1519/JSC.0000000000004774. Evange
 Plain: The split is a scheduling tool; pick the one that lets you train every muscle twice a week with the days you actually have.
 
 Unverifiable/weak, summarised: ACSM "48–72 h" (not in text); AAP 2020 and Lloyd 2014 numbers (paywalled); 85% ramp step (convention); low-impact-first (convention); deload timing (weak); McGill content (light check); Pelland per-session figures (preprint).
+
+---
+
+# Part 2: health and physique rules added 16 Sep 2026
+
+Researched after the first audit; only rules NEW to the app or corrections to part 1. Each carries the numbers and DOI; strength ratings as judged by the reviewer.
+
+## Cardio for health
+- **Aerobic dose plateau.** Vigorous 75–149 min/wk: all-cause HR 0.81, CVD 0.69; moderate 150–299: 19–25% lower risk; 2–4× the minimum adds only 2–13% more; above vigorous ≥300 / moderate ≥600 no further benefit, no harm. Lee et al. 2022, Circulation 146:523, DOI 10.1161/CIRCULATIONAHA.121.058162. Strong. Encoded: target band 150–300 in profile facts and Codex.
+- **VO2max is the strongest modifiable mortality predictor, no upper limit.** Elite vs low fitness HR 0.20 (n=122,007), Mandsager 2018 JAMA Netw Open DOI 10.1001/jamanetworkopen.2018.3605; least-fit HR 4.09 (n=750,302), Kokkinos 2022 JACC DOI 10.1016/j.jacc.2022.05.031; +1 MET → RR 0.87, Kodama 2009 JAMA DOI 10.1001/jama.2009.681. Strong.
+- **4×4 intervals raise VO2max fastest.** 4×4 min at 90–95% HRmax / 3 min easy, 3×/wk, 8 wk: +7.2% vs no change for matched moderate continuous. Helgerud 2007 MSSE 39:665 DOI 10.1249/mss.0b013e3180304570. Moderate (n=40). Encoded: "The Eruption" cardio session, alternating weeks; 65+ steady only.
+- **"Zone 2" not supported as a special intensity.** San-Millán & Brooks 2018 is cross-sectional (DOI 10.1007/s40279-017-0751-x); 2025 review finds no evidence it is optimal (DOI 10.1007/s40279-025-02261-y). Marketing as a must; moderate as "easy cardio counts".
+- **Steps plateau by age.** 6–8k/day at 60+, 8–10k under 60; cadence adds nothing. Paluch 2022 Lancet Public Health DOI 10.1016/S2468-2667(21)00302-9. Strong. Encoded: steps target in profile facts.
+- **Sitting breaks.** 5-min walk every 30 min cut glucose iAUC (n=11), Duran 2023 MSSE DOI 10.1249/MSS.0000000000003109; >8 h/day sitting not associated with mortality in the most active quartile, Ekelund 2016 Lancet DOI 10.1016/S0140-6736(16)30370-1. Weak-moderate / strong.
+- **Tiny vigorous bursts count.** 3 × 1–2 min/day → 38–40% lower all-cause mortality (n=25,241), Stamatakis 2022 Nat Med DOI 10.1038/s41591-022-02100-x. Strong.
+- **Cardio sessions for lifters (synthesis, flagged as inference):** 2–3 sessions/wk of 20–40 min, one of them 4×4, cycling preferred, ≥6 h from lifting or separate days, lifting first if shared.
+
+## Combining lifting and cardio
+- **Interference is small and mostly explosive.** 43 studies: strength SMD −0.06, hypertrophy −0.01, explosive −0.28 (worse same-session), no modality/frequency effect. Schumann 2022 Sports Med DOI 10.1007/s40279-021-01587-7; fibre-level type I −0.81 with running not cycling, Lundberg 2022 DOI 10.1007/s40279-022-01688-x; Wilson 2012 DOI 10.1519/JSC.0b013e31823a3e2d. Strong. Encoded: dedicated cardio day default; finishers short, bike first, after lifting.
+- **Order and separation.** Strength first → +3.96 kg lower-body 1RM, Murlasits 2018 DOI 10.1080/02640414.2017.1364405; 0 h gap blunted gains vs 6 h / 24 h, Robineau 2016 DOI 10.1519/JSC.0000000000000798. Moderate.
+
+## Resistance-training J-curve (caveat to part 1, point 9)
+- Max benefit ≈60 min/wk (RR 0.74) from only 4 cohorts, Shailendra 2022 DOI 10.1016/j.amepre.2022.03.020; the U-shape is explained by single self-report, confounding, no mechanism; "no reason to reduce well-tolerated RE", Burtscher 2023 J Sport Health Sci DOI 10.1016/j.jshs.2022.11.004; 1–59 min/wk RT → 40–70% lower CVD events, Liu 2019 MSSE DOI 10.1249/MSS.0000000000001822. Harm signal weak. Encoded: 60 min/wk is the health floor; extra volume neutral.
+
+## Physique
+- **Stretched position.** Long-length partials vs full ROM SMD −0.28 (CI crosses 0), Wolf 2023 DOI 10.47206/ijsc.v3i1.182; calf initial-ROM +15.2% vs final +3.4%, Kassiano 2023 DOI 10.1519/JSC.0000000000004460; Pedrosa 2022 DOI 10.1080/17461391.2021.1927199; overhead triceps long head +28.5% vs +19.6%, Maeo 2023 DOI 10.1080/17461391.2022.2100279; trained: lengthened partials ≈ full, Wolf 2025 PeerJ DOI 10.7717/peerj.18904. Moderate. Encoded: cue in notes and on calf/curl/RDL/press/overhead-extension entries; overhead extension first in the triceps pool.
+- **Tempo.** 0.5–8 s/rep equal, >10 s inferior. Schoenfeld 2015 Sports Med DOI 10.1007/s40279-015-0304-0. Moderate. Encoded: no tempo prescription.
+- **Variety.** Systematic variation aids regional growth; random rotation can hinder. Kassiano 2022 DOI 10.1519/JSC.0000000000004258; Fonseca 2014 DOI 10.1519/JSC.0000000000000539; Baz-Valle 2019 PLoS One. Moderate. Encoded: second-visit day variants fixed for the block.
+- **Detraining / muscle memory.** Force loss significant from week 3–4 off (SMD −0.46), Bosquet 2013 DOI 10.1111/sms.12047; 3-wk breaks lose nothing, Ogasawara 2013 DOI 10.1007/s00421-012-2511-9; regain faster than first gains, Halonen 2024 DOI 10.1111/sms.14739. Strong. Encoded: progression ramps back −10% after 3 weeks, −20% after 8.
+
+## Fat loss / body composition
+- **Rate of loss.** 0.7%/wk kept lean mass (+2.1%) vs 1.4%/wk (−0.2%), same fat loss. Garthe 2011 DOI 10.1123/ijsnem.21.2.97. Moderate. Encoded: 0.5–0.7%/wk in profile facts.
+- **Protein in a deficit.** 2.3–3.1 g/kg FFM, Helms 2014 DOI 10.1123/ijsnem.2013-0054; 2.4 vs 1.2 g/kg → LBM +1.2 vs +0.1 kg, Longland 2016 AJCN DOI 10.3945/ajcn.115.119339. Moderate. Encoded: fat-loss goal protein 2.0 g/kg BW.
+- **Lift while dieting.** RT prevented 93.5% of diet-induced lean loss, Sardeli 2018 DOI 10.3390/nu10040423. Strong.
+- **Diet drives fat loss.** Exercise alone at guideline levels ≈ 0–2 kg; >225 min/wk for meaningful loss, Swift 2014 DOI 10.1016/j.pcad.2013.09.012; NEAT explained 10-fold fat-gain range, Levine 1999 Science DOI 10.1126/science.283.5399.212. Moderate.
+
+## Recovery
+- **Sleep.** 5.5 vs 8.5 h: fat loss −55%, lean loss +60%, Nedeltcheva 2010 DOI 10.7326/0003-4819-153-7-201010050-00006; one night → MPS −18%, Lamon 2021 DOI 10.14814/phy2.14660; restriction cuts compound force, Knowles 2018 DOI 10.1016/j.jsams.2018.01.012. Moderate. Encoded: Codex advice (no sleep logging yet).
+- **Consecutive days fine.** Yang 2018 DOI 10.3389/fphys.2018.00725. Weak-moderate.
+- **Time of day irrelevant.** Grgic 2019 DOI 10.1080/07420528.2019.1567524. Moderate.
+
+## Blood pressure and glycaemia
+- **Isometrics for BP.** 270 RCTs: isometric −8.24/−4.00 mmHg (wall squat −10.47/−5.33); 4×2 min holds, 3×/wk. Edwards 2023 BJSM DOI 10.1136/bjsports-2022-106503. Strong. Encoded: wall squat hold exercise + animation; added to the cardio day for the health goal.
+- **Glycaemia.** −0.67% HbA1c, >150 min/wk −0.89%, Umpierre 2011 JAMA DOI 10.1001/jama.2011.576; heavy RT −0.61% vs light −0.23%, Liu 2019 DOI 10.3390/ijerph16010140. Strong.
+
+## Flexibility and strength markers
+- ACSM ≥2 d/wk, 60 s per exercise, Garber 2011 DOI 10.1249/MSS.0b013e318213fefb; stretching and soreness ≈ 1/100, Herbert 2011 Cochrane DOI 10.1002/14651858.CD004577.pub3; Flexindex mortality (observational), Araújo 2024 DOI 10.1111/sms.14708.
+- Grip strength HR 1.16 per −5 kg, Leong 2015 Lancet DOI 10.1016/S0140-6736(14)62000-6; García-Hermoso 2018 DOI 10.1016/j.apmr.2018.01.008. Strong marker. Encoded: relative-strength marker in the recap.
+
+Could not verify: a 2025 long-vs-short partials meta; Duran SBP magnitudes and Mandsager per-group HRs (secondary sources); Araújo HRs (press); Swift "225–420"; any harm above 130–140 min/wk of lifting.

@@ -104,6 +104,16 @@ export interface Session {
   reason?: string
 }
 
+/** A structured cardio session (steady state or the 4x4 VO2max protocol). */
+export interface CardioSession {
+  style: 'steady' | 'intervals'
+  title: string
+  exerciseId: string
+  minutes: number
+  intensity: 'moderate' | 'vigorous'
+  steps: string[]
+}
+
 /** One prescribed exercise inside a routine day. */
 export interface Block {
   exerciseId: string
@@ -130,6 +140,8 @@ export interface RoutineDay {
   cardioMinutes: number
   /** Estimated length including warm-up and cardio. */
   minutes: number
+  /** Dedicated cardio days carry structured sessions; the app alternates them week by week. */
+  cardioPlan?: { steady: CardioSession; intervals?: CardioSession }
   /** Add a balance block (65+). */
   balance?: boolean
 }

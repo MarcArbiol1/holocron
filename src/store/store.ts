@@ -10,6 +10,7 @@ import { sessionXp, type XpBreakdown } from '../engine/levels'
 import { uid } from '../engine/ids'
 import { EXERCISE_BY_ID } from '../data/exercises'
 import type { WarmupPlan } from '../engine/warmup'
+import { cardioSessionFor } from '../engine/cardio'
 
 export interface Settings {
   restTimer: boolean
@@ -69,7 +70,9 @@ export const useStore = create<State>()(
           startedAt: new Date().toISOString(), exercises, cardio: [],
         }
         const plannedCardio = day.cardioMinutes + extraCardio
-        if (plannedCardio > 0) session.cardio = [{ exerciseId: '', minutes: 0, intensity: 'moderate' }]
+        const planned = cardioSessionFor(day, get().sessions)
+        if (planned) session.cardio = [{ exerciseId: planned.exerciseId, minutes: planned.minutes, intensity: planned.intensity }]
+        else if (plannedCardio > 0) session.cardio = [{ exerciseId: '', minutes: 0, intensity: 'moderate' }]
         set({ active: session, activeWarmup: warmup, forged: false, lastXp: undefined })
       },
       setForged: (v) => set({ forged: v }),

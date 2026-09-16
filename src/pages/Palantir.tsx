@@ -5,6 +5,7 @@ import { EXERCISE_BY_ID } from '../data/exercises'
 import { MUSCLES, TARGET_MUSCLES, type Muscle } from '../data/muscles'
 import { addDays, monthStart, nextMonth, periodRecap, weekStart, weekStreak } from '../engine/recap'
 import { useStore } from '../store/store'
+import { bestE1rm } from '../engine/recap'
 import { NAMES } from '../theme/names'
 import { MuscleMap } from '../components/MuscleMap'
 import { Page, fmtDate, fmtDuration } from '../components/ui'
@@ -36,6 +37,10 @@ export default function Palantir() {
   const targetHi = Math.round(r.setsTarget[1])
   const levels = Object.fromEntries(TARGET_MUSCLES.map((m) => [m, r.setsTarget[0] > 0 ? r.sets[m] / r.setsTarget[0] : 0])) as Partial<Record<Muscle, number>>
   const streak = weekStreak(sessions, profile, now)
+  // Strength marker (Leong 2015: strength predicts mortality): best estimated 1RM of one lift per big pattern, summed, over body weight.
+  const bestOf = (ids: string[]) => Math.max(0, ...ids.map((id) => bestE1rm(sessions, id)))
+  const big = [bestOf(['backSquat', 'legPress', 'gobletSquat']), bestOf(['deadlift', 'romanianDeadlift', 'hipThrust']), bestOf(['benchPress', 'dbBenchPress', 'machineChestPress']), bestOf(['barbellRow', 'seatedCableRow', 'dbRow'])]
+  const strengthMarker = big.every((v) => v > 0) ? big.reduce((a, b) => a + b, 0) / profile.weightKg : 0
   const history = [...r.sessions].reverse()
 
   const toggle = (
@@ -61,6 +66,7 @@ export default function Palantir() {
         <Tile label="Hard sets" value={`${Math.round(Object.values(r.sets).reduce((a, b) => a + b, 0))}`} sub="fractional" />
         <Tile label="Tonnage" value={r.tonnage >= 1000 ? `${(r.tonnage / 1000).toFixed(1)} t` : `${r.tonnage} kg`} sub="weight × reps" />
         <Tile label="Time" value={r.minutes >= 60 ? `${Math.floor(r.minutes / 60)} h ${r.minutes % 60}` : `${r.minutes} min`} sub="in the gym" />
+        <Tile label="Strength marker" value={strengthMarker ? `${strengthMarker.toFixed(2)}× body weight` : '–'} sub={strengthMarker ? 'best squat + hinge + press + row, estimated 1RM ÷ body weight. A marker of health, not a proven cause.' : 'log a squat, a hinge, a press and a row to unlock'} wide />
       </div>
 
       <section className="aether-rise rise-3" aria-labelledby="muscles-title">
@@ -129,9 +135,9 @@ export default function Palantir() {
   )
 }
 
-function Tile({ label, value, sub, good }: { label: string; value: string; sub?: string; good?: boolean }) {
+function Tile({ label, value, sub, good, wide }: { label: string; value: string; sub?: string; good?: boolean; wide?: boolean }) {
   return (
-    <div className="metric-panel p-3.5">
+    <div className={`metric-panel p-3.5 ${wide ? 'col-span-3' : ''}`}>
       <p className="text-xs font-semibold text-glow">{label}</p>
       <p className={`mt-1 text-xl font-bold leading-tight ${good ? 'text-soft' : ''}`}>{value}</p>
       {sub && <p className="mt-0.5 text-[11px] font-medium text-dim">{sub}</p>}
