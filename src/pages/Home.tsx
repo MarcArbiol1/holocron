@@ -1,4 +1,5 @@
-import { ChevronRight, Dumbbell, Flame, Play } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronRight, Dumbbell, Flame, Play, Square } from 'lucide-react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { EXERCISE_BY_ID } from '../data/exercises'
 import { levelFor, totalXp } from '../engine/levels'
@@ -39,6 +40,8 @@ export default function Home() {
   const sessions = useStore((s) => s.sessions)
   const active = useStore((s) => s.active)
   const startSession = useStore((s) => s.startSession)
+  const discardSession = useStore((s) => s.discardSession)
+  const [confirmEnd, setConfirmEnd] = useState(false)
   const rec = useRecommendation()
   if (!profile || !program) return <Navigate to="/onboarding" replace />
   if (!rec) return null
@@ -107,13 +110,18 @@ export default function Home() {
             <span className="chip-glow shrink-0">{active ? fmtDuration(active.startedAt) : MODE_LABEL[rec.mode]}</span>
           </div>
           {active ? (
-            <Link to="/session" onClick={() => haptic()} className="primary-action mt-4 flex w-full items-center justify-between rounded-2xl p-4 text-left">
-              <span className="flex items-center gap-3">
-                <span className="grid size-11 place-items-center rounded-xl text-glow" style={{ background: 'color-mix(in oklab, var(--glow) 14%, transparent)' }}><Play className="size-5 fill-current" /></span>
-                <span><span className="block text-sm font-semibold">Resume session</span><span className="mt-0.5 block text-xs text-dim">{active.exercises.length} exercises</span></span>
-              </span>
-              <ChevronRight className="size-5 text-dim" />
-            </Link>
+            <>
+              <Link to="/session" onClick={() => haptic()} className="primary-action mt-4 flex w-full items-center justify-between rounded-2xl p-4 text-left">
+                <span className="flex items-center gap-3">
+                  <span className="grid size-11 place-items-center rounded-xl text-glow" style={{ background: 'color-mix(in oklab, var(--glow) 14%, transparent)' }}><Play className="size-5 fill-current" /></span>
+                  <span><span className="block text-sm font-semibold">Resume session</span><span className="mt-0.5 block text-xs text-dim">{active.exercises.length} exercises</span></span>
+                </span>
+                <ChevronRight className="size-5 text-dim" />
+              </Link>
+              <button onClick={() => { haptic('warning'); setConfirmEnd(true) }} className="btn-danger relative mt-2 w-full py-2.5 text-sm">
+                <Square className="size-4" /> Terminate workout<HapticSwitch />
+              </button>
+            </>
           ) : (
             <button onClick={() => start(rec.day, rec.title, rec.reason, rec.extraCardio)} className="primary-action aether-sheen relative mt-4 flex w-full items-center justify-between rounded-2xl p-4 text-left">
               <HapticSwitch />
@@ -190,6 +198,18 @@ export default function Home() {
           {['bg-glow/80', 'bg-dim/50', 'bg-soft/80', 'bg-dim/50', 'bg-glow/80'].map((color, index) => <span key={index} className={`size-1 rounded-full ${color}`} />)}
         </div>
       </div>
+      {confirmEnd && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-4" style={{ background: 'color-mix(in oklab, var(--night) 80%, transparent)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }} onClick={() => setConfirmEnd(false)}>
+          <div className="metric-panel w-full max-w-sm space-y-3 p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold">Terminate the workout?</h3>
+            <p className="text-sm text-dim">Everything logged in this session is lost. To keep it, open the session and press Finish.</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="btn-ghost" onClick={() => setConfirmEnd(false)}>Back</button>
+              <button className="btn-danger" onClick={() => { haptic('warning'); discardSession(); setConfirmEnd(false) }}>Terminate</button>
+            </div>
+          </div>
+        </div>
+      )}
       <LiquidDock />
     </main>
   )

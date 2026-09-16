@@ -204,7 +204,8 @@ export default function Session() {
         <p className="text-[11px] leading-snug text-dim">Moderate: you can talk but not sing. Vigorous: a few words at a time. Vigorous minutes count double.</p>
       </section>
 
-      <button className="w-full py-2 text-center text-xs text-dim" onClick={() => { haptic('warning'); setConfirm('discard') }}>Discard this session</button>
+      <button className="btn-danger relative w-full" onClick={() => { haptic('warning'); setConfirm('discard') }}>Terminate workout<HapticSwitch /></button>
+      <p className="text-center text-[11px] text-dim">Ends the session without saving it. Use Finish to keep what you logged.</p>
 
       {picker && (
         <ExercisePicker
@@ -218,13 +219,13 @@ export default function Session() {
       {confirm && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-night/80 p-5 backdrop-blur-sm sm:items-center" onClick={() => setConfirm(null)}>
           <div className="glass w-full max-w-sm space-y-3 rounded-[1.5rem] p-5" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold">{confirm === 'finish' ? 'Finish the session?' : 'Discard the session?'}</h3>
+            <h3 className="text-lg font-semibold">{confirm === 'finish' ? 'Finish the session?' : 'Terminate the workout?'}</h3>
             <p className="text-sm text-dim">{confirm === 'finish' ? `${hardSets} sets ticked. Unticked sets are dropped and XP is awarded now.` : 'Everything logged in this session is lost.'}</p>
             <div className="grid grid-cols-2 gap-3">
               <button className="btn-ghost" onClick={() => { haptic(); setConfirm(null) }}>Back</button>
               {confirm === 'finish'
                 ? <button className="btn-primary" onClick={finish}>Finish</button>
-                : <button className="btn-danger" onClick={() => { haptic('warning'); discardSession(); nav('/', { replace: true }) }}>Discard</button>}
+                : <button className="btn-danger" onClick={() => { haptic('warning'); discardSession(); nav('/', { replace: true }) }}>Terminate</button>}
             </div>
           </div>
         </div>
