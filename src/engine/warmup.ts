@@ -25,11 +25,24 @@ const LOWER = ['legSwings', 'hipCircles', 'bodyweightSquat', 'worldsGreatest', '
 const UPPER = ['armCircles', 'bandPullApart', 'shoulderDislocates', 'catCow', 'kneePushUp']
 const FULL = ['legSwings', 'armCircles', 'worldsGreatest', 'bandPullApart', 'bodyweightSquat']
 
-export function buildWarmup(day: RoutineDay, profile: Profile, sessions: Session[]): WarmupPlan {
+/** General-cardio minutes and number of dynamic drills, by session length and age. */
+function warmupShape(profile: Profile) {
   const older = ageBracket(profile.age) === 'older'
+  const short = profile.sessionMinutes <= 30
+  return { general: older ? 8 : short ? 3 : 5, drills: short ? 3 : 4, ramp: 3 }
+}
+
+/** Total minutes THE FORGE will ask for; the program builder budgets exactly this. */
+export function warmupMinutes(profile: Profile): number {
+  const w = warmupShape(profile)
+  return w.general + Math.ceil(w.drills * 0.75) + w.ramp
+}
+
+export function buildWarmup(day: RoutineDay, profile: Profile, sessions: Session[]): WarmupPlan {
   const lowImpact = preferLowImpact(profile)
-  const generalId = profile.equipment === 'gym' ? (lowImpact ? 'bike' : 'inclineWalk') : lowImpact ? 'inclineWalk' : 'jumpingJacks'
-  const general = { exerciseId: generalId, minutes: older ? 8 : 5 }
+  const shape = warmupShape(profile)
+  const generalId = profile.equipment === 'gym' ? (lowImpact ? 'bike' : 'inclineWalk') : lowImpact ? 'briskWalk' : 'jumpingJacks'
+  const general = { exerciseId: generalId, minutes: shape.general }
 
   const lowerDay = ['legs', 'lower', 'health'].includes(day.id) || day.key.startsWith('full')
   const upperDay = ['push', 'pull', 'upper'].includes(day.id)
@@ -37,7 +50,7 @@ export function buildWarmup(day: RoutineDay, profile: Profile, sessions: Session
   const dynamic = list
     .filter((id) => EXERCISE_BY_ID[id])
     .filter((id) => profile.equipment !== 'bodyweight' || !EXERCISE_BY_ID[id].equipment.includes('band') || EXERCISE_BY_ID[id].equipment.includes('bodyweight'))
-    .slice(0, 4)
+    .slice(0, shape.drills)
     .map((id) => {
       const ex = EXERCISE_BY_ID[id]
       return ex.timed ? { exerciseId: id, seconds: 30 } : { exerciseId: id, reps: 10 }
@@ -56,7 +69,7 @@ export function buildWarmup(day: RoutineDay, profile: Profile, sessions: Session
     ramp = { exerciseId: first.exerciseId, sets, basedOnKg: w || undefined }
   }
 
-  const totalMinutes = general.minutes + Math.ceil(dynamic.length * 0.75) + (ramp ? 3 : 0)
+  const totalMinutes = general.minutes + Math.ceil(dynamic.length * 0.75) + (ramp ? shape.ramp : 0)
   const rules = [
     'Easy cardio until you are slightly warm and breathing a little faster.',
     'Dynamic moves only. Save long stretches (over 60 seconds) for after training.',

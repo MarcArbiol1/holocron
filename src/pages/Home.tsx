@@ -51,7 +51,7 @@ export default function Home() {
       <div className="card p-4 space-y-3" style={{ borderColor: `${DAY_COLOR[rec.day.id]}55` }}>
         <div className="flex items-center justify-between">
           <span className="chip" style={{ background: `${DAY_COLOR[rec.day.id]}22`, color: DAY_COLOR[rec.day.id] }}>{MODE_LABEL[rec.mode]}</span>
-          <span className="text-xs text-slate-400">{rec.day.blocks.length} exercises{rec.day.cardioMinutes + rec.extraCardio > 0 ? ` + ${rec.day.cardioMinutes + rec.extraCardio} min cardio` : ''}</span>
+          <span className="text-xs text-slate-400">~{rec.day.minutes + rec.extraCardio} min · {rec.day.blocks.length} exercises{rec.day.cardioMinutes + rec.extraCardio > 0 ? ` + ${rec.day.cardioMinutes + rec.extraCardio} min cardio` : ''}</span>
         </div>
         <div>
           <h2 className="font-display text-2xl font-extrabold">{rec.title}</h2>
@@ -114,7 +114,7 @@ export default function Home() {
               <button key={d.key} className="card p-3 text-left" onClick={() => start(d, dayName(d.id), 'Chosen manually.', 0)}>
                 <div className="text-xs" style={{ color: DAY_COLOR[d.id] }}>{d.key.replace('-', ' ')}</div>
                 <div className="font-bold">{dayName(d.id)}</div>
-                <div className="text-[11px] text-slate-400">{d.blocks.length} exercises</div>
+                <div className="text-[11px] text-slate-400">{d.blocks.length} exercises · ~{d.minutes} min</div>
               </button>
             ))}
           </div>

@@ -126,11 +126,15 @@ export interface RoutineDay {
   blocks: Block[]
   /** Cardio finisher in minutes, if any. */
   cardioMinutes: number
+  /** Estimated length including warm-up and cardio. */
+  minutes: number
   /** Add a balance block (65+). */
   balance?: boolean
 }
 
 export interface Program {
+  /** Bumped whenever the builder's rules change, so stored plans rebuild. */
+  version: number
   split: 'fullbody' | 'upperlower' | 'ppl' | 'ulppl' | 'pplx2'
   splitLabel: string
   /** The day rotation, in order. */

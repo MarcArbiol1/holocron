@@ -568,4 +568,22 @@ const A: Record<string, Anim> = {}
   })
 }
 
+/* ---------------- SINGLE-LEG RDL ---------------- */
+{
+  // Stand on the near leg; the far leg and the torso hinge together like a seesaw. Light dumbbell in the far hand.
+  const top = pose({ hip: [92, STAND_HIP_Y], torso: 90, head: 90 })
+  top.legNear = legTo(top.hip, [92, FLOOR_Y - 3], 1)
+  top.legFar = limb(262, 262, 0)
+  const sTop = shoulderOf(top.hip, top.torso)
+  top.armNear = armTo(sTop, [sTop[0] + 2, sTop[1] + 41], -1)
+  top.armFar = armTo(sTop, [sTop[0] + 2, sTop[1] + 41], -1)
+  const bot = pose({ hip: [84, STAND_HIP_Y + 4], torso: 12, head: 20 })
+  bot.legNear = legTo(bot.hip, [92, FLOOR_Y - 3], 1)
+  bot.legFar = limb(170, 172, 100)
+  const sBot = shoulderOf(bot.hip, bot.torso)
+  bot.armNear = armTo(sBot, [sBot[0] - 2, sBot[1] + 40], -1)
+  bot.armFar = armTo(sBot, [sBot[0] - 2, sBot[1] + 40], -1)
+  A.singleLegRdl = rep('singleLegRdl', 'side', top, bot, { props: [FLOOR, { type: 'dumbbell', at: 'wristFar' }], durations: [1100], holds: [200, 250] })
+}
+
 export const STRENGTH = A

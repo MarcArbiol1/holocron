@@ -2,11 +2,12 @@
 
 Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 
-## State as of 16 Sep 2026
+## State as of 16 Sep 2026 (evening: audited)
 
 - **Built and verified locally**: onboarding -> plan -> THE FORGE -> session logger (rest timer, suggestions, swap, cardio) -> XP screen -> recap. Driven end to end in a headless phone-sized browser with zero console errors. 29 engine tests pass (`npm test -- --run`). Production build passes (`npm run build`, ~124 kB gzipped JS).
 - **79 exercises, 78 stick-figure animations**, every one rendered to a contact sheet and checked for correct form (`npm run anims -- <ids>` writes `scratch/anim-preview/sheet.svg.png`; `OUT=dir` changes the folder; `PER_ROW=2` is the default layout).
-- **Not yet done**: pushed to GitHub, installed on Marc's iPhone, used in a real gym session.
+- **Audited 16 Sep**: `docs/AUDIT.md`. The program builder is now time-boxed and versioned (`PROGRAM_VERSION`), muscle maps were rebalanced, 65+ get a balance block, novices never get 5-6 lifting days, bodyweight users get a single-leg RDL, and 16 technique-text fixes landed. `scripts/audit-programs.test.ts` is a regression test over 81 profiles and must stay at zero violations.
+- **Not yet done**: pushed to GitHub, installed on Marc's iPhone, used in a real gym session, UI restyle (Marc will send designs; keep every feature).
 
 ## Decisions and why
 
@@ -29,3 +30,4 @@ Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 - Node runs the `.ts` scripts directly (Node 25 strips types); anim modules import with `.ts` extensions for that reason.
 - `tsconfig` has `noUnusedLocals`: an unused import is a build error.
 - Never commit `scratch/`.
+- Changing any rule in `src/engine/program.ts`: bump `PROGRAM_VERSION`, run `npx vitest run`, read `scratch/audit-report.txt` if the audit fails.

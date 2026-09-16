@@ -36,6 +36,7 @@ export default function Routines() {
                 <div>
                   <div className="text-[11px] uppercase tracking-wider" style={{ color: DAY_COLOR[d.id] }}>{d.key.replace('-', ' ')}</div>
                   <h3 className="font-display text-xl font-extrabold">{dayName(d.id)}</h3>
+                  <div className="text-[11px] text-slate-400">about {d.minutes} min including warm-up</div>
                 </div>
                 {!active && rec && (
                   <button className="btn-ghost py-2 px-3 text-sm" onClick={() => { startSession(d, dayName(d.id), 'Chosen from the plan.', 0, rec.warmup); nav('/forge') }}>Start</button>

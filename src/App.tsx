@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { PROGRAM_VERSION } from './engine/program'
 import { useStore } from './store/store'
 import { BottomNav } from './components/ui'
 import Home from './pages/Home'
@@ -16,7 +18,13 @@ import Settings from './pages/Settings'
 
 function Shell() {
   const profile = useStore((s) => s.profile)
+  const program = useStore((s) => s.program)
+  const setProfile = useStore((s) => s.setProfile)
   const loc = useLocation()
+  // Rebuild the stored plan whenever the builder's rules have changed since it was saved.
+  useEffect(() => {
+    if (profile && program?.version !== PROGRAM_VERSION) setProfile(profile)
+  }, [profile, program?.version, setProfile])
   const hideNav = ['/onboarding', '/forge', '/done'].includes(loc.pathname)
   if (!profile && loc.pathname !== '/onboarding') return <Navigate to="/onboarding" replace />
   return (
