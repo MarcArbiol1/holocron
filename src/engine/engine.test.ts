@@ -73,6 +73,16 @@ describe('buildProgram', () => {
     expect(sets.chest!).toBeGreaterThanOrEqual(6)
     expect(sets.lats!).toBeGreaterThanOrEqual(6)
   })
+  it('cardio day carries two alternating sessions and wall squats for the health goal', () => {
+    const p = buildProgram({ ...base, daysPerWeek: 4, goal: 'health' })
+    const cardio = p.days.find((d) => d.id === 'cardio')!
+    expect(cardio.cardioPlan?.steady.minutes).toBeGreaterThanOrEqual(25)
+    expect(cardio.cardioPlan?.intervals?.style).toBe('intervals')
+    expect(cardio.blocks.some((b) => b.exerciseId === 'wallSit' && b.sets === 4 && b.seconds === 120)).toBe(true)
+    expect(cardio.blocks.some((b) => EXERCISE_BY_ID[b.exerciseId].category === 'cardio')).toBe(false)
+    const older = buildProgram({ ...base, daysPerWeek: 4, age: 70 })
+    expect(older.days.find((d) => d.id === 'cardio')!.cardioPlan?.intervals).toBeUndefined()
+  })
   it('health day is the minimum-dose full body', () => {
     const d = healthDay(base)
     const patterns = d.blocks.map((b) => EXERCISE_BY_ID[b.exerciseId].pattern)

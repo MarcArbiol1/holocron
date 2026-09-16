@@ -37,7 +37,7 @@ export default function Onboarding() {
   const [p, setP] = useState<Profile>(existing ?? {
     name: '', age: 20, sex: 'male', heightCm: 175, weightKg: 70, experience: 'novice', daysPerWeek: 3, sessionMinutes: 60, equipment: 'gym', goal: 'muscle', createdAt: new Date().toISOString(),
   })
-  const up = <K extends keyof Profile>(k: K, v: Profile[K]) => setP({ ...p, [k]: v })
+  const up = <K extends keyof Profile>(k: K, v: Profile[K]) => setP((prev) => ({ ...prev, [k]: v }))
   const valid = p.age >= 12 && p.age <= 99 && p.heightCm >= 120 && p.heightCm <= 230 && p.weightKg >= 30 && p.weightKg <= 250
 
   return (

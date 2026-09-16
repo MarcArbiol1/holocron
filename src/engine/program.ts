@@ -149,7 +149,8 @@ const T: Record<string, Template> = {
   legs: { id: 'legs', patterns: ['squat', 'hinge', 'lunge', 'calf', 'coreLateral', 'hamIso', 'quadIso'], muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
   // The minimum effective dose day (Iversen 2021): one leg push, one hinge, one upper push, one upper pull, core, then cardio.
   health: { id: 'health', patterns: ['squat', 'hinge', 'pushH', 'pullH', 'coreAnti'], muscles: ['quads', 'glutes', 'hamstrings', 'chest', 'lats', 'upperBack', 'abs'] },
-  cardio: { id: 'cardio', patterns: ['cardio', 'coreAnti', 'coreFlex'], muscles: [] },
+  // The cardio itself is the structured session (cardioPlan); the day only adds core work.
+  cardio: { id: 'cardio', patterns: ['coreAnti', 'coreFlex'], muscles: [] },
   mobility: { id: 'mobility', patterns: ['mobility', 'mobility', 'mobility', 'mobility', 'balance'], muscles: [] },
 }
 
