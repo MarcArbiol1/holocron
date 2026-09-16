@@ -38,7 +38,8 @@ const same = (ids: string[]): Pools => ({ novice: ids, intermediate: ids, advanc
 
 const POOLS: Record<Pattern, Pools> = {
   squat: { novice: ['gobletSquat', 'legPress', 'backSquat', 'bodyweightSquat'], intermediate: ['backSquat', 'legPress', 'gobletSquat', 'bodyweightSquat'], advanced: ['backSquat', 'legPress', 'gobletSquat', 'bodyweightSquat'] },
-  hinge: { novice: ['romanianDeadlift', 'singleLegRdl', 'hipThrust', 'kettlebellSwing', 'gluteBridge', 'backExtension'], intermediate: ['deadlift', 'romanianDeadlift', 'singleLegRdl', 'hipThrust', 'kettlebellSwing', 'gluteBridge'], advanced: ['deadlift', 'romanianDeadlift', 'singleLegRdl', 'hipThrust', 'kettlebellSwing', 'gluteBridge'] },
+  // Hinge = hamstring-led hip extension. Hip thrust / glute bridge live in the 'glute' pattern so a hinge slot always trains the hamstrings.
+  hinge: { novice: ['romanianDeadlift', 'singleLegRdl', 'kettlebellSwing', 'backExtension'], intermediate: ['deadlift', 'romanianDeadlift', 'singleLegRdl', 'kettlebellSwing', 'backExtension'], advanced: ['deadlift', 'romanianDeadlift', 'singleLegRdl', 'kettlebellSwing', 'backExtension'] },
   lunge: same(['splitSquat', 'reverseLunge', 'stepUp']),
   pushH: { novice: ['dbBenchPress', 'machineChestPress', 'pushUp', 'kneePushUp', 'benchPress'], intermediate: ['benchPress', 'dbBenchPress', 'inclineDbPress', 'dips', 'pushUp', 'machineChestPress'], advanced: ['benchPress', 'inclineDbPress', 'dips', 'dbBenchPress', 'pushUp'] },
   pushV: { novice: ['dbShoulderPress', 'overheadPress'], intermediate: ['overheadPress', 'dbShoulderPress'], advanced: ['overheadPress', 'dbShoulderPress'] },
