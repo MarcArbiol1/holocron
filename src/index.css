@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-900 text-slate-100 antialiased;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  overscroll-behavior-y: none;
+}
+
+/* Safe-area padding for phones with a notch / home bar. */
+.safe-top { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+@layer components {
+  .card {
+    @apply rounded-2xl bg-ink-800 border border-white/5 shadow-card;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold transition active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100;
+  }
+  .btn-primary {
+    @apply btn bg-gold-400 text-ink-950 hover:bg-gold-300;
+  }
+  .btn-ghost {
+    @apply btn bg-ink-700 text-slate-100 hover:bg-ink-600;
+  }
+  .btn-danger {
+    @apply btn bg-legs/20 text-legs hover:bg-legs/30;
+  }
+  .input {
+    @apply w-full rounded-xl bg-ink-700 border border-white/10 px-3 py-3 text-base text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-gold-400/60;
+  }
+  .label {
+    @apply block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5;
+  }
+  .chip {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+}
+
+/* Hide number input spinners. */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
