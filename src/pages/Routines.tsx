@@ -23,19 +23,7 @@ export default function Routines() {
 
   return (
     <Page title={NAMES.pages.routines} kicker="Your plan" sub={`${program.splitLabel} · ${profile.daysPerWeek} days a week`}>
-      <section className="aether-rise rise-1" aria-labelledby="why-title">
-        <h2 id="why-title" className="text-lg font-semibold">Why it looks like this</h2>
-        <div className="metric-panel mt-3 p-4">
-          <ul className="space-y-2 text-sm leading-relaxed text-ice/90">
-            {program.notes.map((n) => (
-              <li key={n} className="flex gap-2"><span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-glow/80" /><span>{n}</span></li>
-            ))}
-          </ul>
-          <p className="mt-3 text-xs text-dim">Every rule and its paper: <Link to="/codex" className="text-glow font-semibold">open The Codex</Link></p>
-        </div>
-      </section>
-
-      <section className="aether-rise rise-2" aria-labelledby="days-title">
+      <section className="aether-rise rise-1" aria-labelledby="days-title">
         <h2 id="days-title" className="text-lg font-semibold">Your days</h2>
         <div className="mt-3 space-y-3">
           {program.days.map((d) => (
@@ -93,7 +81,7 @@ export default function Routines() {
         </div>
       </section>
 
-      <section className="aether-rise rise-3" aria-labelledby="sets-title">
+      <section className="aether-rise rise-2" aria-labelledby="sets-title">
         <h2 id="sets-title" className="text-lg font-semibold">Planned sets per muscle</h2>
         <p className="mt-1 text-xs text-dim">per week · target {lo}–{hi}</p>
         <div className="metric-panel mt-3 space-y-2.5 p-4">
@@ -109,6 +97,18 @@ export default function Routines() {
           <p className="pt-1 text-[11px] text-dim">Secondary muscles count half a set. Arms and calves sit below the big-muscle target on purpose: they already work in the compound lifts.</p>
         </div>
       </section>
+      <section className="aether-rise rise-4" aria-labelledby="why-title">
+        <h2 id="why-title" className="text-lg font-semibold">Why it looks like this</h2>
+        <div className="metric-panel mt-3 p-4">
+          <ul className="space-y-2 text-sm leading-relaxed text-ice/90">
+            {program.notes.map((n) => (
+              <li key={n} className="flex gap-2"><span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-glow/80" /><span>{n}</span></li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-dim">Every rule and its paper: <Link to="/codex" className="text-glow font-semibold">open The Codex</Link></p>
+        </div>
+      </section>
+
     </Page>
   )
 }
