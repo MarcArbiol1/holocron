@@ -9,7 +9,9 @@ import '@fontsource/space-mono/400.css'
 import '@fontsource/space-mono/700.css'
 import './index.css'
 import App from './App.tsx'
+import { watchForUpdates } from './lib/update'
 
+watchForUpdates()
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

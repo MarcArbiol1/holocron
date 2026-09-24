@@ -5,6 +5,8 @@ import { useStore } from '../store/store'
 import { NAMES } from '../theme/names'
 import { Page } from '../components/ui'
 import { haptic } from '../lib/haptics'
+import { updateApp } from '../lib/update'
+import { PROGRAM_VERSION } from '../engine/program'
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -36,6 +38,16 @@ export default function Settings() {
   const reset = useStore((s) => s.reset)
   const [imp, setImp] = useState('')
   const [msg, setMsg] = useState('')
+  const [updating, setUpdating] = useState(false)
+
+  const update = async () => {
+    haptic()
+    setUpdating(true)
+    setMsg('Checking for a new build...')
+    const r = await updateApp()
+    setUpdating(false)
+    setMsg(r === 'updated' ? 'New build found, reloading.' : r === 'current' ? `Already on the latest build (${__BUILD__}).` : 'Updates are handled by the browser here; reload the page.')
+  }
 
   const copy = async () => {
     haptic()
@@ -77,6 +89,14 @@ export default function Settings() {
           <textarea className="input h-28 font-mono text-xs" placeholder="Paste a backup here to restore" value={imp} onChange={(e) => setImp(e.target.value)} />
           <button className="btn-ghost w-full" disabled={!imp.trim()} onClick={() => { haptic(); try { importData(imp); setMsg('Restored.'); setImp(''); nav('/') } catch (e) { setMsg(`Could not restore: ${(e as Error).message}`) } }}>Restore from pasted backup</button>
           {msg && <p className="text-xs text-glow">{msg}</p>}
+        </div>
+      </section>
+
+      <section className="aether-rise rise-4" aria-labelledby="app-title">
+        <h2 id="app-title" className="text-lg font-semibold">App</h2>
+        <div className="metric-panel mt-3 space-y-3 p-4 text-sm">
+          <p className="text-dim">Build {__BUILD__} · plan rules v{PROGRAM_VERSION}</p>
+          <button className="btn-ghost w-full" disabled={updating} onClick={update}>Update now</button>
         </div>
       </section>
 

@@ -7,6 +7,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 // When running locally (npm run dev) Vite serves it at http://localhost:5173/holocron/
 export default defineConfig({
   base: '/holocron/',
+  // Shown in Settings so a phone can tell which build it is running.
+  define: { __BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC') },
   plugins: [
     react(),
     VitePWA({
