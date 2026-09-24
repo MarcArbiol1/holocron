@@ -87,6 +87,20 @@ describe('buildProgram', () => {
     expect(openers).toContain('pushH')
   })
 
+  it('intermediates on four days get chest and back / legs / shoulders and arms', () => {
+    const prog = buildProgram({ ...base, daysPerWeek: 4, experience: 'intermediate' })
+    expect(prog.days.map((d) => d.id)).toEqual(['chestback', 'lower', 'arms', 'cardio'])
+    const pat = (id: string) => prog.days.find((d) => d.id === id)!.blocks.map((b) => EXERCISE_BY_ID[b.exerciseId].pattern)
+    expect(pat('lower')).toContain('quadIso')
+    const arms = pat('arms')
+    expect(arms.filter((x) => x === 'biceps').length).toBeGreaterThanOrEqual(2)
+    expect(arms.filter((x) => x === 'triceps').length).toBeGreaterThanOrEqual(2)
+    expect(arms).toContain('forearm')
+    const cb = pat('chestback')
+    expect(cb.filter((x) => x === 'pushH').length).toBe(2)
+    expect(cb.filter((x) => x === 'pullH' || x === 'pullV').length).toBeGreaterThanOrEqual(2)
+  })
+
   it('cardio day carries two alternating sessions and wall squats for the health goal', () => {
     const p = buildProgram({ ...base, daysPerWeek: 4, goal: 'health' })
     const cardio = p.days.find((d) => d.id === 'cardio')!
@@ -128,11 +142,11 @@ describe('recommend', () => {
   })
   it('does not put you back on the same muscles within 48 hours', () => {
     const p4 = buildProgram({ ...base, daysPerWeek: 4, experience: 'intermediate', cardioDay: false })
-    // Did lower yesterday and upper the day before -> next in rotation is upper-2 (fine, >48h)
-    const s1 = session('upper-1', '2026-09-08T18:00:00.000Z', ['benchPress', 'barbellRow', 'overheadPress', 'pullUp'], 8, 60)
+    // Did legs yesterday and chest/back the day before -> next in rotation is the arms day (its muscles are >48h old)
+    const s1 = session('chestback-1', '2026-09-08T18:00:00.000Z', ['benchPress', 'barbellRow', 'inclineDbPress', 'pullUp'], 8, 60)
     const s2 = session('lower-1', '2026-09-09T18:00:00.000Z', ['backSquat', 'deadlift', 'splitSquat'], 8, 80)
     const r = recommend({ ...base, daysPerWeek: 4, experience: 'intermediate', cardioDay: false }, p4, [s1, s2], now)
-    expect(r.day.id).toBe('upper')
+    expect(r.day.id).toBe('arms')
     // Did upper 20 hours ago -> the rotation would say lower... which is fine; but if lower was 20h ago too, recovery mode
     const s3 = session('upper-2', '2026-09-10T00:00:00.000Z', ['benchPress', 'barbellRow', 'overheadPress', 'pullUp'], 8, 60)
     const s4 = session('lower-2', '2026-09-10T10:00:00.000Z', ['backSquat', 'deadlift', 'splitSquat'], 8, 80)

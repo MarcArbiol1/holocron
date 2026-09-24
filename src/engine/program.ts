@@ -16,7 +16,7 @@ import { ageBracket, preferLowImpact, proteinTarget, weeklyCardioTarget } from '
 import { warmupMinutes } from './warmup'
 
 /** Bump when any rule below changes; the app rebuilds stored programs that carry an older number. */
-export const PROGRAM_VERSION = 6
+export const PROGRAM_VERSION = 7
 
 /* ---------- 1. equipment ---------- */
 
@@ -26,9 +26,13 @@ const ACCESS: Record<EquipmentAccess, Set<Equipment>> = {
   bodyweight: new Set<Equipment>(['bodyweight', 'band', 'jumpRope']),
 }
 
+/** A bench or a bar to hang from is a place to do the exercise, not the load: it never unlocks an exercise on its own. */
+const AUXILIARY = new Set<Equipment>(['bench', 'pullupBar'])
+
 export function isAvailable(ex: Exercise, access: EquipmentAccess): boolean {
   const have = ACCESS[access]
-  return ex.equipment.some((e) => have.has(e))
+  const loads = ex.equipment.filter((e) => !AUXILIARY.has(e))
+  return (loads.length ? loads : ex.equipment).some((e) => have.has(e))
 }
 
 /* ---------- 2. exercise pools per pattern, in order of preference ---------- */
@@ -55,7 +59,9 @@ const POOLS: Record<Pattern, Pools> = {
   // mostly grows the lateral head; an extension is needed for the long head (Brandão 2020).
   triceps: same(['overheadTricepsExt', 'tricepsPushdown', 'skullCrusher', 'tricepsKickback', 'closeGripBench', 'bandPushdown', 'diamondPushUp', 'benchDip']),
   chestIso: { novice: ['pecDeck', 'dumbbellFly'], intermediate: ['dumbbellFly', 'pecDeck'], advanced: ['dumbbellFly', 'pecDeck'] },
-  quadIso: same(['legExtension', 'splitSquat', 'bodyweightSquat']),
+  forearm: same(['wristCurl', 'reverseCurl', 'farmersCarry', 'hammerCurl']),
+  // Novices skip the leg extension: squat plus lunge already puts their quads at the top of the band.
+  quadIso: { novice: [], intermediate: ['legExtension', 'splitSquat', 'bodyweightSquat'], advanced: ['legExtension', 'splitSquat', 'bodyweightSquat'] },
   hamIso: same(['legCurl', 'romanianDeadlift', 'singleLegRdl', 'gluteBridge']),
   calf: same(['standingCalfRaise', 'seatedCalfRaise']),
   glute: same(['hipThrust', 'gluteBridge']),
@@ -115,7 +121,7 @@ export function prescribe(ex: Exercise, profile: Profile): Prescription {
     p = { sets: exp === 'novice' ? 2 : 3, repMin: 10, repMax: 15, restSec: exp === 'novice' ? 45 : 60, rir: 2, seconds: ex.timed ? (exp === 'novice' ? 30 : 45) : undefined }
   } else if (ex.category === 'isolation') {
     // Isolation: moderate loads, shorter rest (Grgic 2018: 60-120 s is enough when not chasing max strength).
-    p = { sets: exp === 'novice' ? 2 : 3, repMin: 10, repMax: 15, restSec: exp === 'novice' ? 60 : 75, rir: exp === 'novice' ? 2 : 1 }
+    p = { sets: exp === 'novice' ? 2 : 3, repMin: 10, repMax: 15, restSec: exp === 'novice' ? 60 : 75, rir: exp === 'novice' ? 2 : 1, seconds: ex.timed ? 40 : undefined }
   } else {
     // Compound lifts. ACSM 2009: novice 8-12RM; strength 1-6RM with 3-5 min rest; hypertrophy 6-12RM with 1-2 min.
     // Rest: untrained 60-120 s is enough; trained lifters gain from >2 min on big lifts (Grgic 2018, Schoenfeld 2016).
@@ -154,6 +160,9 @@ type Template = { id: DayId; patterns: Pattern[]; muscles: Muscle[] }
  *  - the first exercise rotates (squat day, press day, pull day): the lift done first progresses most (Nunes 2021).
  *  - days that share a pattern use a different exercise for it (the n-th day that carries a pattern gets the
  *    n-th option), so the chest is trained flat and incline and repeated days look different.
+ *  - intermediates and advanced lifters with three lifting days get the Arnold split: chest and back, legs,
+ *    shoulders and arms. Each muscle gets its whole weekly volume on one day; with the volume matched, once and
+ *    twice a week grow muscle the same (Schoenfeld, Grgic & Krieger 2019).
  */
 const T: Record<string, Template> = {
   fullA: { id: 'fullA', patterns: ['squat', 'pushH', 'pullH', 'hinge', 'pushV', 'biceps', 'triceps', 'coreAnti', 'calf'], muscles: ['quads', 'glutes', 'hamstrings', 'chest', 'frontDelts', 'lats', 'upperBack', 'biceps', 'triceps', 'abs'] },
@@ -162,7 +171,11 @@ const T: Record<string, Template> = {
   fullC: { id: 'fullC', patterns: ['pullH', 'pushH', 'lunge', 'glute', 'chestIso', 'biceps', 'rearDelt', 'sideDelt', 'hamIso', 'coreLateral'], muscles: ['lats', 'upperBack', 'chest', 'quads', 'glutes', 'hamstrings', 'rearDelts', 'sideDelts', 'abs'] },
   // Curl, then side delts, then the triceps: pressing already gives the triceps 15+ weekly sets, the side delts get almost none.
   upper: { id: 'upper', patterns: ['pushH', 'pullH', 'pushV', 'pullV', 'pushH', 'biceps', 'sideDelt', 'triceps', 'rearDelt'], muscles: ['chest', 'lats', 'upperBack', 'frontDelts', 'sideDelts', 'biceps', 'triceps'] },
-  lower: { id: 'lower', patterns: ['squat', 'hinge', 'lunge', 'glute', 'calf', 'coreAnti', 'hamIso'], muscles: ['quads', 'hamstrings', 'glutes', 'calves', 'abs'] },
+  lower: { id: 'lower', patterns: ['squat', 'hinge', 'lunge', 'glute', 'quadIso', 'hamIso', 'calf', 'coreAnti'], muscles: ['quads', 'hamstrings', 'glutes', 'calves', 'abs'] },
+  // The Arnold split's upper days. Chest and back: two presses, two rows, a vertical pull, a fly, rear delts.
+  chestback: { id: 'chestback', patterns: ['pushH', 'pullH', 'pushH', 'pullV', 'pullH', 'chestIso', 'rearDelt', 'coreAnti'], muscles: ['chest', 'lats', 'upperBack', 'frontDelts', 'rearDelts'] },
+  // Shoulders and arms: the press first, then triceps and biceps twice each, forearms, side and rear delts.
+  arms: { id: 'arms', patterns: ['pushV', 'triceps', 'biceps', 'triceps', 'forearm', 'biceps', 'sideDelt', 'rearDelt', 'forearm'], muscles: ['frontDelts', 'sideDelts', 'rearDelts', 'triceps', 'biceps', 'forearms'] },
   push: { id: 'push', patterns: ['pushH', 'pushV', 'pushH', 'triceps', 'sideDelt', 'triceps', 'chestIso', 'coreAnti'], muscles: ['chest', 'frontDelts', 'sideDelts', 'triceps'] },
   pull: { id: 'pull', patterns: ['pullV', 'pullH', 'pullV', 'biceps', 'rearDelt', 'biceps', 'coreFlex'], muscles: ['lats', 'upperBack', 'rearDelts', 'biceps'] },
   legs: { id: 'legs', patterns: ['squat', 'hinge', 'lunge', 'calf', 'coreLateral', 'hamIso', 'quadIso'], muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
@@ -315,6 +328,10 @@ function rotation(profile: Profile): { split: Program['split']; label: string; k
   const d = profile.daysPerWeek
   const exp = profile.experience
   const withCardio = profile.cardioDay ?? true
+  // The Arnold split needs weights (an arms day has nothing to do without them) and an hour: in 30 or 45 minutes
+  // one day cannot carry a muscle's whole weekly volume, and when volume is short, frequency is what makes up
+  // for it (Schoenfeld 2019: twice beats once only when the sets are not matched).
+  const arnold = exp !== 'novice' && profile.equipment !== 'bodyweight' && profile.sessionMinutes >= 60
   if (d <= 1) return { split: 'fullbody', label: 'Full body', keys: [['fullA', 'fullA']] }
   if (d === 2) return { split: 'fullbody', label: 'Full body, two versions', keys: [['fullA', 'fullA'], ['fullB', 'fullB']] }
   // A dedicated cardio day (Gorzelitz 2022: aerobic activity plus 1-2 lifting sessions a week carries the lowest
@@ -324,17 +341,25 @@ function rotation(profile: Profile): { split: Program['split']; label: string; k
     if (d === 3) return { split: 'fullbody', label: 'Full body twice, plus a cardio day', keys: [['fullA', 'fullA'], ['fullB', 'fullB'], ['cardio', 'cardio-1']] }
     if (d === 4) {
       if (exp === 'novice') return { split: 'fullbody', label: 'Full body three times, plus a cardio day', keys: [['fullA', 'fullA'], ['fullB', 'fullB'], ['fullC', 'fullC'], ['cardio', 'cardio-1']] }
+      if (arnold) return { split: 'arnold', label: 'Chest and back / legs / shoulders and arms, plus a cardio day', keys: [['chestback', 'chestback-1'], ['lower', 'lower-1'], ['arms', 'arms-1'], ['cardio', 'cardio-1']] }
       return { split: 'upperlower', label: 'Upper / lower / full body, plus a cardio day', keys: [['upper', 'upper-1'], ['lower', 'lower-1'], ['fullA', 'full-1'], ['cardio', 'cardio-1']] }
     }
-    if (d === 5) return { split: 'upperlower', label: 'Upper / lower, twice, plus a cardio day', keys: [['upper', 'upper-1'], ['lower', 'lower-1'], ['upper', 'upper-2'], ['lower', 'lower-2'], ['cardio', 'cardio-1']] }
+    if (d === 5) {
+      if (arnold) return { split: 'arnold', label: 'Chest and back / legs / shoulders and arms / upper, plus a cardio day', keys: [['chestback', 'chestback-1'], ['lower', 'lower-1'], ['arms', 'arms-1'], ['upper', 'upper-2'], ['cardio', 'cardio-1']] }
+      return { split: 'upperlower', label: 'Upper / lower, twice, plus a cardio day', keys: [['upper', 'upper-1'], ['lower', 'lower-1'], ['upper', 'upper-2'], ['lower', 'lower-2'], ['cardio', 'cardio-1']] }
+    }
     if (exp === 'novice') return { split: 'upperlower', label: 'Upper / lower, twice, plus cardio and mobility days', keys: [['upper', 'upper-1'], ['lower', 'lower-1'], ['cardio', 'cardio-1'], ['upper', 'upper-2'], ['lower', 'lower-2'], ['mobility', 'mobility-1']] }
     return { split: 'ulppl', label: 'Push / pull / legs + upper / lower, plus a cardio day', keys: [['push', 'push-1'], ['pull', 'pull-1'], ['legs', 'legs-1'], ['upper', 'upper-1'], ['lower', 'lower-1'], ['cardio', 'cardio-1']] }
   }
   if (d === 3) {
     if (exp === 'novice') return { split: 'fullbody', label: 'Full body, three versions', keys: [['fullA', 'fullA'], ['fullB', 'fullB'], ['fullC', 'fullC']] }
+    if (arnold) return { split: 'arnold', label: 'Chest and back / legs / shoulders and arms', keys: [['chestback', 'chestback-1'], ['lower', 'lower-1'], ['arms', 'arms-1']] }
     return { split: 'upperlower', label: 'Upper / lower / full body', keys: [['upper', 'upper-1'], ['lower', 'lower-1'], ['fullA', 'full-1']] }
   }
-  if (d === 4) return { split: 'upperlower', label: 'Upper / lower, twice', keys: [['upper', 'upper-1'], ['lower', 'lower-1'], ['upper', 'upper-2'], ['lower', 'lower-2']] }
+  if (d === 4) {
+    if (arnold) return { split: 'arnold', label: 'Chest and back / legs / shoulders and arms / upper', keys: [['chestback', 'chestback-1'], ['lower', 'lower-1'], ['arms', 'arms-1'], ['upper', 'upper-2']] }
+    return { split: 'upperlower', label: 'Upper / lower, twice', keys: [['upper', 'upper-1'], ['lower', 'lower-1'], ['upper', 'upper-2'], ['lower', 'lower-2']] }
+  }
   // ACSM 2009: novices lift 2-3 days, intermediates 3-4, advanced 4-6. A novice who can come 5-6 times
   // still lifts four of them; the extra visits become cardio and mobility so they count without over-training.
   if (exp === 'novice') {
@@ -360,7 +385,10 @@ export function buildProgram(profile: Profile): Program {
   const days = rot.keys.map(([tpl, key]) => buildDay(key, T[tpl], profile, { ...OPTS[tpl], variants: variants[key] }))
   const bracket = ageBracket(profile.age)
   const notes: string[] = []
-  notes.push(`${rot.label}: with ${profile.daysPerWeek} day${profile.daysPerWeek > 1 ? 's' : ''} a week this is the layout that trains every muscle at least twice a week when volume allows (Schoenfeld 2016).`)
+  if (rot.split !== 'arnold' && profile.experience !== 'novice' && profile.daysPerWeek >= 3 && profile.daysPerWeek <= 5 && (profile.equipment === 'bodyweight' || profile.sessionMinutes < 60)) notes.push(profile.equipment === 'bodyweight' ? 'A shoulders-and-arms day needs weights or bands for curls and extensions, so the plan keeps the higher-frequency layout; arm work rides on every upper day.' : 'Sessions under an hour cannot carry a muscle\'s whole weekly volume in one day, so the plan keeps the higher-frequency layout (Schoenfeld 2019: twice a week beats once only when the sets do not match). Set 60 minutes to get the chest and back / legs / shoulders and arms layout.')
+  notes.push(rot.split === 'arnold'
+    ? `${rot.label}: each muscle gets its whole weekly volume on its own day (chest and back, legs, shoulders and arms). With the sets matched, once or twice a week grows muscle the same (Schoenfeld 2019), and every day has its own exercises.`
+    : `${rot.label}: with ${profile.daysPerWeek} day${profile.daysPerWeek > 1 ? 's' : ''} a week this is the layout that trains every muscle at least twice a week when volume allows (Schoenfeld 2016).`)
   notes.push(`Each day is time-boxed to your ${profile.sessionMinutes} minutes including the warm-up. Big lifts are filled first, small ones only if time remains (Iversen 2021).`)
   notes.push('Every lifting day is balanced: legs never outnumber the upper body inside a day, the chest is trained from two angles across the week, and each day that is not a leg day has direct biceps or triceps work, because pressing and rowing alone leave the arms behind (Mannarino 2021, Brandão 2020). The first exercise rotates between a squat, a press and a pull, since the lift done first progresses most (Nunes 2021).')
   notes.push('Train the stretched position: full range of motion, or partial reps in the stretched half of the movement, never the shortened half only (Wolf 2023, Kassiano 2023, Maeo 2023).')

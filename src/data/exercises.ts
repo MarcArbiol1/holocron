@@ -417,6 +417,28 @@ export const EXERCISES: Exercise[] = [
     cues: ['Only the forearms move', 'Stand tall instead of leaning on the band'],
     mistakes: ['Elbows drifting forward', 'Standing so close that the band goes slack at the bottom'],
   }),
+  /* ---- forearms ---- */
+  ex({
+    id: 'wristCurl', name: 'Dumbbell wrist curl', pattern: 'forearm', category: 'isolation',
+    primary: ['forearms'], secondary: [], equipment: ['dumbbell'], level: 1, anim: 'wristCurl',
+    steps: ['Sit with your forearms resting on your thighs, palms up, a light dumbbell in each hand and the wrists just past the knees.', 'Let the weight roll down toward the fingers, then curl the wrists up as far as they go.', 'Lower slowly. Light weight, 12 to 20 reps.'],
+    cues: ['Only the wrists move', 'Full range: open the hand at the bottom, squeeze at the top'],
+    mistakes: ['Lifting the forearms off the thighs', 'Going heavy and jerking the wrists'],
+  }),
+  ex({
+    id: 'reverseCurl', name: 'Reverse curl (palms down)', pattern: 'forearm', category: 'isolation',
+    primary: ['forearms', 'biceps'], secondary: [], equipment: ['barbell', 'dumbbell'], level: 1, anim: 'barbellCurl',
+    steps: ['Hold a bar or dumbbells with the palms facing down, hands shoulder-width apart.', 'Curl to shoulder height without moving the upper arms, wrists straight.', 'Lower slowly to straight arms. It is much lighter than a normal curl.'],
+    cues: ['Wrists flat, knuckles up', 'Elbows pinned to the sides'],
+    mistakes: ['Letting the wrists bend back', 'Swinging the body'],
+  }),
+  ex({
+    id: 'farmersCarry', name: "Farmer's carry", pattern: 'forearm', category: 'isolation', timed: true,
+    primary: ['forearms'], secondary: ['upperBack', 'abs', 'calves'], equipment: ['dumbbell', 'kettlebell'], level: 1, anim: 'farmersCarry',
+    steps: ['Pick up a heavy dumbbell or kettlebell in each hand from a squat, not a bend.', 'Stand tall, shoulders back, and walk for 30 to 40 seconds with short quick steps.', 'Set the weights down with a straight back, rest, repeat.'],
+    cues: ['Chest up, eyes ahead', 'Grip hard: the forearms are the point'],
+    mistakes: ['Leaning to one side', 'Shrugging the shoulders up to the ears'],
+  }),
   /* ================= LEG ISOLATION ================= */
   ex({
     id: 'legExtension', name: 'Leg extension', pattern: 'quadIso', category: 'isolation',

@@ -30,6 +30,8 @@ export const NAMES = {
     push: 'The Siege',
     pull: 'The Drawbridge',
     upper: 'The Citadel',
+    chestback: 'The Citadel',   // chest and back day (the Arnold split)
+    arms: 'The Armoury',        // shoulders and arms day
     fullA: 'The Fellowship I',
     fullB: 'The Fellowship II',
     fullC: 'The Fellowship III',

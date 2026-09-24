@@ -2,7 +2,13 @@
 
 Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 
-## State as of 24 Sep 2026 (balance review)
+## State as of 24 Sep 2026, evening (second round: the Arnold split)
+
+- Marc's reply to the first round: still no arms day, no leg extension on Mordor, the Fellowship repeats the other days. Rebuilt the split for intermediate/advanced lifters with weights and 60-min sessions: **chest and back (The Citadel) / legs (Mordor) / shoulders and arms (The Armoury) / cardio**; 5 days adds The Watchtower. New `forearm` pattern (wrist curl, reverse curl, farmer's carry) with animations; leg extension on the leg day; `PROGRAM_VERSION` 7; equipment fix (a bench no longer unlocks barbell lifts). Frequency rule rewritten on Schoenfeld 2019 (volume-matched frequency is a wash). Details: `docs/AUDIT.md` second round, `docs/EVIDENCE.md` part 3.
+- **If Marc says he still sees the old plan:** the PWA is `autoUpdate`, but the first open after a deploy can still show the cached build; close the app fully and reopen. Settings -> Edit profile -> Save also rebuilds.
+- **Marc's likely profile:** intermediate, 4 days, gym, cardio day on (he named The Citadel and Mordor). If his sessions are 45 min he will NOT get the Arnold split; the plan note explains and the fix is 60 min in the profile.
+
+## Earlier on 24 Sep 2026 (balance review)
 
 - **Marc's first real feedback after using it:** "almost all of the workouts are leg located, very little chest, biceps, triceps". Confirmed by simulation and fixed; write-up in `docs/AUDIT.md` part 3, papers in `docs/EVIDENCE.md` part 3, three new Codex rules (`arms`, `balance`, `firstlift`).
 - **Root causes:** the full-body templates had no arm slot at all, both full-body days used the same chest exercise, every day opened with a leg lift, and the audit only tracked six big muscles.

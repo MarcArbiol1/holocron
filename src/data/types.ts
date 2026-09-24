@@ -7,7 +7,7 @@ export type Pattern =
   | 'pushH' | 'pushV' | 'pullH' | 'pullV'
   | 'sideDelt' | 'rearDelt'
   | 'biceps' | 'triceps'
-  | 'chestIso' | 'quadIso' | 'hamIso' | 'calf' | 'glute'
+  | 'chestIso' | 'quadIso' | 'hamIso' | 'calf' | 'glute' | 'forearm'
   | 'coreAnti' | 'coreFlex' | 'coreLateral'
   | 'cardio' | 'mobility' | 'balance'
 
@@ -149,7 +149,7 @@ export interface RoutineDay {
 export interface Program {
   /** Bumped whenever the builder's rules change, so stored plans rebuild. */
   version: number
-  split: 'fullbody' | 'upperlower' | 'ppl' | 'ulppl' | 'pplx2'
+  split: 'fullbody' | 'upperlower' | 'arnold' | 'ppl' | 'ulppl' | 'pplx2'
   splitLabel: string
   /** The day rotation, in order. */
   days: RoutineDay[]

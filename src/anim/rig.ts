@@ -36,7 +36,7 @@ export interface Pose {
 }
 
 export type JointRef =
-  | 'wristNear' | 'wristFar' | 'wrists'
+  | 'wristNear' | 'wristFar' | 'wrists' | 'handNear' | 'handFar'
   | 'elbowNear' | 'elbowFar'
   | 'shoulder' | 'upperBack' | 'chest' | 'hip'
   | 'kneeNear' | 'kneeFar' | 'ankleNear' | 'ankleFar' | 'toeNear' | 'toeFar'

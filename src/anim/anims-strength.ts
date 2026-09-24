@@ -746,4 +746,23 @@ const A: Record<string, Anim> = {}
   A.pikePushUp = rep('pikePushUp', 'side', mk(192), mk(215), { durations: [900] })
 }
 
+{
+  // Wrist curl: seated, forearms along the thighs, only the hands move from drooping to curled up.
+  const hip: [number, number] = [80, 126]
+  const base = pose({ hip, torso: 85, head: 80 })
+  Object.assign(base, bothLegsTo(hip, [120, FLOOR_Y - 3], 1))
+  const down = { ...base, ...arms(275, 0, 300) }
+  const up = { ...base, ...arms(275, 0, 60) }
+  A.wristCurl = rep('wristCurl', 'side', down, up, {
+    props: [FLOOR, { type: 'box', x: 56, y: 130, w: 44, h: 7 }, { type: 'box', x: 74, y: 137, w: 6, h: FLOOR_Y - 137 }, { type: 'dumbbell', at: 'handNear' }, { type: 'dumbbell', at: 'handFar' }],
+    durations: [700],
+  })
+}
+{
+  // Farmer's carry: walking tall with a weight in each hand, arms straight at the sides.
+  const a = pose({ hip: [90, STAND_HIP_Y], ...arms(268, 270), legNear: limb(290, 278, 0), legFar: limb(250, 262, 0) })
+  const b = pose({ hip: [90, STAND_HIP_Y], ...arms(268, 270), legNear: limb(250, 262, 0), legFar: limb(290, 278, 0) })
+  A.farmersCarry = rep('farmersCarry', 'side', a, b, { props: [FLOOR, { type: 'dumbbell', at: 'wristNear' }, { type: 'dumbbell', at: 'wristFar' }], durations: [450], holds: [0, 0] })
+}
+
 export const STRENGTH = A

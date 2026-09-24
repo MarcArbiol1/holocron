@@ -171,7 +171,7 @@ export function Section({ title, children, right, className = '' }: { title: str
 }
 
 export const DAY_COLOR: Record<string, string> = {
-  legs: '#e0553f', lower: '#e0553f', push: '#f08a3c', pull: '#3fa7e0', upper: '#d9b480',
+  legs: '#e0553f', lower: '#e0553f', push: '#f08a3c', pull: '#3fa7e0', upper: '#d9b480', chestback: '#d9b480', arms: '#f5b84a',
   fullA: '#5cdcce', fullB: '#5cdcce', fullC: '#5cdcce', health: '#66b79c', cardio: '#66b79c', core: '#9b6cf0', mobility: '#8fd13f', custom: '#94a3b8',
 }
 

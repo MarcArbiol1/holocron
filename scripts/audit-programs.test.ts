@@ -84,6 +84,7 @@ for (const over of profiles) {
 
   // ---- balance rules (docs/AUDIT.md part 3) ----
   const upperDays = prog.days.filter((d) => isLifting(d) && !LEG_DAYS.has(d.id))
+  const hasArmsDay = prog.days.some((d) => d.id === 'arms')
   let legsOpen = 0
   let legBlocks = 0
   let upperBlocks = 0
@@ -94,7 +95,13 @@ for (const over of profiles) {
     //     Tolerances: a strength goal (4 sets, 3-minute rests) and an advanced lifter's 45-minute session
     //     (2.5-minute rests) are filled by four big lifts; that is the point of those prescriptions.
     const armRule = p.goal !== 'strength' && (p.sessionMinutes >= 60 || (p.sessionMinutes >= 45 && p.experience !== 'advanced'))
-    if (armRule && !exs.some((ex) => ex.pattern === 'biceps' || ex.pattern === 'triceps')) say('arms', `${d.key}: no direct biceps or triceps exercise`)
+    //     A chest-and-back day is exempt when the week has a shoulders-and-arms day: that is the split's whole point.
+    if (armRule && !(hasArmsDay && d.id === 'chestback') && !exs.some((ex) => ex.pattern === 'biceps' || ex.pattern === 'triceps')) say('arms', `${d.key}: no direct biceps or triceps exercise`)
+    if (d.id === 'arms' && p.sessionMinutes >= 60) {
+      const n = (pat: string) => exs.filter((ex) => ex.pattern === pat).length
+      if (n('biceps') < 2 || n('triceps') < 2 || n('forearm') < 1) say('armsday', `${d.key}: biceps ${n('biceps')}, triceps ${n('triceps')}, forearm ${n('forearm')}`)
+    }
+    if (d.id === 'lower' && p.sessionMinutes >= 60 && !exs.some((ex) => ex.pattern === 'quadIso')) say('legday', `${d.key}: no leg extension`)
     // (b) legs never outnumber the upper body inside a full-body day
     const legs = exs.filter((ex) => ex.category !== 'core' && ex.category !== 'balance' && ex.primary.every((m) => LEG_MUSCLES.has(m))).length
     const upper = exs.filter((ex) => ex.category !== 'core' && ex.category !== 'balance' && ex.primary.every((m) => !LEG_MUSCLES.has(m))).length
@@ -123,7 +130,10 @@ for (const over of profiles) {
   if (liftingDays >= 3 && p.sessionMinutes >= 60 && p.goal !== 'strength') for (const m of SMALL) if (weeklySets[m] < lo * FLOOR[m]) say('volume', `${m} ${weeklySets[m]} sets/week < ${lo * FLOOR[m]}`)
   log(`  blocks/wk: upper ${upperBlocks}, legs ${legBlocks}; small: ${SMALL.map((m) => `${m} ${weeklySets[m]}`).join(', ')}`)
   for (const m of BIG) {
-    if (p.daysPerWeek >= 3 && freq[m] < 2) say('freq', `${m} trained directly ${freq[m]}x/week`)
+    // Twice a week, unless the layout gives the muscle its own day with the full weekly volume
+    // (Arnold split): with volume matched, frequency makes no measurable difference (Schoenfeld 2019).
+    const ownDay = prog.split === 'arnold' && freq[m] >= 1 && weeklySets[m] >= lo * 0.75
+    if (p.daysPerWeek >= 3 && freq[m] < 2 && !ownDay) say('freq', `${m} trained directly ${freq[m]}x/week`)
     // Tolerances (documented in docs/AUDIT.md):
     //  - under target only counts for sessions of 60 min or more; shorter sessions cannot fit the volume and say so in the plan notes
     //  - over target: 1.5x the high end; 2.2x for glutes/hamstrings, which collect half-credit from every squat, lunge and hip thrust,

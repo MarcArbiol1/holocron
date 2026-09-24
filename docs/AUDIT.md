@@ -113,3 +113,19 @@ back stay primary, quads secondary.
 **What the plans look like now** (novice, gym, 3 days, 60 min): day A = goblet squat, dumbbell bench, cable row, Romanian deadlift, dumbbell shoulder press, curl, overhead extension, plank, calf raise. Day B = machine chest press, single-leg RDL, chest-supported row, Bulgarian split squat, lat pulldown, pushdown, lateral raise, incline curl, hanging knee raise, face pull. Weekly fractional sets: chest 6, biceps 8.5, triceps 13, quads 6, hamstrings 7.5, glutes 11 (was chest 6, biceps 4.5 from rows only, triceps 9 from presses only, with zero arm exercises).
 
 **Still true:** a 3-day plan with a cardio day has only two lifting days, so every muscle sits near the bottom of its band; the plan notes say so, and switching the cardio day off in the profile gives a third lifting day (full body C).
+
+## Second round, same day: "make a good workout plan"
+
+Marc, on the 4-day plan (The Citadel / Mordor / The Fellowship / Mount Doom): the Citadel and Mordor are good, Mordor lacks the seated leg extension, the Fellowship repeats the other two days, and there is no biceps/triceps day with some forearm work.
+
+**Changes (`PROGRAM_VERSION` 7):**
+
+1. **The Arnold split** for intermediate and advanced lifters with weights and 60-minute sessions: chest and back (The Citadel), legs (Mordor), shoulders and arms (The Armoury), plus the cardio day. Five days adds an upper day (The Watchtower). Three days without the cardio day is the same three lifting days. Evidence: Schoenfeld 2019, volume-matched frequency makes no difference (part 3 of `EVIDENCE.md`).
+2. **Chest and back day:** bench, barbell row, incline press, pulldown, cable row, fly, face pull.
+3. **Leg day** gains the leg extension (intermediate and advanced only: novices' quads are already at the top of the band from squat plus lunge) ahead of the calf raise.
+4. **Shoulders and arms day:** overhead press, overhead extension, incline curl, pushdown, wrist curl, barbell curl, lateral raise, face pull (reverse curl or farmer's carry when time allows).
+5. **Forearm work added** (new `forearm` pattern): dumbbell wrist curl, reverse curl, farmer's carry (timed), hammer curl. Library: 99 exercises.
+6. **Fallbacks:** under an hour, or with bodyweight only, the higher-frequency upper/lower/full layout stays (a 45-minute day cannot hold a muscle's weekly volume; an arms day has nothing to do without weights). The plan notes say so and how to change it.
+7. **Equipment bug fixed:** a bench or a pull-up bar no longer unlocks an exercise on its own (dumbbell-only users were being given the barbell bench press).
+
+**Audit rules added:** the twice-a-week frequency check is waived on the Arnold split when the muscle's own day reaches 75% of the band's low end; a shoulders-and-arms day must carry 2 biceps, 2 triceps and 1 forearm exercise at 60 minutes; a 60-minute leg day must carry the leg extension; the chest-and-back day is exempt from the arm-work rule when the week has an arms day. 81 profiles, 0 violations; 33 tests.

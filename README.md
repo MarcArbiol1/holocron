@@ -22,12 +22,12 @@ scroll). Fonts are bundled so it looks identical offline. Motion respects "reduc
 
 ## What it does
 
-- **Builds a plan from six answers**: age, sex, height, weight, experience, and the days per week you will *actually* show up. One to two days gives full-body sessions, four gives upper/lower, six gives push/pull/legs. Every rule is traced to a paper in [docs/EVIDENCE.md](docs/EVIDENCE.md).
+- **Builds a plan from six answers**: age, sex, height, weight, experience, and the days per week you will *actually* show up. Novices get full-body sessions; intermediates with an hour get chest and back / legs / shoulders and arms plus a cardio day; six days gives push/pull/legs. Every rule is traced to a paper in [docs/EVIDENCE.md](docs/EVIDENCE.md).
 - **Recommends today's session**: the next day in your rotation, skipping any muscle trained less than 48 hours ago. If you only made it twice in the last two weeks, it switches to a full-body "health first" session with cardio, because that gives the biggest return per visit.
 - **THE FORGE**: a warm-up that pops up before every session. Easy cardio, dynamic moves for the joints about to work, then two ramp-up sets computed from your last working weight. No long static stretches (they weaken the next lift).
 - **Logs the session** with a rest timer, next-weight suggestions (double progression), swaps, and a cardio finisher.
 - **The Palantir**: week and month recap, a muscle heat-map of sets versus target, under-trained muscles, new records, and the full archive.
-- **The Archive**: 96 exercises, each with an animated stick figure drawn by the app itself, written steps, cues, and common mistakes.
+- **The Archive**: 99 exercises, each with an animated stick figure drawn by the app itself, written steps, cues, and common mistakes.
 - **The Order**: twelve levels earned by showing up and doing hard sets. Consistency out-earns heroics on purpose.
 
 ## Run it
