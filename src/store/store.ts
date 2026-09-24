@@ -11,6 +11,7 @@ import { uid } from '../engine/ids'
 import { EXERCISE_BY_ID } from '../data/exercises'
 import type { WarmupPlan } from '../engine/warmup'
 import { cardioSessionFor } from '../engine/cardio'
+import type { Account, CloudState } from '../lib/cloud'
 
 export interface Settings {
   restTimer: boolean
@@ -30,6 +31,11 @@ export interface State {
   lastXp?: XpBreakdown
   /** The running rest countdown, kept here so it survives leaving the session page. */
   rest?: { endsAt: number; startedAt: number; label: string }
+  /** Signed-in account (Supabase user), when accounts are on and the user chose one. */
+  account?: Account
+  cloud: { status: 'idle' | 'syncing' | 'error'; lastSyncAt?: string; error?: string }
+  /** The user chose to keep everything on this phone; do not show the login page first. */
+  loginSkipped: boolean
 
   setProfile: (p: Profile) => void
   startSession: (day: RoutineDay, title: string, reason: string, extraCardio: number, warmup?: WarmupPlan) => void
@@ -47,6 +53,11 @@ export interface State {
   deleteSession: (id: string) => void
   setSettings: (s: Partial<Settings>) => void
   setRest: (r: State['rest']) => void
+  setAccount: (a: Account | undefined) => void
+  setCloud: (c: Partial<State['cloud']>) => void
+  setLoginSkipped: (v: boolean) => void
+  /** Replace profile, sessions and settings with a merged cloud copy (keeps the running session). */
+  adoptCloud: (data: CloudState) => void
   importData: (json: string) => void
   exportData: () => string
   reset: () => void
@@ -63,6 +74,8 @@ export const useStore = create<State>()(
       sessions: [],
       forged: false,
       settings: { restTimer: true, sound: false, liveTimer: false },
+      cloud: { status: 'idle' },
+      loginSkipped: false,
 
       setProfile: (profile) => set({ profile, program: buildProgram(profile) }),
 
@@ -116,6 +129,15 @@ export const useStore = create<State>()(
       deleteSession: (id) => set({ sessions: get().sessions.filter((s) => s.id !== id) }),
       setSettings: (s) => set({ settings: { ...get().settings, ...s } }),
       setRest: (rest) => set({ rest }),
+      setAccount: (account) => set({ account }),
+      setCloud: (c) => set({ cloud: { ...get().cloud, ...c } }),
+      setLoginSkipped: (loginSkipped) => set({ loginSkipped }),
+      adoptCloud: (data) => {
+        const cur = get()
+        const profile = data.profile ?? cur.profile
+        const program = profile && (profile !== cur.profile || !cur.program) ? buildProgram(profile) : cur.program
+        set({ profile, program, sessions: data.sessions ?? cur.sessions, settings: data.settings ?? cur.settings })
+      },
 
       importData: (json) => {
         const data = JSON.parse(json)
@@ -127,7 +149,7 @@ export const useStore = create<State>()(
     }),
     {
       name: 'holocron-v1',
-      partialize: (s) => ({ profile: s.profile, program: s.program, sessions: s.sessions, active: s.active, activeWarmup: s.activeWarmup, forged: s.forged, settings: s.settings, lastXp: s.lastXp, rest: s.rest }),
+      partialize: (s) => ({ profile: s.profile, program: s.program, sessions: s.sessions, active: s.active, activeWarmup: s.activeWarmup, forged: s.forged, settings: s.settings, lastXp: s.lastXp, rest: s.rest, account: s.account, loginSkipped: s.loginSkipped }),
     },
   ),
 )

@@ -7,3 +7,6 @@ scratch/
 .gstack/
 backend/.venv/
 __pycache__/
+
+# Supabase (optional accounts, see docs/ACCOUNTS.md)
+.env.local

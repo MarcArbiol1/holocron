@@ -29,6 +29,7 @@ scroll). Fonts are bundled so it looks identical offline. Motion respects "reduc
 - **The Palantir**: week and month recap, a muscle heat-map of sets versus target, under-trained muscles, new records, and the full archive.
 - **The Archive**: 99 exercises, each with an animated stick figure drawn by the app itself, written steps, cues, and common mistakes.
 - **The Order**: twelve levels earned by showing up and doing hard sets. Consistency out-earns heroics on purpose.
+- **Accounts (optional)**: sign in with GitHub or email and progress follows the account onto any phone, through Supabase. Off unless the build carries the keys; see [docs/ACCOUNTS.md](docs/ACCOUNTS.md).
 
 ## Run it
 

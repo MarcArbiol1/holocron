@@ -5,6 +5,7 @@ import { useStore } from '../store/store'
 import { NAMES } from '../theme/names'
 import { Page } from '../components/ui'
 import { NumField } from '../components/NumField'
+import { LogoLoader } from '../components/LogoLoader'
 import { haptic } from '../lib/haptics'
 
 const SELECTED: React.CSSProperties = {
@@ -40,10 +41,20 @@ export default function Onboarding() {
   })
   const up = <K extends keyof Profile>(k: K, v: Profile[K]) => setP((prev) => ({ ...prev, [k]: v }))
   const valid = p.age >= 12 && p.age <= 99 && p.heightCm >= 120 && p.heightCm <= 230 && p.weightKg >= 30 && p.weightKg <= 250
+  const [building, setBuilding] = useState<'new' | 'rebuild' | null>(null)
+
+  // The plan builds in a few milliseconds; the logo gets one full loop so the moment reads as work being done.
+  const build = () => {
+    setBuilding(existing ? 'rebuild' : 'new')
+    setProfile({ ...p, createdAt: existing?.createdAt ?? new Date().toISOString() })
+    setTimeout(() => nav('/', { replace: true }), 4400)
+  }
+
+  if (building) return <LogoLoader label={building === 'rebuild' ? 'Rebuilding your plan' : 'Forging your plan'} />
 
   return (
     <Page title={existing ? 'Edit your profile' : `Welcome to ${NAMES.app}`} kicker={existing ? 'The plan rebuilds when you save.' : 'Six honest answers build your plan.'} back={!!existing}>
-      <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); if (!valid) return; haptic('success'); setProfile({ ...p, createdAt: existing?.createdAt ?? new Date().toISOString() }); nav('/') }}>
+      <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); if (!valid) return; haptic('success'); build() }}>
         <div className="metric-panel aether-rise rise-1 space-y-4 p-4">
           <div>
             <label className="label">Name</label>

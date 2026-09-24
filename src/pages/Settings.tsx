@@ -5,6 +5,8 @@ import { useStore } from '../store/store'
 import { NAMES } from '../theme/names'
 import { Page } from '../components/ui'
 import { Confirm } from '../components/Confirm'
+import { cloudEnabled, signOut } from '../lib/cloud'
+import { syncAgain } from '../lib/sync'
 import { haptic } from '../lib/haptics'
 import { updateApp } from '../lib/update'
 import { PROGRAM_VERSION } from '../engine/program'
@@ -41,6 +43,8 @@ export default function Settings() {
   const [msg, setMsg] = useState('')
   const [updating, setUpdating] = useState(false)
   const [askErase, setAskErase] = useState(false)
+  const account = useStore((s) => s.account)
+  const cloud = useStore((s) => s.cloud)
 
   const update = async () => {
     haptic()
@@ -80,6 +84,29 @@ export default function Settings() {
           <Toggle label="Beep when rest ends" checked={settings.sound} onChange={(v) => setSettings({ sound: v })} />
           <Toggle label="Lock screen / Dynamic Island timer (beta)" checked={settings.liveTimer} onChange={(v) => setSettings({ liveTimer: v })} />
           <p className="text-[11px] leading-relaxed text-dim">Shows the rest countdown as a Now Playing card on the lock screen and in the Dynamic Island, and lets the end-of-rest beep sound with the screen off. It plays silent audio during rests, so your music will pause. Web apps cannot make real Live Activities; iOS 26 sometimes mutes web-app audio after switching apps, hence beta.</p>
+        </div>
+      </section>
+
+      <section className="aether-rise rise-3" aria-labelledby="account-title">
+        <h2 id="account-title" className="text-lg font-semibold">Account</h2>
+        <div className="metric-panel mt-3 space-y-3 p-4 text-sm">
+          {account ? (
+            <>
+              <p className="text-dim">Signed in as <span className="font-semibold text-ice">{account.email ?? account.provider}</span>. Your plan, sessions and records are mirrored to the account.</p>
+              <p className="text-xs text-dim">{cloud.status === 'syncing' ? 'Syncing...' : cloud.status === 'error' ? `Sync problem: ${cloud.error}` : cloud.lastSyncAt ? `Last synced ${new Date(cloud.lastSyncAt).toLocaleString()}` : 'Not synced yet'}</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button className="btn-ghost" disabled={cloud.status === 'syncing'} onClick={() => { haptic(); void syncAgain() }}>Sync now</button>
+                <button className="btn-ghost" onClick={async () => { haptic(); await signOut() }}>Sign out</button>
+              </div>
+            </>
+          ) : cloudEnabled ? (
+            <>
+              <p className="text-dim">Everything is on this phone only. Sign in with GitHub or email and it follows you onto any phone.</p>
+              <button className="btn-ghost w-full" onClick={() => { haptic(); nav('/login') }}>Sign in</button>
+            </>
+          ) : (
+            <p className="text-dim">Accounts are not switched on in this build; everything stays on this phone. Use the backup below to move it.</p>
+          )}
         </div>
       </section>
 

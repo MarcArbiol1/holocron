@@ -18,6 +18,11 @@ import ExerciseDetail from './pages/ExerciseDetail'
 import Order from './pages/Order'
 import Settings from './pages/Settings'
 import Codex from './pages/Codex'
+import Login from './pages/Login'
+import { cloudEnabled } from './lib/cloud'
+import { startSync } from './lib/sync'
+
+startSync()
 
 /** New pages open at the top; going back keeps the browser's own position. */
 function ScrollToTop() {
@@ -35,6 +40,9 @@ function Shell() {
   const rest = useStore((s) => s.rest)
   const setRest = useStore((s) => s.setRest)
   const sound = useStore((s) => s.settings.sound)
+  const account = useStore((s) => s.account)
+  const loginSkipped = useStore((s) => s.loginSkipped)
+  const cloudStatus = useStore((s) => s.cloud.status)
   const loc = useLocation()
   const clearRest = useCallback(() => setRest(undefined), [setRest])
 
@@ -54,8 +62,14 @@ function Shell() {
   }, [activeId])
 
   // Home renders its own dock inside its layout; other pages get it from here.
-  const hideNav = ['/', '/onboarding', '/forge', '/done'].includes(loc.pathname)
-  if (!profile && loc.pathname !== '/onboarding') return <Navigate to="/onboarding" replace />
+  const hideNav = ['/', '/onboarding', '/forge', '/done', '/login'].includes(loc.pathname)
+  if (!profile && loc.pathname !== '/onboarding' && loc.pathname !== '/login') {
+    // First launch: offer an account (when the build has one) before building a plan; a sign-in
+    // that is still fetching the archive stays on the login page until it lands.
+    const wantLogin = cloudEnabled && !account && !loginSkipped
+    if (wantLogin || cloudStatus === 'syncing') return <Navigate to="/login" replace />
+    return <Navigate to="/onboarding" replace />
+  }
   return (
     <>
       <ScrollToTop />
@@ -73,6 +87,7 @@ function Shell() {
         <Route path="/order" element={<Order />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/codex" element={<Codex />} />
+        <Route path="/login" element={<Login />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       {!hideNav && <LiquidDock />}

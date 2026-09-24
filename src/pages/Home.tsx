@@ -10,6 +10,7 @@ import { NAMES } from '../theme/names'
 import { DAY_COLOR, LevelPill, LiquidDock, ProfileButton, dayTitle, fmtDate, fmtDuration, todayLabel } from '../components/ui'
 import { Figure } from '../components/Figure'
 import { Confirm } from '../components/Confirm'
+import { LogoMark } from '../components/LogoLoader'
 import { HapticSwitch, haptic } from '../lib/haptics'
 import type { RoutineDay } from '../data/types'
 
@@ -68,9 +69,12 @@ export default function Home() {
     <main className="relative min-h-dvh overflow-x-hidden bg-night text-ice">
       <div className="relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col px-6 pb-36 pt-[max(2rem,env(safe-area-inset-top))]">
         <header className="aether-rise flex items-end justify-between">
-          <div>
-            <p className="kicker">{todayLabel()}</p>
-            <h1 className="mt-1 text-[32px] font-bold leading-none">{NAMES.app}</h1>
+          <div className="flex items-end gap-3">
+            <LogoMark size={48} className="mb-0.5 shrink-0" />
+            <div>
+              <p className="kicker">{todayLabel()}</p>
+              <h1 className="mt-1 text-[32px] font-bold leading-none">{NAMES.app}</h1>
+            </div>
           </div>
           <ProfileButton />
         </header>

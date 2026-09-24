@@ -165,6 +165,54 @@ button { cursor: pointer; }
 
 @keyframes aether-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- logo loader: cartoon jumps, then the pieces come apart and snap back ---------- */
+.logo-loader { animation: fade-in 220ms ease both; }
+.logo-stage { position: relative; transform-origin: 50% 92%; animation: logo-jump 4.4s cubic-bezier(0.34, 1.2, 0.64, 1) infinite; }
+.logo-piece { position: absolute; inset: 0; width: 100%; height: 100%; transform-origin: 50% 50%; will-change: transform; animation-duration: 4.4s; animation-iteration-count: infinite; animation-timing-function: cubic-bezier(0.34, 1.3, 0.64, 1); }
+.piece-top { animation-name: piece-top; }
+.piece-star { animation-name: piece-star; transform-origin: 50% 46%; }
+.piece-left { animation-name: piece-left; }
+.piece-right { animation-name: piece-right; }
+.logo-loader-label { animation: fade-in 600ms ease both; }
+.logo-float { animation: logo-float 5s ease-in-out infinite; }
+@keyframes logo-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+/* the whole logo: crouch, jump, land with a squash, a smaller second hop, a blop; then still while the pieces fly */
+@keyframes logo-jump {
+  0%   { transform: translateY(0) scale(1, 1); }
+  5%   { transform: translateY(3%) scale(1.10, 0.88); }
+  15%  { transform: translateY(-26%) scale(0.92, 1.10); }
+  24%  { transform: translateY(0) scale(1.14, 0.84); }
+  30%  { transform: translateY(-11%) scale(0.97, 1.04); }
+  36%  { transform: translateY(0) scale(1.07, 0.93); }
+  41%  { transform: translateY(0) scale(0.98, 1.02); }
+  45%, 100% { transform: translateY(0) scale(1, 1); }
+}
+/* the pieces: rest until 46%, drift apart with a soft spin until 66%, hover, then snap home with an overshoot */
+@keyframes piece-top {
+  0%, 46%  { transform: translate(0, 0) rotate(0deg); }
+  66%, 72% { transform: translate(-13%, -24%) rotate(-16deg); }
+  86%      { transform: translate(2.5%, 3.5%) rotate(2.5deg); }
+  93%, 100% { transform: translate(0, 0) rotate(0deg); }
+}
+@keyframes piece-star {
+  0%, 46%  { transform: translate(0, 0) rotate(0deg) scale(1); }
+  66%, 72% { transform: translate(4%, -6%) rotate(200deg) scale(1.28); }
+  86%      { transform: translate(-1%, 1%) rotate(352deg) scale(0.95); }
+  93%, 100% { transform: translate(0, 0) rotate(360deg) scale(1); }
+}
+@keyframes piece-left {
+  0%, 46%  { transform: translate(0, 0) rotate(0deg); }
+  66%, 72% { transform: translate(-24%, 17%) rotate(14deg); }
+  86%      { transform: translate(3%, -2.5%) rotate(-2deg); }
+  93%, 100% { transform: translate(0, 0) rotate(0deg); }
+}
+@keyframes piece-right {
+  0%, 46%  { transform: translate(0, 0) rotate(0deg); }
+  66%, 72% { transform: translate(25%, 14%) rotate(-14deg); }
+  86%      { transform: translate(-3%, -2.5%) rotate(2deg); }
+  93%, 100% { transform: translate(0, 0) rotate(0deg); }
+}
 @keyframes sheet-up { from { opacity: 0; transform: translateY(24px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .confirm-backdrop { background: color-mix(in oklab, var(--night) 80%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); animation: fade-in 180ms ease both; }
 .confirm-sheet { animation: sheet-up 360ms var(--apple) both; }
@@ -182,6 +230,7 @@ input[type=search]::-webkit-search-decoration, input[type=search]::-webkit-searc
   .dock-wrap[data-sliding="true"] .liquid-lens, .dock-wrap[data-sliding="true"] .dock-icon { animation: none; }
   .aether-sheen::after { display: none; }
   .confirm-backdrop, .confirm-sheet, .rest-timer { animation: none; }
+  .logo-stage, .logo-piece { animation: none; }
 }
 
 /* Invisible native switch laid over a button: the finger toggles it, iOS plays its tick. */

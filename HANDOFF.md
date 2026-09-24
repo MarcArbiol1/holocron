@@ -2,7 +2,14 @@
 
 Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 
-## State as of 24 Sep 2026, night (code review pass: bugs + smoothness)
+## State as of 24 Sep 2026, late (new logo, login, logo loader)
+
+- **Logo:** Marc's hand-drawn cube-with-star PNG (Downloads/063EC7F0...PNG) is now the icon, recoloured only: ink darkness became opacity, ice body on the night background. `public/icon-*.png`, `apple-touch-icon.png`, `favicon.png` (the SVG is gone), `logo.png` (transparent), and `public/logo/{top,star,left,right}.png`: the four drawn pieces, split along the drawing's own gaps (the top face is open on its lower right; the left panel is a U hanging off the shared edge; the star's right arm was cut from the right edge along that edge's line). The split script is not in the repo; regenerate from the source PNG with scipy connected components at alpha > 0.95 if the logo ever changes.
+- **Logo loader** (`src/components/LogoLoader.tsx`, CSS in `index.css`): two cartoon jumps with squash and stretch, pieces drift apart and spin, snap back with overshoot; 4.4 s loop, transforms only. Shown for one loop after onboarding saves (`Onboarding.tsx`), and on the Login page while an account's archive is fetched. `LogoMark` is the small logo in the Home header and on Login.
+- **Accounts:** Supabase, optional, off until the build has `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (GitHub Actions secrets are wired in `pages.yml`). `docs/ACCOUNTS.md` has Marc's 15-minute setup (project, table + RLS SQL, redirect URLs, GitHub OAuth app, secrets). Code: `src/lib/cloud.ts`, `src/lib/sync.ts`, `src/pages/Login.tsx`, store fields `account`, `cloud`, `loginSkipped`.
+- **Headless QA gotcha:** the preview page registers the service worker; after a rebuild, unregister it in the browser (`navigator.serviceWorker.getRegistrations()`) or the old bundle is served.
+
+## Earlier on 24 Sep 2026, night (code review pass: bugs + smoothness)
 
 - Marc asked for a bug and UX review. Fixed and browser-verified (headless Chromium at 390x844, onboarding -> plan -> Forge -> session -> exercise page -> finish; zero console errors):
   - **Animations:** `Figure` no longer re-renders through React per frame. One shared rAF loop (`src/anim/ticker.ts`) patches SVG attributes in place; figures pause off-screen (IntersectionObserver), in hidden tabs, and under reduced motion. `Figure` is memoised. Before: eight figures on the session page = 240 React renders a second.
