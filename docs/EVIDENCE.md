@@ -148,3 +148,21 @@ Researched after the first audit; only rules NEW to the app or corrections to pa
 - Grip strength HR 1.16 per −5 kg, Leong 2015 Lancet DOI 10.1016/S0140-6736(14)62000-6; García-Hermoso 2018 DOI 10.1016/j.apmr.2018.01.008. Strong marker. Encoded: relative-strength marker in the recap.
 
 Could not verify: a 2025 long-vs-short partials meta; Duran SBP magnitudes and Mandsager per-group HRs (secondary sources); Araújo HRs (press); Swift "225–420"; any harm above 130–140 min/wk of lifting.
+
+---
+
+# Part 3: balance rules added 24 Sep 2026
+
+Prompted by Marc's first weeks of use: "almost all of the workouts are leg located, very little chest, biceps, triceps".
+The audit in part 1 only tracked six big muscles, so the gap was real and invisible. Verified 24 Sep 2026.
+
+## Direct arm work
+- **Curls beat rows for the biceps.** Ten untrained men, one arm did dumbbell rows and the other biceps curls for 8 weeks: elbow-flexor thickness +11.06% (curl) vs +5.16% (row). Mannarino, Matta, Lima, Simão & de Salles 2021, J Strength Cond Res 35(10):2677, DOI 10.1519/JSC.0000000000003234. Moderate (n=10, within-subject). Encoded: a biceps slot on every full-body day and every upper day.
+- **The bench press does not cover the whole triceps.** 43 young men, 4 groups (bench only, lying triceps press only, both in either order): multi-joint work grew the lateral head more, single-joint work the long head; combining both grew the triceps more than the press alone. Brandão et al. 2020, J Strength Cond Res, DOI 10.1519/JSC.0000000000003550. Moderate. Encoded: a triceps slot on every full-body, upper and push day; overhead extension first in the pool (Maeo 2023, part 2).
+- **Stretched-position curls.** Preacher curls in the initial (stretched) range, 0-68 degrees, grew the distal elbow flexors more (d = 0.89) than the final range (d = 0.23) over 8 weeks. Pedrosa et al. 2023, Sports 11(2):39, DOI 10.3390/sports11020039. Moderate (n=19 women). Encoded: incline dumbbell curl added and put first for intermediates.
+
+## Exercise order
+- **The first exercise progresses most.** Eleven studies: strength gains are largest in the exercises performed first; hypertrophy similar in either order. Nunes et al. 2021, Eur J Sport Sci 21:149, DOI 10.1080/17461391.2020.1733672. Moderate. Encoded: full-body day A opens with the squat, day B with a press, day C with a row; the warm-up ramp follows the opener.
+
+## Balance inside a day (structural, not a single paper)
+- A full-body day = one knee-led and one hip-led leg pattern, two pushes, two pulls, then arms, delts and core. Legs never outnumber the upper body inside a day. Chest trained from two angles across the week. The audit (`scripts/audit-programs.test.ts`) now enforces: direct arm work on every non-leg day of 45+ minutes, legs <= upper exercises per full-body day, the opener rotates, two different chest exercises when two days carry a press, and weekly floors for biceps, triceps, side delts and rear delts. Tolerances in `docs/AUDIT.md` part 3.

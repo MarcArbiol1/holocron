@@ -16,7 +16,7 @@ import { ageBracket, preferLowImpact, proteinTarget, weeklyCardioTarget } from '
 import { warmupMinutes } from './warmup'
 
 /** Bump when any rule below changes; the app rebuilds stored programs that carry an older number. */
-export const PROGRAM_VERSION = 5
+export const PROGRAM_VERSION = 6
 
 /* ---------- 1. equipment ---------- */
 
@@ -41,15 +41,20 @@ const POOLS: Record<Pattern, Pools> = {
   // Hinge = hamstring-led hip extension. Hip thrust / glute bridge live in the 'glute' pattern so a hinge slot always trains the hamstrings.
   hinge: { novice: ['romanianDeadlift', 'singleLegRdl', 'kettlebellSwing', 'backExtension'], intermediate: ['deadlift', 'romanianDeadlift', 'singleLegRdl', 'kettlebellSwing', 'backExtension'], advanced: ['deadlift', 'romanianDeadlift', 'singleLegRdl', 'kettlebellSwing', 'backExtension'] },
   lunge: same(['splitSquat', 'reverseLunge', 'stepUp']),
-  pushH: { novice: ['dbBenchPress', 'machineChestPress', 'pushUp', 'kneePushUp', 'benchPress'], intermediate: ['benchPress', 'dbBenchPress', 'inclineDbPress', 'dips', 'pushUp', 'machineChestPress'], advanced: ['benchPress', 'inclineDbPress', 'dips', 'dbBenchPress', 'pushUp'] },
-  pushV: { novice: ['dbShoulderPress', 'overheadPress'], intermediate: ['overheadPress', 'dbShoulderPress'], advanced: ['overheadPress', 'dbShoulderPress'] },
+  // Second and third options are different angles (flat, machine/incline), so repeated days train the chest from two angles.
+  pushH: { novice: ['dbBenchPress', 'machineChestPress', 'inclineDbPress', 'pushUp', 'declinePushUp', 'kneePushUp', 'benchPress'], intermediate: ['benchPress', 'inclineDbPress', 'dbBenchPress', 'inclineBenchPress', 'dips', 'pushUp', 'declinePushUp', 'machineChestPress'], advanced: ['benchPress', 'inclineBenchPress', 'inclineDbPress', 'dips', 'dbBenchPress', 'pushUp', 'declinePushUp'] },
+  pushV: { novice: ['dbShoulderPress', 'machineShoulderPress', 'overheadPress', 'pikePushUp'], intermediate: ['overheadPress', 'dbShoulderPress', 'machineShoulderPress', 'pikePushUp'], advanced: ['overheadPress', 'dbShoulderPress', 'machineShoulderPress', 'pikePushUp'] },
   pullH: { novice: ['seatedCableRow', 'chestSupportedRow', 'dbRow', 'invertedRow', 'barbellRow'], intermediate: ['barbellRow', 'seatedCableRow', 'dbRow', 'chestSupportedRow', 'invertedRow'], advanced: ['barbellRow', 'dbRow', 'seatedCableRow', 'chestSupportedRow', 'invertedRow'] },
-  pullV: { novice: ['latPulldown', 'bandPulldown', 'chinUp', 'pullUp'], intermediate: ['pullUp', 'latPulldown', 'chinUp', 'bandPulldown'], advanced: ['pullUp', 'chinUp', 'latPulldown', 'bandPulldown'] },
-  sideDelt: same(['lateralRaise']),
+  pullV: { novice: ['latPulldown', 'closeGripPulldown', 'bandPulldown', 'chinUp', 'pullUp'], intermediate: ['pullUp', 'latPulldown', 'chinUp', 'closeGripPulldown', 'bandPulldown'], advanced: ['pullUp', 'chinUp', 'latPulldown', 'closeGripPulldown', 'bandPulldown'] },
+  sideDelt: same(['lateralRaise', 'bandLateralRaise']),
   rearDelt: same(['facePull', 'reverseFly', 'bandPullApart']),
-  biceps: same(['dbCurl', 'barbellCurl', 'hammerCurl']),
-  // Overhead extension first: the long head grows ~40% more in its stretched position (Maeo 2023).
-  triceps: same(['overheadTricepsExt', 'tricepsPushdown', 'skullCrusher', 'benchDip']),
+  // Direct arm work: curls grew the elbow flexors twice as much as rows in a within-person trial (Mannarino 2021).
+  // The incline curl trains the stretched position (Pedrosa 2023); novices start with the plain curl.
+  biceps: { novice: ['dbCurl', 'inclineDbCurl', 'barbellCurl', 'hammerCurl', 'bandCurl'], intermediate: ['inclineDbCurl', 'barbellCurl', 'dbCurl', 'hammerCurl', 'bandCurl'], advanced: ['inclineDbCurl', 'barbellCurl', 'dbCurl', 'hammerCurl', 'bandCurl'] },
+  // Overhead extension first: the long head grows ~40% more in its stretched position (Maeo 2023). Pressing alone
+  // mostly grows the lateral head; an extension is needed for the long head (Brandão 2020).
+  triceps: same(['overheadTricepsExt', 'tricepsPushdown', 'skullCrusher', 'tricepsKickback', 'closeGripBench', 'bandPushdown', 'diamondPushUp', 'benchDip']),
+  chestIso: { novice: ['pecDeck', 'dumbbellFly'], intermediate: ['dumbbellFly', 'pecDeck'], advanced: ['dumbbellFly', 'pecDeck'] },
   quadIso: same(['legExtension', 'splitSquat', 'bodyweightSquat']),
   hamIso: same(['legCurl', 'romanianDeadlift', 'singleLegRdl', 'gluteBridge']),
   calf: same(['standingCalfRaise', 'seatedCalfRaise']),
@@ -66,8 +71,8 @@ const LOW_IMPACT_CARDIO = ['bike', 'inclineWalk', 'rower', 'elliptical', 'stairC
 
 /**
  * First exercise in the pool the user can do (and that fits their level), plus the alternatives.
- * `variant` 2 takes the second option when there is one, so the second upper/lower/push/pull/legs
- * day of the week uses different exercises (same patterns, different angles).
+ * `variant` 2 (or 3) takes the second (third) option when there is one, so the other days of the
+ * week that share a pattern use different exercises (same patterns, different angles).
  */
 export function pick(pattern: Pattern, profile: Profile, exclude: string[] = [], variant = 1): { id: string; alternatives: string[] } | null {
   const bracket = ageBracket(profile.age)
@@ -83,11 +88,13 @@ export function pick(pattern: Pattern, profile: Profile, exclude: string[] = [],
     return true
   })
   if (!ok.length) return null
-  // The second-visit alternative must be the same kind of exercise (compound stays compound,
-  // isolation stays isolation) so the compound-first order of the day is preserved.
+  // The variant must be the same kind of exercise (compound stays compound, isolation stays isolation)
+  // so the compound-first order of the day is preserved. Variant n = the n-th such option, or the last one
+  // available when the pool is shorter than that.
   const firstCat = EXERCISE_BY_ID[ok[0]].category
-  const altIdx = variant === 2 ? ok.findIndex((id, j) => j > 0 && EXERCISE_BY_ID[id].category === firstCat) : -1
-  const i = altIdx > 0 ? altIdx : 0
+  const sameKind = ok.filter((id) => EXERCISE_BY_ID[id].category === firstCat)
+  const chosen = sameKind[Math.min(Math.max(variant, 1), sameKind.length) - 1]
+  const i = ok.indexOf(chosen)
   return { id: ok[i], alternatives: ok.filter((_, j) => j !== i).slice(0, 3) }
 }
 
@@ -138,14 +145,26 @@ export function prescribe(ex: Exercise, profile: Profile): Prescription {
 
 type Template = { id: DayId; patterns: Pattern[]; muscles: Muscle[] }
 
+/**
+ * Balance rules (docs/AUDIT.md part 3, 24 Sep 2026):
+ *  - a full-body day is two leg patterns (one knee-led, one hip-led), two pushes, two pulls, then arms;
+ *    legs never outnumber the upper body inside a day.
+ *  - every lifting day that is not a leg day carries direct biceps or triceps work
+ *    (Mannarino 2021, Brandão 2020: pressing and rowing alone leave the arms behind).
+ *  - the first exercise rotates (squat day, press day, pull day): the lift done first progresses most (Nunes 2021).
+ *  - days that share a pattern use a different exercise for it (the n-th day that carries a pattern gets the
+ *    n-th option), so the chest is trained flat and incline and repeated days look different.
+ */
 const T: Record<string, Template> = {
-  fullA: { id: 'fullA', patterns: ['squat', 'pushH', 'pullH', 'hinge', 'pullV', 'coreAnti', 'calf'], muscles: ['quads', 'glutes', 'chest', 'lats', 'upperBack', 'hamstrings', 'abs'] },
-  fullB: { id: 'fullB', patterns: ['hinge', 'pushH', 'pullH', 'lunge', 'pushV', 'coreFlex', 'sideDelt'], muscles: ['hamstrings', 'glutes', 'chest', 'frontDelts', 'sideDelts', 'lats', 'upperBack', 'quads', 'abs'] },
-  fullC: { id: 'fullC', patterns: ['squat', 'pushH', 'pullV', 'glute', 'coreLateral', 'sideDelt', 'rearDelt'], muscles: ['quads', 'glutes', 'chest', 'lats', 'abs'] },
-  upper: { id: 'upper', patterns: ['pushH', 'pullH', 'pushV', 'pullV', 'pushH', 'sideDelt', 'biceps', 'triceps'], muscles: ['chest', 'lats', 'upperBack', 'frontDelts', 'sideDelts', 'biceps', 'triceps'] },
+  fullA: { id: 'fullA', patterns: ['squat', 'pushH', 'pullH', 'hinge', 'pushV', 'biceps', 'triceps', 'coreAnti', 'calf'], muscles: ['quads', 'glutes', 'hamstrings', 'chest', 'frontDelts', 'lats', 'upperBack', 'biceps', 'triceps', 'abs'] },
+  // Row before the vertical pull: a row is lats and upper back in one move, so a 45-minute day still trains both twice a week.
+  fullB: { id: 'fullB', patterns: ['pushH', 'hinge', 'pullH', 'lunge', 'pullV', 'triceps', 'sideDelt', 'biceps', 'coreFlex', 'rearDelt'], muscles: ['chest', 'hamstrings', 'glutes', 'quads', 'lats', 'upperBack', 'triceps', 'biceps', 'sideDelts', 'abs'] },
+  fullC: { id: 'fullC', patterns: ['pullH', 'pushH', 'lunge', 'glute', 'chestIso', 'biceps', 'rearDelt', 'sideDelt', 'hamIso', 'coreLateral'], muscles: ['lats', 'upperBack', 'chest', 'quads', 'glutes', 'hamstrings', 'rearDelts', 'sideDelts', 'abs'] },
+  // Curl, then side delts, then the triceps: pressing already gives the triceps 15+ weekly sets, the side delts get almost none.
+  upper: { id: 'upper', patterns: ['pushH', 'pullH', 'pushV', 'pullV', 'pushH', 'biceps', 'sideDelt', 'triceps', 'rearDelt'], muscles: ['chest', 'lats', 'upperBack', 'frontDelts', 'sideDelts', 'biceps', 'triceps'] },
   lower: { id: 'lower', patterns: ['squat', 'hinge', 'lunge', 'glute', 'calf', 'coreAnti', 'hamIso'], muscles: ['quads', 'hamstrings', 'glutes', 'calves', 'abs'] },
-  push: { id: 'push', patterns: ['pushH', 'pushV', 'pushH', 'sideDelt', 'triceps', 'triceps', 'coreAnti'], muscles: ['chest', 'frontDelts', 'sideDelts', 'triceps'] },
-  pull: { id: 'pull', patterns: ['pullV', 'pullH', 'pullV', 'rearDelt', 'biceps', 'biceps', 'coreFlex'], muscles: ['lats', 'upperBack', 'rearDelts', 'biceps'] },
+  push: { id: 'push', patterns: ['pushH', 'pushV', 'pushH', 'triceps', 'sideDelt', 'triceps', 'chestIso', 'coreAnti'], muscles: ['chest', 'frontDelts', 'sideDelts', 'triceps'] },
+  pull: { id: 'pull', patterns: ['pullV', 'pullH', 'pullV', 'biceps', 'rearDelt', 'biceps', 'coreFlex'], muscles: ['lats', 'upperBack', 'rearDelts', 'biceps'] },
   legs: { id: 'legs', patterns: ['squat', 'hinge', 'lunge', 'calf', 'coreLateral', 'hamIso', 'quadIso'], muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
   // The minimum effective dose day (Iversen 2021): one leg push, one hinge, one upper push, one upper pull, core, then cardio.
   health: { id: 'health', patterns: ['squat', 'hinge', 'pushH', 'pullH', 'coreAnti'], muscles: ['quads', 'glutes', 'hamstrings', 'chest', 'lats', 'upperBack', 'abs'] },
@@ -170,15 +189,43 @@ function plannedCardio(profile: Profile): number {
 }
 
 /**
+ * Patterns whose exercise changes from one day to the next when several days in the week carry them.
+ * Small isolation patterns are left alone (their pools are one or two moves deep and the first is the best).
+ */
+const VARIED: Set<Pattern> = new Set(['squat', 'hinge', 'lunge', 'pushH', 'pushV', 'pullH', 'pullV', 'biceps', 'triceps', 'chestIso'])
+/** Patterns that never vary: the only alternative is the band fallback for people without dumbbells. */
+const FIXED: Set<Pattern> = new Set(['sideDelt'])
+
+/**
+ * For each day of the rotation, which variant every pattern should use: the first day that carries a
+ * pattern gets option 1, the second option 2, and so on. Keys ending in '-2' (second visit of the same
+ * day type) get at least variant 2 for everything, so the second visit looks different throughout.
+ */
+export function variantPlan(keys: [string, string][]): Record<string, Partial<Record<Pattern, number>>> {
+  const seen: Partial<Record<Pattern, number>> = {}
+  const out: Record<string, Partial<Record<Pattern, number>>> = {}
+  for (const [tpl, key] of keys) {
+    const v: Partial<Record<Pattern, number>> = {}
+    for (const pat of new Set(T[tpl].patterns)) {
+      if (!VARIED.has(pat)) continue
+      seen[pat] = (seen[pat] ?? 0) + 1
+      v[pat] = seen[pat]
+    }
+    out[key] = v
+  }
+  return out
+}
+
+/**
  * Fill the day's patterns in priority order until the session length is used up.
  * Compound lifts come first in every template, so a short session keeps the lifts that
  * matter most (Iversen 2021: one leg push, one hinge, one upper push, one upper pull).
  * Cardio takes whatever time is left, up to the planned finisher; the weekly cardio
  * target is mostly met outside the gym (walking), which the recap tracks.
  */
-function buildDay(key: string, tpl: Template, profile: Profile, opts: { cardio?: number; minBlocks?: number; minCardio?: number } = {}): RoutineDay {
+function buildDay(key: string, tpl: Template, profile: Profile, opts: { cardio?: number; minBlocks?: number; minCardio?: number; variants?: Partial<Record<Pattern, number>> } = {}): RoutineDay {
   const older = ageBracket(profile.age) === 'older'
-  const variant = key.endsWith('-2') ? 2 : 1
+  const baseVariant = key.endsWith('-2') ? 2 : 1
   const warm = warmupMinutes(profile)
   const cardioWanted = opts.cardio ?? plannedCardio(profile)
   const minCardio = opts.minCardio ?? 0
@@ -189,7 +236,7 @@ function buildDay(key: string, tpl: Template, profile: Profile, opts: { cardio?:
   let time = 0
   let isoSeen = false
   for (const pattern of tpl.patterns) {
-    const choice = pick(pattern, profile, used, variant)
+    const choice = pick(pattern, profile, used, FIXED.has(pattern) ? 1 : Math.max(baseVariant, opts.variants?.[pattern] ?? 1))
     if (!choice) continue
     const ex = EXERCISE_BY_ID[choice.id]
     // Compound lifts come first (ACSM 2009, Simão 2012): once an isolation move is in, a late
@@ -309,11 +356,13 @@ export function buildProgram(profile: Profile): Program {
     cardio: { cardio: profile.goal === 'fatloss' ? 40 : 35, minCardio: 25, minBlocks: 0 },
     mobility: { cardio: 0, minBlocks: 4 },
   }
-  const days = rot.keys.map(([tpl, key]) => buildDay(key, T[tpl], profile, OPTS[tpl]))
+  const variants = variantPlan(rot.keys)
+  const days = rot.keys.map(([tpl, key]) => buildDay(key, T[tpl], profile, { ...OPTS[tpl], variants: variants[key] }))
   const bracket = ageBracket(profile.age)
   const notes: string[] = []
   notes.push(`${rot.label}: with ${profile.daysPerWeek} day${profile.daysPerWeek > 1 ? 's' : ''} a week this is the layout that trains every muscle at least twice a week when volume allows (Schoenfeld 2016).`)
   notes.push(`Each day is time-boxed to your ${profile.sessionMinutes} minutes including the warm-up. Big lifts are filled first, small ones only if time remains (Iversen 2021).`)
+  notes.push('Every lifting day is balanced: legs never outnumber the upper body inside a day, the chest is trained from two angles across the week, and each day that is not a leg day has direct biceps or triceps work, because pressing and rowing alone leave the arms behind (Mannarino 2021, Brandão 2020). The first exercise rotates between a squat, a press and a pull, since the lift done first progresses most (Nunes 2021).')
   notes.push('Train the stretched position: full range of motion, or partial reps in the stretched half of the movement, never the shortened half only (Wolf 2023, Kassiano 2023, Maeo 2023).')
   if (profile.goal === 'fatloss') notes.push('Fat loss: aim to lose 0.5 to 0.7% of body weight a week, eat about 2 g of protein per kg, and keep lifting; that is what keeps the muscle while the fat goes (Garthe 2011, Helms 2014, Sardeli 2018). Food does most of the work; exercise alone at guideline levels moves the scale 0 to 2 kg (Swift 2014).')
   if ((profile.cardioDay ?? true) && profile.daysPerWeek >= 3) notes.push(`One visit a week is a cardio day, alternating a steady session with 4x4 intervals, the protocol that raised fitness most in head-to-head trials (Helgerud 2007). Aerobic fitness is the strongest modifiable predictor of a long life (Mandsager 2018), lifting plus aerobic work beats either alone (Gorzelitz 2022), and cardio does not blunt muscle or strength gains (Schumann 2022). ${profile.daysPerWeek === 3 ? 'With three visits that leaves two lifting days, so muscle-growth volume runs below the usual target; add a day or switch the cardio day off if physique is the priority.' : ''}`)

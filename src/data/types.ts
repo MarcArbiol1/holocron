@@ -7,7 +7,7 @@ export type Pattern =
   | 'pushH' | 'pushV' | 'pullH' | 'pullV'
   | 'sideDelt' | 'rearDelt'
   | 'biceps' | 'triceps'
-  | 'quadIso' | 'hamIso' | 'calf' | 'glute'
+  | 'chestIso' | 'quadIso' | 'hamIso' | 'calf' | 'glute'
   | 'coreAnti' | 'coreFlex' | 'coreLateral'
   | 'cardio' | 'mobility' | 'balance'
 

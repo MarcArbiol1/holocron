@@ -586,4 +586,164 @@ const A: Record<string, Anim> = {}
   A.singleLegRdl = rep('singleLegRdl', 'side', top, bot, { props: [FLOOR, { type: 'dumbbell', at: 'wristFar' }], durations: [1100], holds: [200, 250] })
 }
 
+/* ---------------- ADDED 24 Sep 2026: chest, shoulder and arm balance ---------------- */
+{
+  // Incline barbell bench press: the same 30-degree body as the incline dumbbell press, bar to the upper chest.
+  const hip: [number, number] = [112, 128]
+  const base = pose({ hip, torso: 150, head: 150 })
+  const s = shoulderOf(hip, 150)
+  const onFloor = bothLegsTo(hip, [140, FLOOR_Y - 3], 1)
+  const top = { ...base, ...onFloor, ...bothArmsTo(s, [s[0] + 41 * Math.cos(Math.PI / 3), s[1] - 41 * Math.sin(Math.PI / 3)], -1) }
+  const bot = { ...base, ...onFloor, ...bothArmsTo(s, [s[0] + 10, s[1] + 1], -1) }
+  A.inclineBenchPress = rep('inclineBenchPress', 'side', top, bot, {
+    props: [FLOOR, { type: 'bench', x: 66, y: 121, w: 60, angle: 30 }, { type: 'box', x: 104, y: 131, w: 36, h: 7 }, { type: 'box', x: 118, y: 138, w: 6, h: FLOOR_Y - 138 }, { type: 'barbell', at: 'wrists' }],
+    durations: [1000],
+  })
+}
+{
+  // Dumbbell fly, seen from above: lying on the bench, arms open wide then meet over the chest.
+  // Arms that rise toward the viewer shorten in projection (k goes through zero and comes out inward).
+  const hip: [number, number] = [100, 118]
+  const base = pose({ hip, torso: 90, head: 90, legNear: limb(262, 275, 330, 1, 0.45) })
+  const wide = { ...base, armNear: limb(0, 0, undefined, 1, 0.85) }
+  const together = { ...base, armNear: limb(0, 0, undefined, -0.25, -0.2) }
+  A.dumbbellFly = rep('dumbbellFly', 'front', wide, together, {
+    props: [{ type: 'box', x: 86, y: 52, w: 28, h: 118 }, { type: 'dumbbell', at: 'wristNear' }, { type: 'dumbbell', at: 'wristFar' }],
+    mirror: true,
+    durations: [1000],
+  })
+}
+{
+  // Pec deck, front view: seated, arms level with the shoulders swing forward until the handles meet.
+  const hip: [number, number] = [100, 128]
+  const base = pose({ hip, torso: 90, head: 90, legNear: limb(280, 268, 300, 0.4, 1) })
+  const open = { ...base, armNear: limb(0, 0, undefined, 1, 0.9) }
+  const closed = { ...base, armNear: limb(0, 0, undefined, -0.2, -0.25) }
+  A.pecDeck = rep('pecDeck', 'front', open, closed, {
+    props: [FLOOR, { type: 'box', x: 94, y: 62, w: 12, h: 66 }, { type: 'box', x: 82, y: 128, w: 36, h: 8 }, { type: 'box', x: 97, y: 136, w: 6, h: FLOOR_Y - 136 }, { type: 'handle', at: 'wristNear' }, { type: 'handle', at: 'wristFar' }],
+    mirror: true,
+    durations: [1000],
+  })
+}
+{
+  // Machine shoulder press, front view: seated, handles from ear level to straight arms overhead.
+  const hip: [number, number] = [100, 128]
+  const sNear: [number, number] = [100 + LEN.shoulderW, 128 - LEN.torso]
+  const base = pose({ hip, torso: 90, head: 90, legNear: limb(280, 268, 300, 0.4, 1) })
+  const bot = { ...base, armNear: armTo(sNear, [sNear[0] + 24, sNear[1] - 16], -1) }
+  const top = { ...base, armNear: armTo(sNear, [sNear[0] + 5, sNear[1] - 40], -1) }
+  A.machineShoulderPress = rep('machineShoulderPress', 'front', bot, top, {
+    props: [FLOOR, { type: 'box', x: 94, y: 62, w: 12, h: 66 }, { type: 'box', x: 82, y: 128, w: 36, h: 8 }, { type: 'box', x: 97, y: 136, w: 6, h: FLOOR_Y - 136 }, { type: 'handle', at: 'wristNear' }, { type: 'handle', at: 'wristFar' }],
+    mirror: true,
+    durations: [1000],
+  })
+}
+{
+  // Band lateral raise: the dumbbell lateral raise body, band under the feet.
+  const sNear: [number, number] = [100 + LEN.shoulderW, STAND_HIP_Y - LEN.torso]
+  const bot = pose({ hip: [100, STAND_HIP_Y], ...legs(268, 268, 300) })
+  bot.armNear = armTo(sNear, [sNear[0] + 8, sNear[1] + 40], -1)
+  const top = pose({ hip: [100, STAND_HIP_Y], ...legs(268, 268, 300) })
+  top.armNear = armTo(sNear, [sNear[0] + 39, sNear[1] + 1], 1)
+  A.bandLateralRaise = rep('bandLateralRaise', 'front', bot, top, {
+    props: [FLOOR, { type: 'band', from: [100, FLOOR_Y - 2], to: 'wristNear' }, { type: 'band', from: [100, FLOOR_Y - 2], to: 'wristFar' }],
+    mirror: true,
+    durations: [1000],
+  })
+}
+{
+  // Incline dumbbell curl: sat back on a 55-degree bench, arms hang behind the body, only the forearms curl.
+  const hip: [number, number] = [96, 128]
+  const base = pose({ hip, torso: 125, head: 110 })
+  Object.assign(base, bothLegsTo(hip, [132, FLOOR_Y - 3], 1))
+  const bot = { ...base, ...arms(270, 270) }
+  const top = { ...base, ...arms(270, 50) }
+  A.inclineDbCurl = rep('inclineDbCurl', 'side', bot, top, {
+    props: [FLOOR, { type: 'bench', x: 60, y: 112, w: 44, angle: 55 }, { type: 'box', x: 88, y: 131, w: 30, h: 7 }, { type: 'box', x: 100, y: 138, w: 6, h: FLOOR_Y - 138 }, { type: 'dumbbell', at: 'wristNear' }, { type: 'dumbbell', at: 'wristFar' }],
+    durations: [900],
+  })
+}
+{
+  // Band curl: standing on the band, elbows pinned, forearms curl up.
+  const bot = pose({ ...arms(270, 270) })
+  const top = pose({ ...arms(270, 66) })
+  A.bandCurl = rep('bandCurl', 'side', bot, top, { props: [FLOOR, { type: 'band', from: [96, FLOOR_Y - 2], to: 'wrists' }], durations: [800] })
+}
+{
+  // Close-grip bench press: the bench press body with the hands over the lower chest so the elbows stay tucked.
+  const benchY = 120
+  const base = pose({ hip: [108, benchY - 4], torso: 180, head: 180 })
+  const s = shoulderOf(base.hip, base.torso)
+  const onFloor = bothLegsTo(base.hip, [134, FLOOR_Y - 3], 1)
+  const top = { ...base, ...onFloor, ...bothArmsTo(s, [s[0] + 12, s[1] - 40], -1) }
+  const bot = { ...base, ...onFloor, ...bothArmsTo(s, [s[0] + 18, s[1] - 1], -1) }
+  A.closeGripBench = rep('closeGripBench', 'side', top, bot, {
+    props: [FLOOR, { type: 'bench', x: 48, y: benchY, w: 100 }, { type: 'barbell', at: 'wrists' }],
+    durations: [1000],
+  })
+}
+{
+  // Diamond push-up: the push-up body with the hands under the chest and the elbows folding back along the ribs.
+  const mk = (shoulderY: number) => {
+    const shoulder: [number, number] = [76, shoulderY]
+    const hip: [number, number] = [shoulder[0] + 31.9, shoulder[1] + 11.6]
+    const p = pose({ hip, torso: 160, head: 160 })
+    Object.assign(p, bothArmsTo(shoulder, [88, FLOOR_Y - 3], 1))
+    Object.assign(p, bothLegsTo(hip, [162.5, 156.4], 1, 270))
+    return p
+  }
+  A.diamondPushUp = rep('diamondPushUp', 'side', mk(125), mk(150), { durations: [900] })
+}
+{
+  // Triceps kickback: hinged forward, upper arms held level with the floor, forearms swing back to straight.
+  const hip: [number, number] = [80, 118]
+  const base = pose({ hip, torso: 22, head: 30 })
+  Object.assign(base, bothLegsTo(hip, [92, FLOOR_Y - 3], 1))
+  const bent = { ...base, ...arms(180, 270) }
+  const straight = { ...base, ...arms(180, 180) }
+  A.tricepsKickback = rep('tricepsKickback', 'side', bent, straight, { props: [FLOOR, { type: 'dumbbell', at: 'wristNear' }, { type: 'dumbbell', at: 'wristFar' }], durations: [900] })
+}
+{
+  // Band pushdown: the cable pushdown body with a band from a high anchor.
+  const hip: [number, number] = [86, STAND_HIP_Y]
+  const base = pose({ hip, torso: 88, head: 85 })
+  Object.assign(base, bothLegsTo(hip, [90, FLOOR_Y - 3], 1))
+  const up = { ...base, ...arms(268, 30) }
+  const down = { ...base, ...arms(268, 292) }
+  A.bandPushdown = rep('bandPushdown', 'side', up, down, {
+    props: [FLOOR, { type: 'box', x: 147, y: 10, w: 6, h: 14 }, { type: 'band', from: [150, 22], to: 'wrists' }],
+    durations: [800],
+  })
+}
+
+{
+  // Decline push-up: the push-up body with the feet on a box, so the line from ankles to shoulders slopes down to the hands.
+  const ankle: [number, number] = [160, 138]
+  const mk = (shoulder: [number, number]) => {
+    const d = (Math.atan2(shoulder[1] - ankle[1], ankle[0] - shoulder[0]) * 180) / Math.PI // world direction shoulder -> ankle
+    const hip: [number, number] = [shoulder[0] + 34 * Math.cos((d * Math.PI) / 180), shoulder[1] - 34 * Math.sin((d * Math.PI) / 180)]
+    const torso = d + 180
+    const p = pose({ hip, torso, head: torso })
+    Object.assign(p, bothArmsTo(shoulder, [74, FLOOR_Y - 3], 1))
+    Object.assign(p, bothLegsTo(hip, ankle, 1, 270))
+    return p
+  }
+  A.declinePushUp = rep('declinePushUp', 'side', mk([70, 133]), mk([70, 152]), { props: [FLOOR, { type: 'box', x: 148, y: 140, w: 30, h: FLOOR_Y - 140 }], durations: [900] })
+}
+
+{
+  // Pike push-up: an upside-down V, hips high, the head lowers toward the floor between the hands.
+  const hip: [number, number] = [128, 118]
+  const feet: [number, number] = [155, FLOOR_Y - 3]
+  const hands: [number, number] = [86, FLOOR_Y - 3]
+  const mk = (torso: number) => {
+    const p = pose({ hip, torso, head: 250 })
+    const s = shoulderOf(hip, torso)
+    Object.assign(p, bothArmsTo(s, hands, 1))
+    Object.assign(p, bothLegsTo(hip, feet, 1, 300))
+    return p
+  }
+  A.pikePushUp = rep('pikePushUp', 'side', mk(192), mk(215), { durations: [900] })
+}
+
 export const STRENGTH = A

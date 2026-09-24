@@ -73,6 +73,20 @@ describe('buildProgram', () => {
     expect(sets.chest!).toBeGreaterThanOrEqual(6)
     expect(sets.lats!).toBeGreaterThanOrEqual(6)
   })
+  it('full-body days are balanced: direct arm work, two chest angles, no leg-only openers', () => {
+    const prog = buildProgram({ ...base, daysPerWeek: 3 })
+    const lifting = prog.days.filter((d) => d.muscles.length > 0)
+    expect(lifting.length).toBe(2)
+    for (const d of lifting) {
+      const patterns = d.blocks.map((b) => EXERCISE_BY_ID[b.exerciseId].pattern)
+      expect(patterns.some((x) => x === 'biceps' || x === 'triceps'), `${d.key} has arm work`).toBe(true)
+    }
+    const chest = lifting.map((d) => d.blocks.find((b) => EXERCISE_BY_ID[b.exerciseId].pattern === 'pushH')?.exerciseId)
+    expect(new Set(chest).size).toBe(2)
+    const openers = lifting.map((d) => EXERCISE_BY_ID[d.blocks[0].exerciseId].pattern)
+    expect(openers).toContain('pushH')
+  })
+
   it('cardio day carries two alternating sessions and wall squats for the health goal', () => {
     const p = buildProgram({ ...base, daysPerWeek: 4, goal: 'health' })
     const cardio = p.days.find((d) => d.id === 'cardio')!

@@ -2,7 +2,15 @@
 
 Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 
-## State as of 16 Sep 2026 (late night: health + physique research encoded)
+## State as of 24 Sep 2026 (balance review)
+
+- **Marc's first real feedback after using it:** "almost all of the workouts are leg located, very little chest, biceps, triceps". Confirmed by simulation and fixed; write-up in `docs/AUDIT.md` part 3, papers in `docs/EVIDENCE.md` part 3, three new Codex rules (`arms`, `balance`, `firstlift`).
+- **Root causes:** the full-body templates had no arm slot at all, both full-body days used the same chest exercise, every day opened with a leg lift, and the audit only tracked six big muscles.
+- **Fixes:** full-body templates rebuilt (2 legs, 2 pushes, 2 pulls, arms, delts); per-pattern variants across the rotation (`variantPlan` in `program.ts`); 14 new exercises with animations (incline barbell press, dumbbell fly, pec deck, machine shoulder press, pike push-up, decline push-up, close-grip pulldown, incline curl, band curl, close-grip bench, diamond push-up, kickback, band pushdown, band lateral raise); new `chestIso` pattern; `PROGRAM_VERSION` 6 so phones rebuild their plan on next load.
+- **Audit now enforces balance** (arm work on every non-leg day, legs <= upper per full-body day, rotating opener, two chest angles, small-muscle floors); tolerances documented. 32 tests, 0 violations, build green, `npm run check-anims` 0 missing.
+- **Not done:** not committed or pushed (Marc's call); not yet tested on the phone.
+
+## Earlier: 16 Sep 2026 (late night: health + physique research encoded)
 
 - **Second research pass** (26 rules, `docs/EVIDENCE.md` part 2) encoded: dedicated cardio day (Mount Doom) in every plan of 3+ days with two alternating sessions (The Long Road steady / The Eruption 4x4 intervals, 65+ steady only), wall squat holds on the cardio day for the health goal (blood pressure), fat-loss protein 2 g/kg + 0.5-0.7%/week rate in profile facts, steps target, muscle-memory ramp-back in `progression.ts`, stretched-position cues, overhead triceps first, second-visit day variants, strength marker tile in the recap, and **The Codex** page (`/codex`, `src/data/codex.ts`, 42 rules) linked from Plan and Settings.
 - **Gotcha that cost an hour:** a stale `vite` process on the wildcard address kept serving an old module graph on :5173 ("Invalid hook call", blank root). `pkill -f vite` before starting a dev server.

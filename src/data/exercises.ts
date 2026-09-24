@@ -143,6 +143,13 @@ export const EXERCISES: Exercise[] = [
     mistakes: ['Hips sagging or piking up', 'Half reps'],
   }),
   ex({
+    id: 'declinePushUp', name: 'Decline push-up (feet raised)', pattern: 'pushH', category: 'compound',
+    primary: ['chest'], secondary: ['frontDelts', 'triceps', 'abs'], equipment: ['bodyweight', 'bench'], level: 2, anim: 'declinePushUp',
+    steps: ['Put your feet on a bench or step and your hands on the floor a little wider than your shoulders.', 'Lower your chest toward the floor with the elbows about 45 degrees from the body.', 'Press back up to straight arms. The higher the feet, the more it works the upper chest and shoulders.'],
+    cues: ['One straight line from head to heels', 'Brace the stomach so the hips do not sag'],
+    mistakes: ['Hips sagging', 'Head craning forward to reach the floor'],
+  }),
+  ex({
     id: 'kneePushUp', name: 'Knee push-up', pattern: 'pushH', category: 'compound',
     primary: ['chest', 'triceps'], secondary: ['frontDelts', 'abs'], equipment: ['bodyweight'], level: 1, anim: 'kneePushUp',
     steps: ['Same as a push-up but with your knees on the floor and body straight from head to knees.', 'Lower the chest to the floor and press up.'],
@@ -164,6 +171,27 @@ export const EXERCISES: Exercise[] = [
     mistakes: ['Going so deep the shoulders hurt', 'Swinging the legs'],
   }),
 
+  ex({
+    id: 'inclineBenchPress', name: 'Incline barbell bench press', pattern: 'pushH', category: 'compound',
+    primary: ['chest'], secondary: ['frontDelts', 'triceps'], equipment: ['barbell', 'bench'], level: 2, anim: 'inclineBenchPress',
+    steps: ['Set the bench to about 30 degrees and the safeties just below chest height, then lie back with your eyes under the bar.', 'Grip a little wider than your shoulders with the thumbs wrapped, and unrack the bar over your upper chest.', 'Lower the bar to the top of the chest, just below the collarbones, elbows about 45 degrees from your sides.', 'Press up and slightly back so the bar finishes over your shoulders.'],
+    cues: ['Feet flat, shoulder blades pulled back and down', 'Bar touches the upper chest, never the neck'],
+    mistakes: ['Bench set too steep, which turns it into a shoulder press', 'Bouncing the bar off the chest', 'Elbows flared straight out to the sides'],
+  }),
+  ex({
+    id: 'dumbbellFly', name: 'Dumbbell chest fly', pattern: 'chestIso', category: 'isolation',
+    primary: ['chest'], secondary: ['frontDelts'], equipment: ['dumbbell', 'bench'], level: 1, anim: 'dumbbellFly',
+    steps: ['Lie on a flat bench with a light dumbbell in each hand pressed above your chest, palms facing each other.', 'With a slight bend in the elbows, open your arms in a wide arc until you feel a stretch across the chest and the hands are about level with the shoulders.', 'Bring the dumbbells back together above the chest along the same arc, as if hugging a tree.'],
+    cues: ['Elbows stay slightly bent the whole way', 'Go light: the stretch at the bottom is the part that grows', 'Squeeze the chest at the top instead of clanging the weights'],
+    mistakes: ['Bending the elbows more on the way up, which turns it into a press', 'Dropping heavy weights far below the bench, which strains the shoulders'],
+  }),
+  ex({
+    id: 'pecDeck', name: 'Machine chest fly (pec deck)', pattern: 'chestIso', category: 'isolation',
+    primary: ['chest'], secondary: ['frontDelts'], equipment: ['machine'], level: 1, anim: 'pecDeck',
+    steps: ['Set the seat so the handles sit at chest height and your upper arms are level with the floor.', 'Sit tall with your back on the pad and hold the handles with a slight bend in the elbows.', 'Bring the handles together in front of your chest in a wide arc and squeeze for a second.', 'Open back out slowly until you feel a stretch across the chest.'],
+    cues: ['Shoulders down, chest up', 'A slow arc, not a push'],
+    mistakes: ['Rounding forward to bring the handles together', 'Letting the weight stack bang at the bottom'],
+  }),
   /* ================= VERTICAL PUSH ================= */
   ex({
     id: 'overheadPress', name: 'Barbell overhead press', pattern: 'pushV', category: 'compound',
@@ -201,6 +229,27 @@ export const EXERCISES: Exercise[] = [
     mistakes: ['Standing up during the rep'],
   }),
 
+  ex({
+    id: 'machineShoulderPress', name: 'Machine shoulder press', pattern: 'pushV', category: 'compound',
+    primary: ['frontDelts', 'triceps'], secondary: ['sideDelts', 'upperBack'], equipment: ['machine'], level: 1, anim: 'machineShoulderPress',
+    steps: ['Set the seat so the handles start about level with your ears and your back is flat on the pad.', 'Press the handles up until the arms are straight, without slamming the elbows locked.', 'Lower slowly back to ear level.'],
+    cues: ['Ribs down, no arching off the pad', 'Head stays still'],
+    mistakes: ['Handles set too low, which strains the shoulders at the bottom', 'Bouncing the stack'],
+  }),
+  ex({
+    id: 'pikePushUp', name: 'Pike push-up', pattern: 'pushV', category: 'compound',
+    primary: ['frontDelts', 'triceps'], secondary: ['sideDelts', 'upperBack', 'abs'], equipment: ['bodyweight'], level: 2, anim: 'pikePushUp',
+    steps: ['Start in a push-up position, then walk your feet in and push your hips high so your body makes an upside-down V.', 'Bend the elbows and lower the top of your head toward the floor between your hands.', 'Press back up until the arms are straight. Put your feet on a step to make it harder.'],
+    cues: ['Hips stay high the whole time', 'Elbows point back at about 45 degrees, not straight out'],
+    mistakes: ['Letting the hips drop, which turns it into a push-up', 'Looking forward instead of at the floor'],
+  }),
+  ex({
+    id: 'bandLateralRaise', name: 'Band lateral raise', pattern: 'sideDelt', category: 'isolation',
+    primary: ['sideDelts'], secondary: [], equipment: ['band'], level: 1, anim: 'bandLateralRaise',
+    steps: ['Stand on the middle of a band and hold an end in each hand at your sides.', 'Raise both arms out to the sides until they are level with your shoulders, elbows slightly bent.', 'Lower slowly. Hold the band lower down, or widen your stance, to make it harder.'],
+    cues: ['Lead with the elbows', 'Hands level with the floor, never tipped down'],
+    mistakes: ['Shrugging the shoulders up', 'Swinging the body'],
+  }),
   /* ================= HORIZONTAL PULL ================= */
   ex({
     id: 'barbellRow', name: 'Barbell row', pattern: 'pullH', category: 'compound',
@@ -261,6 +310,13 @@ export const EXERCISES: Exercise[] = [
     mistakes: ['Pulling behind the neck', 'Leaning far back and using body weight'],
   }),
   ex({
+    id: 'closeGripPulldown', name: 'Close-grip lat pulldown', pattern: 'pullV', category: 'compound',
+    primary: ['lats'], secondary: ['upperBack', 'biceps', 'forearms'], equipment: ['cable', 'machine'], level: 1, anim: 'latPulldown',
+    steps: ['Attach the V-handle (palms facing each other) and sit with your thighs under the pad.', 'Lean back a touch, chest up, and pull the handle to your upper chest with the elbows driving down and back.', 'Let the arms straighten fully at the top so the lats stretch before the next rep.'],
+    cues: ['Elbows finish beside the ribs', 'Full stretch at the top'],
+    mistakes: ['Leaning far back and rowing it', 'Shrugging the shoulders up at the top'],
+  }),
+  ex({
     id: 'bandPulldown', name: 'Band pulldown', pattern: 'pullV', category: 'compound',
     primary: ['lats'], secondary: ['upperBack', 'biceps'], equipment: ['band'], level: 1, anim: 'latPulldown',
     steps: ['Anchor a band high. Kneel or sit and grip it overhead.', 'Pull the elbows down to your sides.', 'Return slowly.'],
@@ -291,6 +347,20 @@ export const EXERCISES: Exercise[] = [
     mistakes: ['Leaning back to cheat the weight up'],
   }),
   ex({
+    id: 'inclineDbCurl', name: 'Incline dumbbell curl', pattern: 'biceps', category: 'isolation',
+    primary: ['biceps'], secondary: ['forearms'], equipment: ['dumbbell', 'bench'], level: 1, anim: 'inclineDbCurl',
+    steps: ['Set the bench to about 45 to 60 degrees and sit back with a dumbbell in each hand, arms hanging straight down behind your body, palms forward.', 'Curl both dumbbells up without moving the upper arms.', 'Lower slowly all the way to straight arms and feel the stretch in the biceps at the bottom.'],
+    cues: ['Upper arms stay behind the body: that stretched position is what grows more', 'Shoulders stay back on the pad'],
+    mistakes: ['Swinging the elbows forward to help', 'Cutting the bottom of the movement short'],
+  }),
+  ex({
+    id: 'bandCurl', name: 'Band curl', pattern: 'biceps', category: 'isolation',
+    primary: ['biceps'], secondary: ['forearms'], equipment: ['band'], level: 1, anim: 'bandCurl',
+    steps: ['Stand on the middle of a band with both feet and hold an end in each hand, palms forward.', 'Curl your hands to your shoulders without moving the upper arms.', 'Lower slowly to straight arms. Widen your stance to make it harder.'],
+    cues: ['Elbows pinned to your sides', 'Straighten fully at the bottom'],
+    mistakes: ['Leaning back to finish the rep', 'Stopping short of straight arms'],
+  }),
+  ex({
     id: 'tricepsPushdown', name: 'Cable triceps pushdown', pattern: 'triceps', category: 'isolation',
     primary: ['triceps'], secondary: [], equipment: ['cable'], level: 1, anim: 'tricepsPushdown',
     steps: ['Hold a bar or rope at chest height with elbows tucked to your sides.', 'Push down until your arms are straight.', 'Return until the forearms are just above parallel.'],
@@ -319,6 +389,34 @@ export const EXERCISES: Exercise[] = [
     mistakes: ['Going too deep and pinching the shoulders'],
   }),
 
+  ex({
+    id: 'closeGripBench', name: 'Close-grip bench press', pattern: 'triceps', category: 'compound',
+    primary: ['triceps'], secondary: ['chest', 'frontDelts'], equipment: ['barbell', 'bench'], level: 2, anim: 'closeGripBench',
+    steps: ['Lie on the bench with the safeties set and grip the bar about shoulder-width apart, not narrower, thumbs wrapped.', 'Unrack and lower the bar to your lower chest with the elbows tucked close to your sides.', 'Press back up, driving with the triceps, until the arms are straight.'],
+    cues: ['Elbows brush the ribs on the way down', 'Wrists stacked over the elbows'],
+    mistakes: ['Hands too close together, which strains the wrists', 'Elbows flaring out'],
+  }),
+  ex({
+    id: 'diamondPushUp', name: 'Diamond push-up', pattern: 'triceps', category: 'compound',
+    primary: ['triceps'], secondary: ['chest', 'frontDelts', 'abs'], equipment: ['bodyweight'], level: 2, anim: 'diamondPushUp',
+    steps: ['Get into a push-up position with your hands together under your chest, thumbs and index fingers touching in a diamond.', 'Lower your chest to your hands with the elbows tucked close to the body.', 'Press back up until the arms are straight. Do them from the knees if you cannot do 8 from the toes.'],
+    cues: ['One straight line from head to heels', 'Elbows point back, not out'],
+    mistakes: ['Hips sagging or piking up', 'Head dropping toward the floor'],
+  }),
+  ex({
+    id: 'tricepsKickback', name: 'Dumbbell triceps kickback', pattern: 'triceps', category: 'isolation',
+    primary: ['triceps'], secondary: [], equipment: ['dumbbell'], level: 1, anim: 'tricepsKickback',
+    steps: ['Hold a light dumbbell in each hand and hinge forward with a flat back, upper arms alongside the body and parallel to the floor.', 'Straighten the arms until they are fully extended behind you, then pause.', 'Lower the forearms back to 90 degrees without letting the elbows drop.'],
+    cues: ['Upper arms stay still and high', 'A fully straight arm at the top is the working part'],
+    mistakes: ['Swinging the weights', 'Elbows dropping as you tire'],
+  }),
+  ex({
+    id: 'bandPushdown', name: 'Band triceps pushdown', pattern: 'triceps', category: 'isolation',
+    primary: ['triceps'], secondary: [], equipment: ['band'], level: 1, anim: 'bandPushdown',
+    steps: ['Anchor a band above head height (a door anchor or a bar) and hold both ends with the elbows tucked to your sides, forearms just above parallel.', 'Push down until your arms are straight, then squeeze.', 'Return slowly with the elbows still in place.'],
+    cues: ['Only the forearms move', 'Stand tall instead of leaning on the band'],
+    mistakes: ['Elbows drifting forward', 'Standing so close that the band goes slack at the bottom'],
+  }),
   /* ================= LEG ISOLATION ================= */
   ex({
     id: 'legExtension', name: 'Leg extension', pattern: 'quadIso', category: 'isolation',

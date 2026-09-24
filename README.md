@@ -27,7 +27,7 @@ scroll). Fonts are bundled so it looks identical offline. Motion respects "reduc
 - **THE FORGE**: a warm-up that pops up before every session. Easy cardio, dynamic moves for the joints about to work, then two ramp-up sets computed from your last working weight. No long static stretches (they weaken the next lift).
 - **Logs the session** with a rest timer, next-weight suggestions (double progression), swaps, and a cardio finisher.
 - **The Palantir**: week and month recap, a muscle heat-map of sets versus target, under-trained muscles, new records, and the full archive.
-- **The Archive**: 79 exercises, each with an animated stick figure drawn by the app itself, written steps, cues, and common mistakes.
+- **The Archive**: 96 exercises, each with an animated stick figure drawn by the app itself, written steps, cues, and common mistakes.
 - **The Order**: twelve levels earned by showing up and doing hard sets. Consistency out-earns heroics on purpose.
 
 ## Run it
