@@ -2,7 +2,13 @@
 
 Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 
-## State as of 24 Sep 2026, late (new logo, login, logo loader)
+## State as of 24 Sep 2026, latest (accounts live; icon 10% bigger)
+
+- **Supabase is live** for the deployed app: project `qljlxfcupuoasloowrxs`, table + RLS, URLs, GitHub OAuth app + provider, repo secrets `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (the publishable key). Details and what to do if any of it needs redoing: `docs/ACCOUNTS.md`. Nobody has signed in yet; Marc's first sign-in is the real test of the merge/push path (`src/lib/sync.ts`).
+- Home-screen icon regenerated with the logo at 68% of the square (was 62%).
+- The gstack `browse --headed` handoff worked well for dashboards that need Marc's login: he logs in, `browse --headed resume`, then drive with `eval` scripts (clicking by text through the DOM is more reliable than @refs on the Supabase dashboard, which re-numbers after every save).
+
+## Earlier on 24 Sep 2026, late (new logo, login, logo loader)
 
 - **Logo:** Marc's hand-drawn cube-with-star PNG (Downloads/063EC7F0...PNG) is now the icon, recoloured only: ink darkness became opacity, ice body on the night background. `public/icon-*.png`, `apple-touch-icon.png`, `favicon.png` (the SVG is gone), `logo.png` (transparent), and `public/logo/{top,star,left,right}.png`: the four drawn pieces, split along the drawing's own gaps (the top face is open on its lower right; the left panel is a U hanging off the shared edge; the star's right arm was cut from the right edge along that edge's line). The split script is not in the repo; regenerate from the source PNG with scipy connected components at alpha > 0.95 if the logo ever changes.
 - **Logo loader** (`src/components/LogoLoader.tsx`, CSS in `index.css`): two cartoon jumps with squash and stretch, pieces drift apart and spin, snap back with overshoot; 4.4 s loop, transforms only. Shown for one loop after onboarding saves (`Onboarding.tsx`), and on the Login page while an account's archive is fetched. `LogoMark` is the small logo in the Home header and on Login.
