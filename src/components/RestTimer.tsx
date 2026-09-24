@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react'
 import { haptic } from '../lib/haptics'
 import { beep as liveBeep, liveActive, updateLive } from '../lib/live'
 
-/** Floating glass countdown shown after a set is ticked. Buzzes (where the phone allows) and optionally beeps when done. */
-export function RestTimer({ endsAt, onDone, onSkip, sound, label = 'Rest' }: { endsAt: number; onDone: () => void; onSkip: () => void; sound: boolean; label?: string }) {
+/**
+ * Floating glass countdown shown after a set is ticked. Lives at the app level (App.tsx), so it keeps
+ * counting when you open an exercise page mid-rest. Buzzes where the phone allows and optionally beeps.
+ */
+export function RestTimer({ endsAt, startedAt, onDone, onSkip, sound, label = 'Rest' }: { endsAt: number; startedAt: number; onDone: () => void; onSkip: () => void; sound: boolean; label?: string }) {
   const [left, setLeft] = useState(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)))
   useEffect(() => {
     const id = setInterval(() => {
@@ -22,12 +25,21 @@ export function RestTimer({ endsAt, onDone, onSkip, sound, label = 'Rest' }: { e
   }, [endsAt, onDone, sound, label])
   const m = Math.floor(left / 60)
   const s = left % 60
+  const total = Math.max(1, endsAt - startedAt)
+  const frac = Math.max(0, Math.min(1, (left * 1000) / total))
   return (
-    <div className="fixed inset-x-0 z-40 px-5" style={{ bottom: 'max(6.75rem, calc(env(safe-area-inset-bottom) + 6rem))' }}>
-      <div className="glass mx-auto flex max-w-[390px] items-center gap-3 rounded-[1.8rem] px-5 py-3">
-        <div className="kicker">Rest</div>
-        <div className="flex-1 font-mono text-2xl font-bold tabular-nums text-ice">{m}:{String(s).padStart(2, '0')}</div>
-        <button className="btn-ghost py-1.5 px-3 text-sm" onClick={() => { haptic(); onSkip() }}>Skip</button>
+    <div className="rest-timer fixed inset-x-0 z-40 px-5" style={{ bottom: 'max(6.75rem, calc(env(safe-area-inset-bottom) + 6rem))' }}>
+      <div className="glass mx-auto max-w-[390px] overflow-hidden rounded-[1.8rem]">
+        <div className="flex items-center gap-3 px-5 py-3">
+          <div className="min-w-0 flex-1">
+            <div className="kicker truncate">Rest · {label}</div>
+            <div className="font-mono text-2xl font-bold tabular-nums text-ice">{m}:{String(s).padStart(2, '0')}</div>
+          </div>
+          <button className="btn-ghost py-1.5 px-3 text-sm" onClick={() => { haptic(); onSkip() }}>Skip</button>
+        </div>
+        <div className="h-1 w-full" style={{ background: 'color-mix(in oklab, var(--ice) 8%, transparent)' }}>
+          <div className="h-full origin-left bg-glow transition-transform duration-300 ease-linear" style={{ transform: `scaleX(${frac})` }} />
+        </div>
       </div>
     </div>
   )

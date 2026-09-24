@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Check, ChevronRight, Plus } from 'lucide-react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { EXERCISE_BY_ID, EXERCISES } from '../data/exercises'
@@ -8,10 +8,11 @@ import { isAvailable } from '../engine/program'
 import { useStore } from '../store/store'
 import { Figure } from '../components/Figure'
 import { ExercisePicker } from '../components/ExercisePicker'
-import { RestTimer } from '../components/RestTimer'
+import { NumField } from '../components/NumField'
+import { Confirm } from '../components/Confirm'
 import { Page, fmtDuration } from '../components/ui'
 import { HapticSwitch, haptic } from '../lib/haptics'
-import { keepAwake, liveActive, startLive, stopLive } from '../lib/live'
+import { liveActive, startLive } from '../lib/live'
 import { cardioSessionFor } from '../engine/cardio'
 import type { Block, CardioLog } from '../data/types'
 
@@ -31,14 +32,13 @@ export default function Session() {
   const addExercise = useStore((s) => s.addExercise)
   const removeExercise = useStore((s) => s.removeExercise)
   const setCardio = useStore((s) => s.setCardio)
+  const setRest = useStore((s) => s.setRest)
   const finishSession = useStore((s) => s.finishSession)
   const discardSession = useStore((s) => s.discardSession)
   const lastXp = useStore((s) => s.lastXp)
 
   const [picker, setPicker] = useState<{ mode: 'add' } | { mode: 'swap'; idx: number; only?: string[] } | null>(null)
-  const [rest, setRest] = useState<number | null>(null)
-  const [confirm, setConfirm] = useState<'finish' | 'discard' | null>(null)
-  const [, tick] = useState(0)
+  const [confirm, setConfirm] = useState<'finish' | 'discard' | { remove: number } | null>(null)
 
   const day = useMemo(() => program?.days.find((d) => d.key === active?.dayKey), [program, active?.dayKey])
   const blockFor = useCallback((exerciseId: string): Block => {
@@ -49,16 +49,6 @@ export default function Session() {
     return { exerciseId, sets: 3, ...p, seconds: ex?.timed ? 30 : undefined, alternatives: [] }
   }, [day])
 
-  const onRestDone = useCallback(() => setRest(null), [])
-  const [restLabel, setRestLabel] = useState('Rest')
-
-  // Keep the screen on while logging (iOS 18.4+ in installed apps); re-request when the app comes back.
-  useEffect(() => {
-    keepAwake(true)
-    const onVis = () => { if (document.visibilityState === 'visible') keepAwake(true) }
-    document.addEventListener('visibilitychange', onVis)
-    return () => { document.removeEventListener('visibilitychange', onVis); keepAwake(false); stopLive() }
-  }, [])
   if (!active || !profile) return <Navigate to={!active && lastXp ? '/done' : '/'} replace />
 
   const cardioOptions = EXERCISES.filter((e) => e.category === 'cardio' && isAvailable(e, profile.equipment))
@@ -113,13 +103,13 @@ export default function Session() {
                     <td className="py-1 font-mono text-xs font-bold text-dim">{j + 1}</td>
                     {!ex.timed && (
                       <td className="py-1 pr-1">
-                        <input className="input py-2 px-2 text-center font-mono" type="number" inputMode="decimal" step="0.5" placeholder={sug.weightKg ? String(sug.weightKg) : '-'} value={s.weightKg ?? ''}
-                          onChange={(e) => setSet(idx, j, { weightKg: e.target.value === '' ? undefined : Number(e.target.value) })} />
+                        <NumField className="input py-2 px-2 text-center font-mono" mode="decimal" ariaLabel="Weight in kg" placeholder={sug.weightKg ? String(sug.weightKg) : '-'} value={s.weightKg}
+                          onChange={(v) => setSet(idx, j, { weightKg: v })} />
                       </td>
                     )}
                     <td className="py-1 pr-1">
-                      <input className="input py-2 px-2 text-center font-mono" type="number" inputMode="numeric" placeholder={ex.timed ? String(block.seconds ?? 30) : String(sug.reps)} value={ex.timed ? (s.seconds ?? '') : (s.reps ?? '')}
-                        onChange={(e) => setSet(idx, j, ex.timed ? { seconds: e.target.value === '' ? undefined : Number(e.target.value) } : { reps: e.target.value === '' ? undefined : Number(e.target.value) })} />
+                      <NumField className="input py-2 px-2 text-center font-mono" mode="numeric" ariaLabel={ex.timed ? 'Seconds' : 'Reps'} placeholder={ex.timed ? String(block.seconds ?? 30) : String(sug.reps)} value={ex.timed ? s.seconds : s.reps}
+                        onChange={(v) => setSet(idx, j, ex.timed ? { seconds: v } : { reps: v })} />
                     </td>
                     <td className="py-1 pr-1">
                       <select className="input py-2 px-1 text-center font-mono" value={s.rir ?? ''} onChange={(e) => setSet(idx, j, { rir: e.target.value === '' ? undefined : Number(e.target.value) })}>
@@ -139,12 +129,11 @@ export default function Session() {
                         }
                         setSet(idx, j, patch)
                         if (done && settings.restTimer && block.restSec > 0) {
-                          setRestLabel(ex.name)
                           // Must start inside the tap (autoplay rules); the timer then updates the card.
                           if (settings.liveTimer && !liveActive()) startLive(`Rest ${Math.floor(block.restSec / 60)}:${String(block.restSec % 60).padStart(2, '0')}`, ex.name)
-                          setRest(Date.now() + block.restSec * 1000)
+                          const now = Date.now()
+                          setRest({ startedAt: now, endsAt: now + block.restSec * 1000, label: ex.name })
                         }
-                        tick((n) => n + 1)
                       }} className={`relative grid size-10 place-items-center rounded-xl border transition-transform active:scale-90 ${s.done ? 'bg-glow text-night' : 'text-dim'}`}
                         style={s.done ? { borderColor: 'var(--glow)', boxShadow: '0 6px 18px color-mix(in oklab, var(--glow) 28%, transparent)' } : { borderColor: 'color-mix(in oklab, var(--ice) 12%, transparent)', background: 'color-mix(in oklab, var(--panel) 85%, transparent)' }}>
                         <HapticSwitch />
@@ -159,7 +148,7 @@ export default function Session() {
               <button className="btn-ghost py-1.5 px-3 text-xs" onClick={() => { haptic(); addSet(idx) }}>+ set</button>
               {log.sets.length > 1 && <button className="btn-ghost py-1.5 px-3 text-xs" onClick={() => { haptic(); removeSet(idx, log.sets.length - 1) }}>– set</button>}
               <button className="btn-ghost py-1.5 px-3 text-xs" onClick={() => { haptic(); setPicker({ mode: 'swap', idx, only: alts }) }}>Swap</button>
-              <button className="btn-ghost ml-auto py-1.5 px-3 text-xs text-dim" onClick={() => { haptic('warning'); removeExercise(idx) }}>Remove</button>
+              <button className="btn-ghost ml-auto py-1.5 px-3 text-xs text-dim" onClick={() => { haptic('warning'); setConfirm({ remove: idx }) }}>Remove</button>
             </div>
           </section>
         )
@@ -215,20 +204,14 @@ export default function Session() {
           onPick={(id) => { if (picker.mode === 'swap') swapExercise(picker.idx, id); else addExercise(id); setPicker(null) }}
         />
       )}
-      {rest !== null && <RestTimer endsAt={rest} onDone={onRestDone} onSkip={() => setRest(null)} sound={settings.sound} label={restLabel} />}
-      {confirm && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-night/80 p-5 backdrop-blur-sm sm:items-center" onClick={() => setConfirm(null)}>
-          <div className="glass w-full max-w-sm space-y-3 rounded-[1.5rem] p-5" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold">{confirm === 'finish' ? 'Finish the session?' : 'Terminate the workout?'}</h3>
-            <p className="text-sm text-dim">{confirm === 'finish' ? `${hardSets} sets ticked. Unticked sets are dropped and XP is awarded now.` : 'Everything logged in this session is lost.'}</p>
-            <div className="grid grid-cols-2 gap-3">
-              <button className="btn-ghost" onClick={() => { haptic(); setConfirm(null) }}>Back</button>
-              {confirm === 'finish'
-                ? <button className="btn-primary" onClick={finish}>Finish</button>
-                : <button className="btn-danger" onClick={() => { haptic('warning'); discardSession(); nav('/', { replace: true }) }}>Terminate</button>}
-            </div>
-          </div>
-        </div>
+      {confirm === 'finish' && (
+        <Confirm title="Finish the session?" body={`${hardSets} sets ticked. Unticked sets are dropped and XP is awarded now.`} confirmLabel="Finish" onConfirm={finish} onCancel={() => setConfirm(null)} />
+      )}
+      {confirm === 'discard' && (
+        <Confirm title="Terminate the workout?" body="Everything logged in this session is lost." confirmLabel="Terminate" danger onConfirm={() => { discardSession(); nav('/', { replace: true }) }} onCancel={() => setConfirm(null)} />
+      )}
+      {confirm && typeof confirm === 'object' && (
+        <Confirm title="Remove this exercise?" body={(() => { const n = active.exercises[confirm.remove]?.sets.filter((s) => s.done).length ?? 0; return `${EXERCISE_BY_ID[active.exercises[confirm.remove]?.exerciseId]?.name ?? 'It'} leaves this session${n ? ` with its ${n} ticked set${n === 1 ? '' : 's'}` : ''}.` })()} confirmLabel="Remove" danger onConfirm={() => { removeExercise(confirm.remove); setConfirm(null) }} onCancel={() => setConfirm(null)} />
       )}
     </Page>
   )

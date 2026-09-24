@@ -4,6 +4,7 @@ import { profileFacts } from '../engine/profile'
 import { useStore } from '../store/store'
 import { NAMES } from '../theme/names'
 import { Page } from '../components/ui'
+import { Confirm } from '../components/Confirm'
 import { haptic } from '../lib/haptics'
 import { updateApp } from '../lib/update'
 import { PROGRAM_VERSION } from '../engine/program'
@@ -39,6 +40,7 @@ export default function Settings() {
   const [imp, setImp] = useState('')
   const [msg, setMsg] = useState('')
   const [updating, setUpdating] = useState(false)
+  const [askErase, setAskErase] = useState(false)
 
   const update = async () => {
     haptic()
@@ -102,8 +104,9 @@ export default function Settings() {
 
       <section className="aether-rise rise-4" aria-labelledby="danger-title">
         <h2 id="danger-title" className="text-lg font-semibold">Danger</h2>
-        <button className="btn-danger mt-3 w-full" onClick={() => { haptic('warning'); if (confirm('Erase profile and every session on this phone?')) { reset(); nav('/onboarding', { replace: true }) } }}>Erase everything</button>
+        <button className="btn-danger mt-3 w-full" onClick={() => { haptic('warning'); setAskErase(true) }}>Erase everything</button>
       </section>
+      {askErase && <Confirm title="Erase everything?" body="Profile, plan and every session on this phone are deleted. Copy a backup first if you want them back." confirmLabel="Erase" danger onConfirm={() => { reset(); nav('/onboarding', { replace: true }) }} onCancel={() => setAskErase(false)} />}
 
       <p className="aether-rise rise-5 px-1 text-[11px] leading-relaxed text-dim">
         {NAMES.app} is a hobby project and not medical advice. Names of pages and levels are nods to films and books; no affiliation. All exercise animations are drawn by the app itself. The science behind every rule is listed in the repo (docs/EVIDENCE.md), and in the app under <Link to="/codex" className="text-glow">The Codex</Link>.

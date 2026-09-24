@@ -9,6 +9,7 @@ import { useStore } from '../store/store'
 import { NAMES } from '../theme/names'
 import { DAY_COLOR, LevelPill, LiquidDock, ProfileButton, dayTitle, fmtDate, fmtDuration, todayLabel } from '../components/ui'
 import { Figure } from '../components/Figure'
+import { Confirm } from '../components/Confirm'
 import { HapticSwitch, haptic } from '../lib/haptics'
 import type { RoutineDay } from '../data/types'
 
@@ -136,6 +137,7 @@ export default function Home() {
           <ul className="mt-3 space-y-2">
             {rec.day.blocks.map((b) => {
               const ex = EXERCISE_BY_ID[b.exerciseId]
+              if (!ex) return null
               return (
                 <li key={b.exerciseId}>
                   <Link to={`/exercise/${ex.id}`} onClick={() => haptic()} className="workout-row flex items-center gap-3 rounded-2xl p-2.5">
@@ -199,16 +201,7 @@ export default function Home() {
         </div>
       </div>
       {confirmEnd && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-4" style={{ background: 'color-mix(in oklab, var(--night) 80%, transparent)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }} onClick={() => setConfirmEnd(false)}>
-          <div className="metric-panel w-full max-w-sm space-y-3 p-5" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold">Terminate the workout?</h3>
-            <p className="text-sm text-dim">Everything logged in this session is lost. To keep it, open the session and press Finish.</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button className="btn-ghost" onClick={() => setConfirmEnd(false)}>Back</button>
-              <button className="btn-danger" onClick={() => { haptic('warning'); discardSession(); setConfirmEnd(false) }}>Terminate</button>
-            </div>
-          </div>
-        </div>
+        <Confirm title="Terminate the workout?" body="Everything logged in this session is lost. To keep it, open the session and press Finish." confirmLabel="Terminate" danger onConfirm={() => { discardSession(); setConfirmEnd(false) }} onCancel={() => setConfirmEnd(false)} />
       )}
       <LiquidDock />
     </main>

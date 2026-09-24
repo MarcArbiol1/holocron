@@ -28,6 +28,8 @@ export interface State {
   forged: boolean
   settings: Settings
   lastXp?: XpBreakdown
+  /** The running rest countdown, kept here so it survives leaving the session page. */
+  rest?: { endsAt: number; startedAt: number; label: string }
 
   setProfile: (p: Profile) => void
   startSession: (day: RoutineDay, title: string, reason: string, extraCardio: number, warmup?: WarmupPlan) => void
@@ -44,6 +46,7 @@ export interface State {
   discardSession: () => void
   deleteSession: (id: string) => void
   setSettings: (s: Partial<Settings>) => void
+  setRest: (r: State['rest']) => void
   importData: (json: string) => void
   exportData: () => string
   reset: () => void
@@ -73,7 +76,7 @@ export const useStore = create<State>()(
         const planned = cardioSessionFor(day, get().sessions)
         if (planned) session.cardio = [{ exerciseId: planned.exerciseId, minutes: planned.minutes, intensity: planned.intensity }]
         else if (plannedCardio > 0) session.cardio = [{ exerciseId: '', minutes: 0, intensity: 'moderate' }]
-        set({ active: session, activeWarmup: warmup, forged: false, lastXp: undefined })
+        set({ active: session, activeWarmup: warmup, forged: false, lastXp: undefined, rest: undefined })
       },
       setForged: (v) => set({ forged: v }),
       updateActive: (fn) => { const a = get().active; if (a) set({ active: fn(a) }) },
@@ -106,24 +109,25 @@ export const useStore = create<State>()(
         }
         const xp = sessionXp(done, sessions, profile)
         done.xp = xp.total
-        set({ sessions: [...sessions, done], active: undefined, activeWarmup: undefined, forged: false, lastXp: xp })
+        set({ sessions: [...sessions, done], active: undefined, activeWarmup: undefined, forged: false, lastXp: xp, rest: undefined })
         return xp
       },
-      discardSession: () => set({ active: undefined, activeWarmup: undefined, forged: false }),
+      discardSession: () => set({ active: undefined, activeWarmup: undefined, forged: false, rest: undefined }),
       deleteSession: (id) => set({ sessions: get().sessions.filter((s) => s.id !== id) }),
       setSettings: (s) => set({ settings: { ...get().settings, ...s } }),
+      setRest: (rest) => set({ rest }),
 
       importData: (json) => {
         const data = JSON.parse(json)
         if (!data || !Array.isArray(data.sessions)) throw new Error('Not a Holocron backup')
-        set({ profile: data.profile, program: data.profile ? buildProgram(data.profile) : undefined, sessions: data.sessions, settings: data.settings ?? get().settings, active: undefined })
+        set({ profile: data.profile, program: data.profile ? buildProgram(data.profile) : undefined, sessions: data.sessions, settings: data.settings ?? get().settings, active: undefined, rest: undefined })
       },
       exportData: () => JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), profile: get().profile, sessions: get().sessions, settings: get().settings }, null, 2),
-      reset: () => set({ profile: undefined, program: undefined, sessions: [], active: undefined, forged: false, lastXp: undefined }),
+      reset: () => set({ profile: undefined, program: undefined, sessions: [], active: undefined, forged: false, lastXp: undefined, rest: undefined }),
     }),
     {
       name: 'holocron-v1',
-      partialize: (s) => ({ profile: s.profile, program: s.program, sessions: s.sessions, active: s.active, activeWarmup: s.activeWarmup, forged: s.forged, settings: s.settings, lastXp: s.lastXp }),
+      partialize: (s) => ({ profile: s.profile, program: s.program, sessions: s.sessions, active: s.active, activeWarmup: s.activeWarmup, forged: s.forged, settings: s.settings, lastXp: s.lastXp, rest: s.rest }),
     },
   ),
 )

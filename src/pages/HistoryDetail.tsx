@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { EXERCISE_BY_ID } from '../data/exercises'
 import { useStore } from '../store/store'
 import { Page, fmtDate, fmtDuration } from '../components/ui'
 import { Figure } from '../components/Figure'
+import { Confirm } from '../components/Confirm'
 import { haptic } from '../lib/haptics'
 
 export default function HistoryDetail() {
@@ -11,6 +13,7 @@ export default function HistoryDetail() {
   const nav = useNavigate()
   const s = useStore((st) => st.sessions.find((x) => x.id === id))
   const del = useStore((st) => st.deleteSession)
+  const [ask, setAsk] = useState(false)
   if (!s) return <Navigate to="/palantir" replace />
   const setsDone = s.exercises.reduce((a, e) => a + e.sets.filter((x) => x.done).length, 0)
   return (
@@ -50,10 +53,11 @@ export default function HistoryDetail() {
       )}
       <button
         className="aether-rise rise-3 btn-danger w-full"
-        onClick={() => { haptic('warning'); if (confirm('Delete this session from the archive?')) { del(s.id); nav('/palantir', { replace: true }) } }}
+        onClick={() => { haptic('warning'); setAsk(true) }}
       >
         <Trash2 className="size-4" /> Delete session
       </button>
+      {ask && <Confirm title="Delete this session?" body="It leaves the archive and its XP is gone." confirmLabel="Delete" danger onConfirm={() => { del(s.id); nav('/palantir', { replace: true }) }} onCancel={() => setAsk(false)} />}
     </Page>
   )
 }

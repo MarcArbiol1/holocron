@@ -49,6 +49,7 @@ export default function Routines() {
               <ul className="mt-3 space-y-2">
                 {d.blocks.map((b) => {
                   const ex = EXERCISE_BY_ID[b.exerciseId]
+                  if (!ex) return null
                   return (
                     <li key={b.exerciseId}>
                       <Link to={`/exercise/${ex.id}`} onClick={() => haptic()} className="workout-row flex items-center gap-3 rounded-2xl p-2.5">

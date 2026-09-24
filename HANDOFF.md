@@ -2,7 +2,17 @@
 
 Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 
-## State as of 24 Sep 2026, evening (second round: the Arnold split)
+## State as of 24 Sep 2026, night (code review pass: bugs + smoothness)
+
+- Marc asked for a bug and UX review. Fixed and browser-verified (headless Chromium at 390x844, onboarding -> plan -> Forge -> session -> exercise page -> finish; zero console errors):
+  - **Animations:** `Figure` no longer re-renders through React per frame. One shared rAF loop (`src/anim/ticker.ts`) patches SVG attributes in place; figures pause off-screen (IntersectionObserver), in hidden tabs, and under reduced motion. `Figure` is memoised. Before: eight figures on the session page = 240 React renders a second.
+  - **Decimals:** `<input type=number>` ate the trailing dot, so 12.5 kg could not be typed. New `NumField` (text + inputMode) accepts "12,5" and "12.5", selects the old value on focus (with the mouse-up guard so the tap does not undo it). Used in the session table and onboarding.
+  - **Rest timer** now lives in the store (`rest`) and renders from `App.tsx`, so it keeps counting when you open an exercise page mid-rest; it shows the exercise name and a progress bar. Wake lock and the live card are managed at app level for the whole workout.
+  - **Confirm sheets** (`src/components/Confirm.tsx`) replace `window.confirm` (which showed the site address) for delete/erase, and "Remove exercise" now asks first.
+  - Scroll to top on new pages; the back button falls back to Home when there is no history; guards against a stale plan referencing a removed exercise; library search is a real search field; onboarding hints match the new splits.
+- **Verify animations locally:** `npx vite preview --port 4173`, then in the browse tool read an SVG attribute twice a second apart.
+
+## Earlier on 24 Sep 2026, evening (second round: the Arnold split)
 
 - Marc's reply to the first round: still no arms day, no leg extension on Mordor, the Fellowship repeats the other days. Rebuilt the split for intermediate/advanced lifters with weights and 60-min sessions: **chest and back (The Citadel) / legs (Mordor) / shoulders and arms (The Armoury) / cardio**; 5 days adds The Watchtower. New `forearm` pattern (wrist curl, reverse curl, farmer's carry) with animations; leg extension on the leg day; `PROGRAM_VERSION` 7; equipment fix (a bench no longer unlocks barbell lifts). Frequency rule rewritten on Schoenfeld 2019 (volume-matched frequency is a wash). Details: `docs/AUDIT.md` second round, `docs/EVIDENCE.md` part 3.
 - **If Marc says he still sees the old plan:** the PWA is `autoUpdate`, but the first open after a deploy can still show the cached build; close the app fully and reopen. Settings -> Edit profile -> Save also rebuilds.

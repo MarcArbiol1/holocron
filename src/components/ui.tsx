@@ -16,7 +16,7 @@ export function Page({ title, sub, children, back, right, kicker }: { title: str
         <header className="aether-rise flex items-end justify-between gap-3">
           <div className="min-w-0 flex items-end gap-3">
             {back && (
-              <button onClick={() => { haptic(); nav(-1) }} aria-label="Back" className="profile-orbit grid size-11 shrink-0 place-items-center rounded-full bg-panel text-glow transition-transform active:scale-95">
+              <button onClick={() => { haptic(); if ((window.history.state?.idx ?? 0) > 0) nav(-1); else nav('/', { replace: true }) }} aria-label="Back" className="profile-orbit grid size-11 shrink-0 place-items-center rounded-full bg-panel text-glow transition-transform active:scale-95">
                 <ChevronLeft className="size-5" />
               </button>
             )}

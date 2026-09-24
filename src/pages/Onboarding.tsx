@@ -4,6 +4,7 @@ import type { EquipmentAccess, Experience, Goal, Profile, Sex } from '../data/ty
 import { useStore } from '../store/store'
 import { NAMES } from '../theme/names'
 import { Page } from '../components/ui'
+import { NumField } from '../components/NumField'
 import { haptic } from '../lib/haptics'
 
 const SELECTED: React.CSSProperties = {
@@ -49,9 +50,9 @@ export default function Onboarding() {
             <input className="input" value={p.name} onChange={(e) => up('name', e.target.value)} placeholder="What should we call you?" />
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <div><label className="label">Age</label><input className="input font-mono" type="number" inputMode="numeric" value={p.age} onChange={(e) => up('age', Number(e.target.value))} /></div>
-            <div><label className="label">Height cm</label><input className="input font-mono" type="number" inputMode="numeric" value={p.heightCm} onChange={(e) => up('heightCm', Number(e.target.value))} /></div>
-            <div><label className="label">Weight kg</label><input className="input font-mono" type="number" inputMode="decimal" value={p.weightKg} onChange={(e) => up('weightKg', Number(e.target.value))} /></div>
+            <div><label className="label">Age</label><NumField className="input font-mono" mode="numeric" ariaLabel="Age" value={p.age || undefined} onChange={(v) => up('age', v ?? 0)} /></div>
+            <div><label className="label">Height cm</label><NumField className="input font-mono" mode="numeric" ariaLabel="Height in cm" value={p.heightCm || undefined} onChange={(v) => up('heightCm', v ?? 0)} /></div>
+            <div><label className="label">Weight kg</label><NumField className="input font-mono" mode="decimal" ariaLabel="Weight in kg" value={p.weightKg || undefined} onChange={(v) => up('weightKg', v ?? 0)} /></div>
           </div>
           <div>
             <label className="label">Sex</label>
@@ -71,7 +72,7 @@ export default function Onboarding() {
           </div>
           <div>
             <label className="label">Days per week you will actually show up</label>
-            <Choice<Profile['daysPerWeek']> value={p.daysPerWeek} onChange={(v) => up('daysPerWeek', v)} options={[1, 2, 3, 4, 5, 6].map((n) => ({ v: n as Profile['daysPerWeek'], label: `${n} day${n > 1 ? 's' : ''}`, hint: n <= 2 ? 'Full body each time' : n === 3 ? 'Full body or upper/lower/full' : n === 4 ? 'Upper / lower' : 'Push / pull / legs' }))} />
+            <Choice<Profile['daysPerWeek']> value={p.daysPerWeek} onChange={(v) => up('daysPerWeek', v)} options={[1, 2, 3, 4, 5, 6].map((n) => ({ v: n as Profile['daysPerWeek'], label: `${n} day${n > 1 ? 's' : ''}`, hint: n <= 2 ? 'Full body each time' : n === 3 ? 'Two lifting days + cardio' : n === 4 ? 'Chest & back / legs / arms + cardio' : n === 5 ? 'Adds an upper day' : 'Push / pull / legs + cardio' }))} />
             <p className="mt-2 text-[11px] leading-snug text-dim">Be honest. The plan is built for the days you really have, and it adapts if you miss some.</p>
           </div>
           <div>
@@ -94,7 +95,7 @@ export default function Onboarding() {
           <div>
             <label className="label">Separate cardio day</label>
             <Choice<'yes' | 'no'> value={(p.cardioDay ?? true) ? 'yes' : 'no'} onChange={(v) => up('cardioDay', v === 'yes')} options={[
-              { v: 'yes', label: 'Yes, one visit is cardio', hint: 'Mount Doom: 30 to 40 min, lifting days still hit every muscle twice' },
+              { v: 'yes', label: 'Yes, one visit is cardio', hint: 'Mount Doom: 30 to 40 min; the lifting days keep their full volume' },
               { v: 'no', label: 'No, short finishers only', hint: 'All visits are lifting days' },
             ]} />
             <p className="text-[11px] text-dim mt-1.5">Needs 3 or more days. Aerobic work plus lifting carries the lowest mortality risk in the big cohorts.</p>

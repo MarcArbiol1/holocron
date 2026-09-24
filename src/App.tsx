@@ -1,8 +1,10 @@
-import { useEffect } from 'react'
-import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { useCallback, useEffect } from 'react'
+import { HashRouter, Navigate, Route, Routes, useLocation, useNavigationType } from 'react-router-dom'
 import { PROGRAM_VERSION } from './engine/program'
 import { useStore } from './store/store'
 import { LiquidDock } from './components/ui'
+import { RestTimer } from './components/RestTimer'
+import { keepAwake, stopLive } from './lib/live'
 import Home from './pages/Home'
 import Onboarding from './pages/Onboarding'
 import Forge from './pages/Forge'
@@ -17,20 +19,46 @@ import Order from './pages/Order'
 import Settings from './pages/Settings'
 import Codex from './pages/Codex'
 
+/** New pages open at the top; going back keeps the browser's own position. */
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  const type = useNavigationType()
+  useEffect(() => { if (type !== 'POP') window.scrollTo({ top: 0 }) }, [pathname, type])
+  return null
+}
+
 function Shell() {
   const profile = useStore((s) => s.profile)
   const program = useStore((s) => s.program)
   const setProfile = useStore((s) => s.setProfile)
+  const active = useStore((s) => s.active)
+  const rest = useStore((s) => s.rest)
+  const setRest = useStore((s) => s.setRest)
+  const sound = useStore((s) => s.settings.sound)
   const loc = useLocation()
+  const clearRest = useCallback(() => setRest(undefined), [setRest])
+
   // Rebuild the stored plan whenever the builder's rules have changed since it was saved.
   useEffect(() => {
     if (profile && program?.version !== PROGRAM_VERSION) setProfile(profile)
   }, [profile, program?.version, setProfile])
+
+  // Keep the screen on for the whole workout, whichever page is open; re-request when the app comes back.
+  const activeId = active?.id
+  useEffect(() => {
+    if (!activeId) { keepAwake(false); stopLive(); return }
+    keepAwake(true)
+    const onVis = () => { if (document.visibilityState === 'visible') keepAwake(true) }
+    document.addEventListener('visibilitychange', onVis)
+    return () => { document.removeEventListener('visibilitychange', onVis); keepAwake(false) }
+  }, [activeId])
+
   // Home renders its own dock inside its layout; other pages get it from here.
   const hideNav = ['/', '/onboarding', '/forge', '/done'].includes(loc.pathname)
   if (!profile && loc.pathname !== '/onboarding') return <Navigate to="/onboarding" replace />
   return (
     <>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/onboarding" element={<Onboarding />} />
@@ -48,6 +76,7 @@ function Shell() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       {!hideNav && <LiquidDock />}
+      {active && rest && <RestTimer endsAt={rest.endsAt} startedAt={rest.startedAt} label={rest.label} sound={sound} onDone={clearRest} onSkip={clearRest} />}
     </>
   )
 }

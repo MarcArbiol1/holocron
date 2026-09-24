@@ -27,7 +27,7 @@ export default function Library() {
     <Page title={NAMES.pages.library} kicker={`${EXERCISES.length} exercises, every one animated`}>
       <div className="aether-rise rise-1 relative">
         <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-dim" />
-        <input className="input pl-10" placeholder="Search by name or muscle" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input type="search" enterKeyHint="search" autoCapitalize="off" autoCorrect="off" className="input pl-10" placeholder="Search by name or muscle" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
       <div className="aether-rise rise-2 -mx-6 flex gap-1.5 overflow-x-auto px-6 pb-1">
         {FILTERS.map((x) => (
