@@ -6,7 +6,7 @@ import { NAMES } from '../theme/names'
 import { Page } from '../components/ui'
 import { Confirm } from '../components/Confirm'
 import { cloudEnabled, signOut } from '../lib/cloud'
-import { syncAgain } from '../lib/sync'
+import { cancelPendingPush, syncAgain } from '../lib/sync'
 import { haptic } from '../lib/haptics'
 import { updateApp } from '../lib/update'
 import { PROGRAM_VERSION } from '../engine/program'
@@ -18,7 +18,7 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
       role="switch"
       aria-checked={checked}
       onClick={() => { haptic(); onChange(!checked) }}
-      className="flex w-full items-center justify-between py-1 text-left"
+      className="press-soft flex w-full items-center justify-between py-1 text-left"
     >
       <span className="text-sm text-ice/90">{label}</span>
       <span
@@ -53,6 +53,14 @@ export default function Settings() {
     const r = await updateApp()
     setUpdating(false)
     setMsg(r === 'updated' ? 'New build found, reloading.' : r === 'current' ? `Already on the latest build (${__BUILD__}).` : 'Updates are handled by the browser here; reload the page.')
+  }
+
+  // Signed in, an erase must not reach the cloud: sign out first (which cancels any pending push),
+  // then clear the phone. Otherwise the empty phone would be synced over the account's archive.
+  const erase = async () => {
+    if (account) { cancelPendingPush(); await signOut(); useStore.getState().setAccount(undefined) }
+    reset()
+    nav('/onboarding', { replace: true })
   }
 
   const copy = async () => {
@@ -117,7 +125,7 @@ export default function Settings() {
           <button className="btn-ghost w-full" onClick={copy}>Copy backup to clipboard</button>
           <textarea className="input h-28 font-mono text-xs" placeholder="Paste a backup here to restore" value={imp} onChange={(e) => setImp(e.target.value)} />
           <button className="btn-ghost w-full" disabled={!imp.trim()} onClick={() => { haptic(); try { importData(imp); setMsg('Restored.'); setImp(''); nav('/') } catch (e) { setMsg(`Could not restore: ${(e as Error).message}`) } }}>Restore from pasted backup</button>
-          {msg && <p className="text-xs text-glow">{msg}</p>}
+          {msg && <p key={msg} className="swap-in text-xs text-glow">{msg}</p>}
         </div>
       </section>
 
@@ -133,7 +141,7 @@ export default function Settings() {
         <h2 id="danger-title" className="text-lg font-semibold">Danger</h2>
         <button className="btn-danger mt-3 w-full" onClick={() => { haptic('warning'); setAskErase(true) }}>Erase everything</button>
       </section>
-      {askErase && <Confirm title="Erase everything?" body="Profile, plan and every session on this phone are deleted. Copy a backup first if you want them back." confirmLabel="Erase" danger onConfirm={() => { reset(); nav('/onboarding', { replace: true }) }} onCancel={() => setAskErase(false)} />}
+      {askErase && <Confirm title="Erase everything?" body={account ? 'Profile, plan and every session on this phone are deleted, and you are signed out. Your account keeps its copy: sign in again to get it back.' : 'Profile, plan and every session on this phone are deleted. Copy a backup first if you want them back.'} confirmLabel="Erase" danger onConfirm={erase} onCancel={() => setAskErase(false)} />}
 
       <p className="aether-rise rise-5 px-1 text-[11px] leading-relaxed text-dim">
         {NAMES.app} is a hobby project and not medical advice. Names of pages and levels are nods to films and books; no affiliation. All exercise animations are drawn by the app itself. The science behind every rule is listed in the repo (docs/EVIDENCE.md), and in the app under <Link to="/codex" className="text-glow">The Codex</Link>.

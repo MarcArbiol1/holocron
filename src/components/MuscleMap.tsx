@@ -48,7 +48,7 @@ function Body({ regions, level, onPick }: { regions: Region[]; level: (m: Muscle
         const color = GROUP_COLOR[MUSCLES[r.m].group]
         const fill = v <= 0 ? UNTRAINED : color
         const opacity = v <= 0 ? 1 : 0.35 + 0.65 * v
-        const common = { fill, opacity, stroke: EDGE, strokeWidth: 0.6, onClick: () => onPick?.(r.m), style: { cursor: onPick ? 'pointer' : 'default' } }
+        const common = { fill, opacity, stroke: EDGE, strokeWidth: 0.6, className: 'muscle-region', onClick: () => onPick?.(r.m), style: { cursor: onPick ? 'pointer' : 'default', animationDelay: `${150 + i * 18}ms` } }
         if (r.el === 'ellipse') { const [cx, cy, rx, ry] = r.a as number[]; return <ellipse key={i} cx={cx} cy={cy} rx={rx} ry={ry} {...common} /> }
         if (r.el === 'rect') { const [x, y, w, h, rx] = r.a as number[]; return <rect key={i} x={x} y={y} width={w} height={h} rx={rx} {...common} /> }
         return <path key={i} d={r.a as string} {...common} />
@@ -60,7 +60,7 @@ function Body({ regions, level, onPick }: { regions: Region[]; level: (m: Muscle
 export function MuscleMap({ levels, onPick }: { levels: Partial<Record<Muscle, number>>; onPick?: (m: Muscle) => void }) {
   const level = (m: Muscle) => levels[m] ?? 0
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="muscle-map-in grid grid-cols-2 gap-3">
       <div>
         <Body regions={FRONT} level={level} onPick={onPick} />
         <p className="kicker mt-1 text-center text-[10px]">front</p>

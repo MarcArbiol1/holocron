@@ -6,6 +6,7 @@ import { useStore } from '../store/store'
 import { cloudEnabled, sendMagicLink, signInWithEmail, signInWithGitHub, signOut, signUpWithEmail } from '../lib/cloud'
 import { LogoLoader, LogoMark } from '../components/LogoLoader'
 import { HapticSwitch, haptic } from '../lib/haptics'
+import { Segment } from '../components/ui'
 
 /** The GitHub mark (used only to label the GitHub sign-in, as GitHub's brand guidelines allow). */
 const GitHubMark = () => (
@@ -76,18 +77,14 @@ export default function Login() {
               </button>
             </div>
             <form className="aether-rise rise-3 metric-panel mt-4 space-y-3 p-4" onSubmit={submit}>
-              <div className="flex gap-1.5">
-                {(['in', 'up'] as const).map((m) => (
-                  <button key={m} type="button" onClick={() => { haptic(); setMode(m); setMsg('') }} className={`chip ${mode === m ? 'bg-glow text-night' : 'chip-dim'}`}>{m === 'in' ? 'Sign in' : 'Create account'}</button>
-                ))}
-              </div>
+              <Segment value={mode} options={[{ v: 'in', label: 'Sign in' }, { v: 'up', label: 'Create account' }]} onChange={(m) => { setMode(m); setMsg('') }} />
               <input className="input" type="email" inputMode="email" autoComplete="email" autoCapitalize="off" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
               <input className="input" type="password" autoComplete={mode === 'in' ? 'current-password' : 'new-password'} placeholder={mode === 'in' ? 'Password' : 'Choose a password (8+ characters)'} value={password} onChange={(e) => setPassword(e.target.value)} />
               <button className="btn-primary w-full" type="submit" disabled={busy || !email.trim() || password.length < (mode === 'in' ? 1 : 8)}>
                 <Mail className="size-4" /> {mode === 'in' ? 'Sign in with email' : 'Create account'}
               </button>
               {mode === 'in' && <button type="button" className="w-full text-center text-xs text-glow" disabled={busy} onClick={magic}>Email me a sign-in link instead</button>}
-              {msg && <p className="text-xs leading-snug text-sand">{msg}</p>}
+              {msg && <p key={msg} className="swap-in text-xs leading-snug text-sand">{msg}</p>}
             </form>
             <button className="aether-rise rise-4 mt-6 text-center text-sm text-dim" onClick={skip}>Not now, keep everything on this phone</button>
           </>

@@ -66,8 +66,9 @@ export function recommend(profile: Profile, program: Program, sessions: Session[
   }
 
   // 2. Rotation.
-  const lastKey = done.sort((a, b) => new Date(b.endedAt!).getTime() - new Date(a.endedAt!).getTime())[0]
   const keys = program.days.map((d) => d.key)
+  // Off-plan visits (health, extra cardio, mobility) do not move the rotation: continue after the last plan day.
+  const lastKey = done.sort((a, b) => new Date(b.endedAt!).getTime() - new Date(a.endedAt!).getTime()).find((s) => keys.includes(lastDayKey(s)))
   let start = 0
   if (lastKey) {
     const idx = keys.indexOf(lastDayKey(lastKey))

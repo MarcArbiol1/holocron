@@ -24,6 +24,8 @@ export interface State {
   profile?: Profile
   program?: Program
   sessions: Session[]
+  /** Ids of sessions deleted on this phone, so a cloud merge does not bring them back. */
+  deleted: string[]
   active?: Session
   activeWarmup?: WarmupPlan
   forged: boolean
@@ -33,6 +35,8 @@ export interface State {
   rest?: { endsAt: number; startedAt: number; label: string }
   /** Signed-in account (Supabase user), when accounts are on and the user chose one. */
   account?: Account
+  /** The account this phone's data was last synced with; a different account must not absorb it. */
+  lastUserId?: string
   cloud: { status: 'idle' | 'syncing' | 'error'; lastSyncAt?: string; error?: string }
   /** The user chose to keep everything on this phone; do not show the login page first. */
   loginSkipped: boolean
@@ -54,10 +58,11 @@ export interface State {
   setSettings: (s: Partial<Settings>) => void
   setRest: (r: State['rest']) => void
   setAccount: (a: Account | undefined) => void
+  setLastUserId: (id: string | undefined) => void
   setCloud: (c: Partial<State['cloud']>) => void
   setLoginSkipped: (v: boolean) => void
   /** Replace profile, sessions and settings with a merged cloud copy (keeps the running session). */
-  adoptCloud: (data: CloudState) => void
+  adoptCloud: (data: CloudState, replace?: boolean) => void
   importData: (json: string) => void
   exportData: () => string
   reset: () => void
@@ -72,6 +77,7 @@ export const useStore = create<State>()(
   persist(
     (set, get) => ({
       sessions: [],
+      deleted: [],
       forged: false,
       settings: { restTimer: true, sound: false, liveTimer: false },
       cloud: { status: 'idle' },
@@ -114,6 +120,11 @@ export const useStore = create<State>()(
       finishSession: () => {
         const { active, sessions, profile } = get()
         if (!active || !profile) return undefined
+        // Nothing ticked and no cardio: there is nothing to save, and an empty session would still
+        // earn XP, count toward the week and move the rotation past a day that was never done.
+        const anySet = active.exercises.some((e) => e.sets.some((x) => x.done))
+        const anyCardio = active.cardio.some((c) => c.minutes > 0 && c.exerciseId)
+        if (!anySet && !anyCardio) { get().discardSession(); return undefined }
         const done: Session = {
           ...active,
           endedAt: new Date().toISOString(),
@@ -126,17 +137,18 @@ export const useStore = create<State>()(
         return xp
       },
       discardSession: () => set({ active: undefined, activeWarmup: undefined, forged: false, rest: undefined }),
-      deleteSession: (id) => set({ sessions: get().sessions.filter((s) => s.id !== id) }),
+      deleteSession: (id) => set({ sessions: get().sessions.filter((s) => s.id !== id), deleted: [...get().deleted, id] }),
       setSettings: (s) => set({ settings: { ...get().settings, ...s } }),
       setRest: (rest) => set({ rest }),
       setAccount: (account) => set({ account }),
+      setLastUserId: (lastUserId) => set({ lastUserId }),
       setCloud: (c) => set({ cloud: { ...get().cloud, ...c } }),
       setLoginSkipped: (loginSkipped) => set({ loginSkipped }),
-      adoptCloud: (data) => {
+      adoptCloud: (data, replace) => {
         const cur = get()
-        const profile = data.profile ?? cur.profile
-        const program = profile && (profile !== cur.profile || !cur.program) ? buildProgram(profile) : cur.program
-        set({ profile, program, sessions: data.sessions ?? cur.sessions, settings: data.settings ?? cur.settings })
+        const profile = replace ? data.profile : data.profile ?? cur.profile
+        const program = !profile ? undefined : profile !== cur.profile || !cur.program ? buildProgram(profile) : cur.program
+        set({ profile, program, sessions: data.sessions ?? cur.sessions, settings: data.settings ?? cur.settings, deleted: data.deletedIds ?? cur.deleted })
       },
 
       importData: (json) => {
@@ -145,11 +157,11 @@ export const useStore = create<State>()(
         set({ profile: data.profile, program: data.profile ? buildProgram(data.profile) : undefined, sessions: data.sessions, settings: data.settings ?? get().settings, active: undefined, rest: undefined })
       },
       exportData: () => JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), profile: get().profile, sessions: get().sessions, settings: get().settings }, null, 2),
-      reset: () => set({ profile: undefined, program: undefined, sessions: [], active: undefined, forged: false, lastXp: undefined, rest: undefined }),
+      reset: () => set({ profile: undefined, program: undefined, sessions: [], deleted: [], active: undefined, activeWarmup: undefined, forged: false, lastXp: undefined, rest: undefined }),
     }),
     {
       name: 'holocron-v1',
-      partialize: (s) => ({ profile: s.profile, program: s.program, sessions: s.sessions, active: s.active, activeWarmup: s.activeWarmup, forged: s.forged, settings: s.settings, lastXp: s.lastXp, rest: s.rest, account: s.account, loginSkipped: s.loginSkipped }),
+      partialize: (s) => ({ profile: s.profile, program: s.program, sessions: s.sessions, deleted: s.deleted, active: s.active, activeWarmup: s.activeWarmup, forged: s.forged, settings: s.settings, lastXp: s.lastXp, rest: s.rest, account: s.account, lastUserId: s.lastUserId, loginSkipped: s.loginSkipped }),
     },
   ),
 )

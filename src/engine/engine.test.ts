@@ -181,13 +181,33 @@ describe('levels + xp', () => {
 
 describe('progression', () => {
   const block = { exerciseId: 'dbBenchPress', sets: 3, repMin: 8, repMax: 12, restSec: 90, rir: 2, alternatives: [] }
+  // Relative to today: a fixed date drifts into the "back after three weeks" rule as the calendar moves on.
+  const recent = new Date(Date.now() - 3 * 864e5).toISOString()
   it('suggests more weight after hitting the top of the range with reps to spare', () => {
-    const s = session('fullA', '2026-09-08T18:00:00.000Z', ['dbBenchPress'], 12, 20)
+    const s = session('fullA', recent, ['dbBenchPress'], 12, 20)
     expect(suggest(block, [s]).trend).toBe('up')
     expect(suggest(block, [s]).weightKg).toBe(22.5)
   })
+  it('treats an empty RIR field as reps to spare (the field is optional)', () => {
+    const s = session('fullA', recent, ['dbBenchPress'], 12, 20)
+    for (const st of s.exercises[0].sets) st.rir = undefined
+    expect(suggest(block, [s]).trend).toBe('up')
+  })
+  it('holds weight when a set was logged as a grind', () => {
+    const s = session('fullA', recent, ['dbBenchPress'], 12, 20)
+    s.exercises[0].sets[2].rir = 0
+    expect(suggest(block, [s]).trend).toBe('same')
+  })
+  it('talks in seconds for timed holds', () => {
+    const plank = { exerciseId: 'plank', sets: 3, repMin: 1, repMax: 1, restSec: 60, rir: 2, seconds: 30, alternatives: [] }
+    const s = session('fullA', recent, [])
+    s.exercises = [{ exerciseId: 'plank', sets: [30, 30, 25].map((seconds) => ({ seconds, done: true })) }]
+    const sug = suggest(plank, [s])
+    expect(sug.note).toContain('25 s')
+    expect(sug.note).not.toContain('0/0')
+  })
   it('suggests less weight after missing the bottom of the range twice', () => {
-    const s = session('fullA', '2026-09-08T18:00:00.000Z', ['dbBenchPress'], 6, 20)
+    const s = session('fullA', recent, ['dbBenchPress'], 6, 20)
     expect(suggest(block, [s]).trend).toBe('down')
   })
   it('is honest on the first attempt', () => {
@@ -219,5 +239,34 @@ describe('warmup', () => {
     expect(w.ramp?.sets[0].weightKg).toBe(40)
     expect(w.ramp?.sets[1].weightKg).toBe(55)
     expect(w.dynamic.length).toBeGreaterThan(2)
+  })
+})
+
+describe('cloud merge', () => {
+  it('drops sessions deleted on either side and keeps the union of the rest', async () => {
+    const { merge } = await import('../lib/cloud')
+    const a = session('fullA', '2026-09-01T18:00:00.000Z', ['benchPress'])
+    const b = session('fullA', '2026-09-03T18:00:00.000Z', ['benchPress'])
+    const c = session('fullA', '2026-09-05T18:00:00.000Z', ['benchPress'])
+    const settings = { restTimer: true, sound: false, liveTimer: false }
+    const m = merge({ profile: base, sessions: [a, c], settings, deletedIds: [b.id] }, { profile: base, sessions: [a, b], settings, deletedIds: [] })
+    expect(m.sessions.map((s) => s.id)).toEqual([a.id, c.id])
+    expect(m.deletedIds).toEqual([b.id])
+  })
+  it('a fresh install takes the account settings', async () => {
+    const { merge } = await import('../lib/cloud')
+    const m = merge({ sessions: [], settings: { restTimer: true, sound: false, liveTimer: false } }, { profile: base, sessions: [], settings: { restTimer: false, sound: true, liveTimer: false } })
+    expect(m.settings.sound).toBe(true)
+  })
+})
+
+describe('rotation', () => {
+  it('an off-plan visit does not restart the rotation', () => {
+    const program = buildProgram(base)
+    const keys = program.days.map((d) => d.key)
+    const plan = session(keys[0], new Date(Date.now() - 4 * 864e5).toISOString(), [])
+    const extra = { ...session('mobility', new Date(Date.now() - 3 * 864e5).toISOString(), []), dayId: 'mobility' as const }
+    const rec = recommend(base, program, [plan, extra])
+    if (rec.mode === 'plan') expect(rec.day.key).not.toBe(keys[0])
   })
 })

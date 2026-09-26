@@ -52,7 +52,7 @@ export function sessionXp(session: Session, history: Session[], profile: Profile
   const base = 100
   const total = base + sets + cardio + week + prs
   const lines = [`+${base} showed up`]
-  if (sets) lines.push(`+${sets} for ${Math.min(hardSets, 40)} hard sets`)
+  if (sets) { const n = Math.min(hardSets, 40); lines.push(`+${sets} for ${n} hard set${n === 1 ? "" : "s"}`) }
   if (cardio) lines.push(`+${cardio} for cardio`)
   if (week) lines.push(`+${week} week complete (${profile.daysPerWeek}/${profile.daysPerWeek})`)
   if (prs) lines.push(`+${prs} new records`)

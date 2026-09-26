@@ -19,6 +19,9 @@
   --gold: oklch(0.79 0.08 75);
   --spring: linear(0, 0.0772, 0.2473, 0.4431, 0.6252, 0.7746, 0.8857, 0.9608, 1.0063, 1.0296, 1.0379, 1.037, 1.0314, 1.024, 1.0167, 1.0105, 1.0057, 1.0024, 1.0003, 0.9991, 0.9986, 0.9985, 0.9987, 0.999, 0.9993, 0.9995, 0.9997, 0.9999, 1, 1, 1, 1.0001, 1);
   --apple: cubic-bezier(0.32, 0.72, 0, 1);
+  /* Strong ease-out for anything entering or answering a tap: fast start, soft landing. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   /* Apple's SwiftUI springs (duration 0.5 s; bounce 0 / 0.15 / 0.3) sampled from mass 1, k = (2π/d)², c = 4π(1−bounce)/d. */
   --spring-smooth-duration: 600ms;
   --spring-smooth: linear(0.0, 0.0042, 0.0157, 0.0332, 0.0555, 0.0816, 0.1107, 0.1419, 0.1748, 0.2086, 0.2431, 0.2777, 0.3123, 0.3465, 0.3801, 0.4129, 0.4448, 0.4758, 0.5057, 0.5344, 0.562, 0.5883, 0.6135, 0.6375, 0.6603, 0.6819, 0.7024, 0.7218, 0.74, 0.7573, 0.7736, 0.7888, 0.8032, 0.8167, 0.8294, 0.8412, 0.8524, 0.8627, 0.8725, 0.8816, 0.89, 0.8979, 0.9053, 0.9122, 0.9186, 0.9246, 0.9301, 0.9353, 0.9401, 0.9445, 0.9487, 0.9525, 0.9561, 0.9594, 0.9625, 0.9653, 0.968, 0.9704, 0.9727, 0.9748, 0.9767, 0.9785, 0.9802, 0.9817, 0.9831, 0.9844, 0.9856, 0.9868, 0.9878, 0.9888, 0.9896, 0.9905, 0.9912, 0.9919, 0.9925, 0.9931, 0.9937, 0.9942, 0.9946, 0.9951, 1);
@@ -60,18 +63,16 @@ button { cursor: pointer; }
   .workout-row {
     background: color-mix(in oklab, var(--panel) 72%, transparent);
     border: 1px solid color-mix(in oklab, var(--ice) 7%, transparent);
-    transition: background 180ms ease, transform 180ms ease;
+    transition: background 220ms ease, transform 260ms var(--ease-out);
   }
-  .workout-row:hover { background: color-mix(in oklab, var(--panel) 92%, transparent); }
-  .workout-row:active { transform: scale(0.985); }
+  .workout-row:active { transform: scale(0.975); background: color-mix(in oklab, var(--panel) 92%, transparent); transition-duration: 90ms; }
   .primary-action {
     background: color-mix(in oklab, var(--panel) 82%, transparent);
     border: 1px solid color-mix(in oklab, var(--glow) 16%, transparent);
     box-shadow: inset 0 1px 0 color-mix(in oklab, var(--ice) 7%, transparent);
-    transition: background 180ms ease, transform 180ms ease;
+    transition: background 220ms ease, transform 260ms var(--ease-out);
   }
-  .primary-action:hover { background: color-mix(in oklab, var(--panel) 96%, transparent); }
-  .primary-action:active { transform: scale(0.985); }
+  .primary-action:active { transform: scale(0.975); background: color-mix(in oklab, var(--panel) 96%, transparent); transition-duration: 90ms; }
   .profile-orbit {
     border: 1px solid color-mix(in oklab, var(--glow) 25%, transparent);
     box-shadow: 0 0 0 4px color-mix(in oklab, var(--glow) 5%, transparent), inset 0 1px 0 color-mix(in oklab, var(--ice) 9%, transparent);
@@ -80,17 +81,27 @@ button { cursor: pointer; }
   .aether-action {
     @apply bg-glow text-night font-semibold;
     box-shadow: 0 10px 35px color-mix(in oklab, var(--glow) 28%, transparent), inset 0 1px 0 color-mix(in oklab, var(--ice) 45%, transparent);
-    transition: transform 180ms var(--apple), box-shadow 220ms ease;
+    transition: transform 260ms var(--ease-out), box-shadow 220ms ease;
   }
-  .aether-action:hover { box-shadow: 0 12px 44px color-mix(in oklab, var(--glow) 42%, transparent), inset 0 1px 0 color-mix(in oklab, var(--ice) 55%, transparent); }
-  .aether-action:active { transform: scale(0.98); }
+  .aether-action:active { transform: scale(0.97); transition-duration: 90ms; }
   .aether-sheen { position: relative; overflow: hidden; }
   .aether-sheen::after {
     content: ""; position: absolute; inset-block: 0; left: 0; width: 38%;
     background: linear-gradient(100deg, transparent, color-mix(in oklab, var(--ice) 24%, transparent), transparent);
     transform: translateX(-150%) skewX(-12deg);
   }
-  .aether-sheen:hover::after, .aether-sheen:active::after { animation: aether-sheen 0.85s var(--apple); }
+  .aether-sheen:active::after { animation: aether-sheen 0.7s var(--ease-out); }
+  @media (hover: hover) and (pointer: fine) {
+    .workout-row:hover { background: color-mix(in oklab, var(--panel) 92%, transparent); }
+    .primary-action:hover { background: color-mix(in oklab, var(--panel) 96%, transparent); }
+    .aether-action:hover { box-shadow: 0 12px 44px color-mix(in oklab, var(--glow) 42%, transparent), inset 0 1px 0 color-mix(in oklab, var(--ice) 55%, transparent); }
+    .aether-sheen:hover::after { animation: aether-sheen 0.7s var(--ease-out); }
+  }
+  /* Generic press feedback for small controls (chips, icon buttons). */
+  .press { transition: transform 260ms var(--ease-out), background-color 220ms ease, color 220ms ease; }
+  .press:active { transform: scale(0.94); transition-duration: 90ms; }
+  .press-soft { transition: transform 260ms var(--ease-out); }
+  .press-soft:active { transform: scale(0.97); transition-duration: 90ms; }
 
   /* chips + inputs in the new skin */
   .chip { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold; }
@@ -105,7 +116,8 @@ button { cursor: pointer; }
   .input:focus { border-color: color-mix(in oklab, var(--glow) 45%, transparent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--glow) 10%, transparent); }
   .label { @apply block text-[11px] font-semibold uppercase tracking-[0.12em] text-dim mb-1.5; }
   .kicker { @apply text-xs font-semibold uppercase tracking-[0.12em] text-dim; }
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3.5 font-semibold transition active:scale-[0.985] disabled:opacity-40 disabled:active:scale-100; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3.5 font-semibold disabled:opacity-40; transition: transform 260ms var(--ease-out), opacity 200ms ease, background-color 200ms ease, box-shadow 220ms ease; }
+  .btn:active:not(:disabled) { transform: scale(0.97); transition-duration: 90ms; }
   .btn-primary { @apply btn aether-action; }
   .btn-ghost { @apply btn primary-action text-ice; }
   .btn-danger { @apply btn text-legs; background: color-mix(in oklab, #e0553f 14%, transparent); border: 1px solid color-mix(in oklab, #e0553f 25%, transparent); }
@@ -119,8 +131,8 @@ button { cursor: pointer; }
   .activity-ring-faint { opacity: 0.72; }
 
   /* Entrance */
-  .aether-rise { animation: aether-rise 0.6s var(--apple) both; }
-  .rise-1 { animation-delay: 60ms; } .rise-2 { animation-delay: 120ms; } .rise-3 { animation-delay: 180ms; } .rise-4 { animation-delay: 240ms; } .rise-5 { animation-delay: 300ms; }
+  .aether-rise { animation: aether-rise 460ms var(--ease-out) both; }
+  .rise-1 { animation-delay: 40ms; } .rise-2 { animation-delay: 80ms; } .rise-3 { animation-delay: 120ms; } .rise-4 { animation-delay: 160ms; } .rise-5 { animation-delay: 200ms; }
 
   /* ---------- Liquid dock (bottom bar) ---------- */
   /* Apple's iOS 26 tab bar: floating glass capsule, a lens that slides to the active tab with the
@@ -160,10 +172,19 @@ button { cursor: pointer; }
   .dock-wrap[data-sliding="true"] .liquid-lens { animation: lens-stretch 520ms var(--apple); }
   .dock-wrap[data-sliding="true"] .dock-icon { animation: icon-squash 420ms var(--apple); }
   .dock-tab { transition: color 300ms ease, transform 160ms var(--apple); border-radius: 9999px; }
-  .dock-tab:active { transform: scale(0.9); }
+  .dock-tab:active { transform: scale(0.88); transition-duration: 90ms; }
 }
 
-@keyframes aether-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+/* ---------- page transitions (App.tsx picks the class) ---------- */
+.route-push { animation: route-push 340ms var(--ease-out) both; }
+.route-back { animation: route-back 300ms var(--ease-out) both; }
+.route-tab { animation: route-tab 240ms var(--ease-out) both; }
+@keyframes route-push { from { opacity: 0; transform: translate3d(28px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes route-back { from { opacity: 0; transform: translate3d(-22px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes route-tab { from { opacity: 0; transform: translate3d(0, 6px, 0); } to { opacity: 1; transform: none; } }
+/* after the first screen, the route transition replaces the staggered entrance */
+.warm .aether-rise { animation: none; }
+@keyframes aether-rise { from { opacity: 0; transform: translateY(10px) scale(0.99); } to { opacity: 1; transform: none; } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- logo loader: cartoon jumps, then the pieces come apart and snap back ---------- */
@@ -213,10 +234,95 @@ button { cursor: pointer; }
   86%      { transform: translate(-3%, -2.5%) rotate(2deg); }
   93%, 100% { transform: translate(0, 0) rotate(0deg); }
 }
-@keyframes sheet-up { from { opacity: 0; transform: translateY(24px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-.confirm-backdrop { background: color-mix(in oklab, var(--night) 80%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); animation: fade-in 180ms ease both; }
-.confirm-sheet { animation: sheet-up 360ms var(--apple) both; }
-.rest-timer { animation: sheet-up 420ms var(--spring-snappy) both; }
+/* ---------- sheets: in with a spring, out quicker than in (the exit should never hold you up) ---------- */
+@keyframes sheet-up { from { opacity: 0; transform: translateY(28px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes sheet-down { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(20px) scale(0.98); } }
+@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes panel-in { from { opacity: 0; transform: translateY(6%); } to { opacity: 1; transform: none; } }
+@keyframes panel-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(4%); } }
+/* The backdrop is a plain dim layer: a full-screen blur is re-rasterised every frame on iOS. */
+.confirm-backdrop { background: color-mix(in oklab, var(--night) 72%, transparent); animation: fade-in 200ms ease both; }
+.confirm-sheet { animation: sheet-up 440ms var(--spring-snappy) both; }
+.confirm-backdrop[data-leaving="true"] { animation: fade-out 200ms ease both; }
+.confirm-backdrop[data-leaving="true"] .confirm-sheet { animation: sheet-down 200ms var(--ease-in-out) both; }
+.picker-panel { animation: panel-in 380ms var(--ease-out) both; }
+.picker-panel[data-leaving="true"] { animation: panel-out 200ms var(--ease-in-out) both; }
+.picker-row { animation: aether-rise 360ms var(--ease-out) both; }
+.rest-timer { animation: sheet-up 480ms var(--spring-snappy) both; }
+.rest-timer[data-leaving="true"] { animation: sheet-down 200ms var(--ease-in-out) both; }
+@keyframes rest-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+/* last three seconds: the digits tick with a small pulse, the bar glows */
+.rest-final { animation: tick-pulse 1s var(--ease-out) infinite; }
+@keyframes tick-pulse { 0% { transform: scale(1.08); color: var(--glow); } 60%, 100% { transform: scale(1); } }
+
+/* ---------- set logging ---------- */
+/* the check pops with a small overshoot and a ring expands from it */
+.set-check { transition: transform 260ms var(--ease-out), background-color 200ms ease, border-color 200ms ease, box-shadow 260ms ease, color 200ms ease; }
+.set-check:active { transform: scale(0.86); transition-duration: 90ms; }
+.set-check.just-done svg { animation: check-pop 420ms var(--spring-bouncy) both; }
+.set-check.just-done::after {
+  content: ""; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
+  border: 2px solid var(--glow); animation: check-ring 520ms var(--ease-out) both;
+}
+@keyframes check-pop { 0% { transform: scale(0.3) rotate(-12deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: none; } }
+@keyframes check-ring { from { opacity: 0.9; transform: scale(1); } to { opacity: 0; transform: scale(1.7); } }
+/* the set row: done sets dim, the row that was just ticked gets a quick glow sweep */
+.set-row { transition: opacity 300ms ease; }
+.set-row[data-done="true"] > td:first-child { color: var(--glow); }
+.set-row-flash { animation: row-flash 700ms var(--ease-out); }
+@keyframes row-flash { 0% { background: color-mix(in oklab, var(--glow) 16%, transparent); } 100% { background: transparent; } }
+/* a whole exercise finished: its panel's edge lights up once */
+.exercise-done { border-color: color-mix(in oklab, var(--glow) 30%, transparent) !important; transition: border-color 400ms ease; }
+.exercise-done-flash { animation: panel-glow 900ms var(--ease-out); }
+@keyframes panel-glow { 0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--glow) 40%, transparent); } 100% { box-shadow: 0 0 0 14px transparent; } }
+/* rows added with "+ set" slide in */
+.set-new { animation: aether-rise 320ms var(--ease-out) both; }
+
+/* ---------- progress: rings draw in, bars fill from the left ---------- */
+.ring-draw { animation: ring-draw 1100ms var(--ease-out) backwards; }
+.ring-draw-2 { animation-delay: 90ms; } .ring-draw-3 { animation-delay: 180ms; }
+@keyframes ring-draw { from { stroke-dashoffset: var(--ring-c); } }
+.bar-fill { transform-origin: left center; transition: transform 700ms var(--ease-out); animation: bar-fill 900ms var(--ease-out) backwards; animation-delay: var(--bar-delay, 150ms); }
+@keyframes bar-fill { from { transform: scaleX(0); } }
+.muscle-region { transition: opacity 500ms ease, fill 500ms ease; }
+.muscle-map-in .muscle-region { animation: region-in 700ms var(--ease-out) backwards; }
+@keyframes region-in { from { opacity: 0; } }
+
+/* ---------- small moments ---------- */
+/* a small breathing dot: the workout is running */
+.live-dot { width: 7px; height: 7px; border-radius: 9999px; background: var(--night); animation: live-dot 1.8s ease-in-out infinite; }
+@keyframes live-dot { 0%, 100% { opacity: 0.45; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
+.pill-in { animation: pill-in 520ms var(--spring-bouncy) both; }
+@keyframes pill-in { from { opacity: 0; transform: translateY(12px) scale(0.9); } to { opacity: 1; transform: none; } }
+/* a sliding highlight for two-way segmented controls */
+.segment { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.segment-thumb { position: absolute; top: 0.25rem; bottom: 0.25rem; left: 0.25rem; width: calc((100% - 0.5rem) / var(--seg-n)); border-radius: 9999px; background: var(--glow); transform: translateX(calc(var(--seg-i) * 100%)); transition: transform var(--spring-snappy-duration) var(--spring-snappy); }
+.segment > button { position: relative; z-index: 1; transition: color 250ms ease; }
+/* content swaps (period, filter): a quick cross-fade instead of a hard cut */
+.swap-in { animation: swap-in 320ms var(--ease-out) both; }
+@keyframes swap-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+/* list items appear one after another; the delay comes from --i (capped in the component) */
+.stagger { animation: aether-rise 420ms var(--ease-out) both; animation-delay: calc(var(--i, 0) * 30ms); }
+.selected-pop { animation: selected-pop 360ms var(--spring-bouncy); }
+@keyframes selected-pop { 0% { transform: scale(0.96); } 100% { transform: none; } }
+
+/* ---------- the XP moment on the Done page ---------- */
+.xp-pop { animation: xp-pop 700ms var(--spring-bouncy) both; animation-delay: 120ms; }
+@keyframes xp-pop { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+.burst { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
+.burst > i {
+  position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 9999px; background: var(--c, var(--glow));
+  opacity: 0; animation: burst 1000ms var(--ease-out) both; animation-delay: calc(var(--d, 0ms) + 250ms);
+}
+@keyframes burst {
+  0% { opacity: 1; transform: translate(0, 0) scale(1); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--x), var(--y)) scale(0.4); }
+}
+.level-up { animation: level-up 900ms var(--spring-bouncy) both; animation-delay: 900ms; }
+@keyframes level-up { from { opacity: 0; transform: translateY(8px) scale(0.85); } to { opacity: 1; transform: none; } }
+.level-glow { animation: level-glow 2.4s ease-in-out 1.6s infinite; }
+@keyframes level-glow { 0%, 100% { text-shadow: 0 0 0 transparent; } 50% { text-shadow: 0 0 18px color-mix(in oklab, var(--glow-soft) 70%, transparent); } }
 input[type=search]::-webkit-search-decoration, input[type=search]::-webkit-search-cancel-button { -webkit-appearance: none; }
 @keyframes aether-sheen { 0% { transform: translateX(-150%) skewX(-12deg); } 100% { transform: translateX(280%) skewX(-12deg); } }
 @keyframes aether-pulse { 0%, 100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.35); } }
@@ -229,8 +335,16 @@ input[type=search]::-webkit-search-decoration, input[type=search]::-webkit-searc
   .liquid-lens, .liquid-dock, .dock-mini { transition: none; }
   .dock-wrap[data-sliding="true"] .liquid-lens, .dock-wrap[data-sliding="true"] .dock-icon { animation: none; }
   .aether-sheen::after { display: none; }
-  .confirm-backdrop, .confirm-sheet, .rest-timer { animation: none; }
-  .logo-stage, .logo-piece { animation: none; }
+  .logo-stage, .logo-piece, .logo-float { animation: none; }
+  /* Motion off: everything that animates in or celebrates just appears; state changes still cross-fade in the transitions above. */
+  .confirm-backdrop, .confirm-sheet, .rest-timer, .picker-panel, .picker-row, .rest-final,
+  .set-check svg, .set-check::after, .set-row-flash, .exercise-done-flash, .set-new,
+  .ring-draw, .bar-fill, .muscle-region, .pill-in, .swap-in, .stagger, .selected-pop,
+  .xp-pop, .burst > i, .level-up, .level-glow, .live-dot { animation: none !important; }
+  /* page changes still cross-fade, without the slide */
+  .route-push, .route-back, .route-tab { animation: fade-in 180ms ease both; }
+  .burst { display: none; }
+  .segment-thumb { transition: none; }
 }
 
 /* Invisible native switch laid over a button: the finger toggles it, iOS plays its tick. */

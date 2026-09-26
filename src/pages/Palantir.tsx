@@ -8,7 +8,7 @@ import { useStore } from '../store/store'
 import { bestE1rm } from '../engine/recap'
 import { NAMES } from '../theme/names'
 import { MuscleMap } from '../components/MuscleMap'
-import { Page, fmtDate, fmtDuration } from '../components/ui'
+import { Page, Segment, fmtDate, fmtDuration } from '../components/ui'
 import { haptic } from '../lib/haptics'
 
 export default function Palantir() {
@@ -43,25 +43,19 @@ export default function Palantir() {
   const strengthMarker = big.every((v) => v > 0) ? big.reduce((a, b) => a + b, 0) / profile.weightKg : 0
   const history = [...r.sessions].reverse()
 
-  const toggle = (
-    <div className="glass flex rounded-full p-1 text-xs font-semibold">
-      {(['week', 'month'] as const).map((k) => (
-        <button key={k} onClick={() => { haptic(); setRange(k); setOffset(0) }} className={`rounded-full px-3 py-1.5 transition-colors duration-300 ${range === k ? 'bg-glow text-night' : 'text-dim'}`}>{k}</button>
-      ))}
-    </div>
-  )
+  const toggle = <Segment value={range} options={[{ v: 'week', label: 'week' }, { v: 'month', label: 'month' }]} onChange={(k) => { setRange(k); setOffset(0); setPicked(null) }} />
 
   return (
     <Page title={NAMES.pages.palantir} kicker="What the archive shows" right={toggle}>
       <div className="aether-rise rise-1 flex items-center justify-between">
-        <button onClick={() => { haptic(); setOffset(offset - 1) }} aria-label="Previous period" className="primary-action grid size-9 place-items-center rounded-full text-ice"><ChevronLeft className="size-4" /></button>
-        <div className="font-semibold">{label}</div>
-        <button onClick={() => { haptic(); setOffset(offset + 1) }} disabled={offset >= 0} aria-label="Next period" className="primary-action grid size-9 place-items-center rounded-full text-ice disabled:opacity-30"><ChevronRight className="size-4" /></button>
+        <button onClick={() => { haptic(); setOffset(offset - 1); setPicked(null) }} aria-label="Previous period" className="primary-action grid size-9 place-items-center rounded-full text-ice"><ChevronLeft className="size-4" /></button>
+        <div key={label} className="swap-in font-semibold">{label}</div>
+        <button onClick={() => { haptic(); setOffset(offset + 1); setPicked(null) }} disabled={offset >= 0} aria-label="Next period" className="primary-action grid size-9 place-items-center rounded-full text-ice disabled:opacity-30"><ChevronRight className="size-4" /></button>
       </div>
 
-      <div className="aether-rise rise-2 grid grid-cols-3 gap-2">
-        <Tile label="Sessions" value={`${r.count}`} sub={`of ${planned} planned`} good={r.count >= planned} />
-        <Tile label="Cardio" value={`${r.cardio}`} sub={`of ${r.cardioTarget} min`} good={r.cardio >= r.cardioTarget} />
+      <div key={`${range}${offset}`} className="swap-in aether-rise rise-2 grid grid-cols-3 gap-2">
+        <Tile label="Sessions" value={`${r.count}`} sub={`of ${planned} planned`} good={planned > 0 && r.count >= planned} />
+        <Tile label="Cardio" value={`${r.cardio}`} sub={`of ${r.cardioTarget} min`} good={r.cardioTarget > 0 && r.cardio >= r.cardioTarget} />
         <Tile label="XP" value={`${r.xp}`} sub={streak ? `${streak}-week streak` : 'no streak'} />
         <Tile label="Hard sets" value={`${Math.round(Object.values(r.sets).reduce((a, b) => a + b, 0))}`} sub="fractional" />
         <Tile label="Tonnage" value={r.tonnage >= 1000 ? `${(r.tonnage / 1000).toFixed(1)} t` : `${r.tonnage} kg`} sub="weight × reps" />
@@ -75,7 +69,7 @@ export default function Palantir() {
         <div className="metric-panel mt-3 space-y-3 p-4">
           <MuscleMap levels={levels} onPick={(m) => { haptic(); setPicked(m) }} />
           {picked && (
-            <div className="text-center text-sm text-ice/90">{MUSCLES[picked].label}: {Math.round(r.sets[picked] * 10) / 10} sets ({Math.round((r.sets[picked] / r.setsTarget[0]) * 100)}% of the low target)</div>
+            <div key={picked} className="swap-in text-center text-sm text-ice/90">{MUSCLES[picked].label}: {Math.round(r.sets[picked] * 10) / 10} sets{r.setsTarget[0] > 0 ? ` (${Math.round((r.sets[picked] / r.setsTarget[0]) * 100)}% of the low target)` : ''}</div>
           )}
           {r.count > 0 && offset < 0 && r.neglected.length > 0 && (
             <p className="text-sm text-ice/90"><span className="font-semibold text-legs">Under-trained:</span> {r.neglected.map((m) => MUSCLES[m].label).join(', ')}.</p>

@@ -18,12 +18,12 @@ export default function Codex() {
     <Page title={NAMES.pages.codex} kicker="Why the app does what it does" sub={`${CODEX.length} rules, each with its paper`} back>
       <div className="aether-rise flex gap-1.5 overflow-x-auto pb-1 -mx-6 px-6">
         {(['all', ...Object.keys(AREAS)] as (Area | 'all')[]).map((a) => (
-          <button key={a} onClick={() => { haptic(); setArea(a) }} className={`chip shrink-0 ${area === a ? 'bg-glow text-night' : 'chip-dim'}`}>{a === 'all' ? 'All' : AREAS[a]}</button>
+          <button key={a} onClick={() => { haptic(); setArea(a) }} aria-pressed={area === a} className={`press chip shrink-0 ${area === a ? 'bg-glow text-night' : 'chip-dim'}`}>{a === 'all' ? 'All' : AREAS[a]}</button>
         ))}
       </div>
-      <ul className="space-y-3">
+      <ul key={area} className="space-y-3">
         {rules.map((r, i) => (
-          <li key={r.id} className={`metric-panel p-4 aether-rise rise-${Math.min(5, (i % 5) + 1)}`}>
+          <li key={r.id} className="metric-panel stagger p-4" style={{ '--i': Math.min(i, 6) } as React.CSSProperties}>
             <div className="flex items-start justify-between gap-3">
               <h2 className="font-semibold leading-tight">{r.title}</h2>
               <span className={`${STRENGTH[r.strength].cls} shrink-0`}>{STRENGTH[r.strength].label}</span>

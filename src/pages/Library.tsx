@@ -31,13 +31,14 @@ export default function Library() {
       </div>
       <div className="aether-rise rise-2 -mx-6 flex gap-1.5 overflow-x-auto px-6 pb-1">
         {FILTERS.map((x) => (
-          <button key={x.key} onClick={() => { haptic(); setF(x.key) }} className={`chip shrink-0 transition-colors duration-300 ${f === x.key ? 'bg-glow text-night' : 'chip-dim'}`}>{x.label}</button>
+          <button key={x.key} onClick={() => { haptic(); setF(x.key) }} aria-pressed={f === x.key} className={`press chip shrink-0 ${f === x.key ? 'bg-glow text-night' : 'chip-dim'}`}>{x.label}</button>
         ))}
       </div>
-      <ul className="aether-rise rise-3 grid grid-cols-2 gap-3">
-        {list.map((e) => (
-          <li key={e.id}>
-            <Link to={`/exercise/${e.id}`} onClick={() => haptic()} className="metric-panel block p-2 transition-transform active:scale-[0.985]">
+      {/* Keyed by the filter: a new filter re-deals the cards, the first few one after another. */}
+      <ul key={f} className="aether-rise rise-3 grid grid-cols-2 gap-3">
+        {list.map((e, i) => (
+          <li key={e.id} className="stagger" style={{ '--i': Math.min(i, 8) } as React.CSSProperties}>
+            <Link to={`/exercise/${e.id}`} onClick={() => haptic()} className="press-soft metric-panel block p-2">
               <Figure animId={e.anim} size="100%" playing={false} className="h-auto w-full rounded-xl" />
               <div className="mt-2 px-1 text-sm font-semibold leading-tight">{e.name}</div>
               <div className="mb-1 px-1 text-[11px] text-dim truncate">{e.primary.map((m) => MUSCLES[m].label).join(', ')}</div>

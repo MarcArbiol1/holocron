@@ -27,6 +27,8 @@ export interface CloudState {
   profile?: Profile
   sessions: Session[]
   settings: Settings
+  /** Sessions deleted on some device; the merge drops them everywhere. */
+  deletedIds?: string[]
 }
 
 export interface Account { id: string; email?: string; provider?: string }
@@ -81,11 +83,22 @@ export async function pushState(userId: string, state: CloudState): Promise<stri
   return updated_at
 }
 
-/** Union of sessions by id, newest profile/settings kept from the phone when it has them. */
+/**
+ * Union of sessions by id minus anything deleted on either side. The phone's profile and settings win
+ * when the phone has a profile; a fresh install (no profile yet) takes the account's settings too.
+ */
 export function merge(local: CloudState, remote: CloudState): CloudState {
+  const deletedIds = [...new Set([...(remote.deletedIds ?? []), ...(local.deletedIds ?? [])])]
+  const gone = new Set(deletedIds)
   const byId = new Map<string, Session>()
   for (const s of remote.sessions ?? []) byId.set(s.id, s)
   for (const s of local.sessions ?? []) byId.set(s.id, s)
-  const sessions = [...byId.values()].sort((a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime())
-  return { profile: local.profile ?? remote.profile, sessions, settings: local.settings ?? remote.settings }
+  const sessions = [...byId.values()].filter((s) => !gone.has(s.id)).sort((a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime())
+  const fresh = !local.profile
+  return {
+    profile: local.profile ?? remote.profile,
+    sessions,
+    settings: (fresh ? remote.settings ?? local.settings : local.settings ?? remote.settings),
+    deletedIds,
+  }
 }

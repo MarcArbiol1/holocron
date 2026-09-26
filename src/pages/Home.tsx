@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronRight, Dumbbell, Flame, Play, Square } from 'lucide-react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { EXERCISE_BY_ID } from '../data/exercises'
@@ -7,30 +7,40 @@ import { addDays, cardioMinutes, inRange, weekStart, weekStreak } from '../engin
 import { useRecommendation } from '../store/hooks'
 import { useStore } from '../store/store'
 import { NAMES } from '../theme/names'
-import { DAY_COLOR, LevelPill, LiquidDock, ProfileButton, dayTitle, fmtDate, fmtDuration, todayLabel } from '../components/ui'
+import { DAY_COLOR, LevelPill, ProfileButton, dayTitle, fmtDate, fmtDuration, todayLabel } from '../components/ui'
 import { Figure } from '../components/Figure'
 import { Confirm } from '../components/Confirm'
 import { LogoMark } from '../components/LogoLoader'
 import { HapticSwitch, haptic } from '../lib/haptics'
+import { useCountUp } from '../lib/motion'
 import type { RoutineDay } from '../data/types'
 
 const MODE_LABEL: Record<string, string> = { plan: 'Next in your rotation', health: 'Health first', recovery: 'Recovery day', cardio: 'Cardio day', done: 'Week complete' }
 
+/**
+ * What the rings showed last time Home was on screen (module scope: survives tab switches, resets on
+ * relaunch). The rings grow from there, so the first launch draws them from empty and a finished
+ * workout visibly adds its part, while a plain tab switch changes nothing.
+ */
+let shown = { sessions: 0, cardio: 0, xp: 0, pct: 0 }
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
+
 /** Three rings: sessions this week (outer), cardio minutes (middle), XP into the level (inner). */
 function Rings({ sessions, cardio, xp }: { sessions: number; cardio: number; xp: number }) {
-  const ring = (r: number, frac: number) => {
+  const [from] = useState(shown)
+  const ring = (r: number, frac: number, was: number) => {
     const c = 2 * Math.PI * r
-    return { dasharray: c, dashoffset: c * (1 - Math.max(0, Math.min(1, frac))) }
+    return { dasharray: c, dashoffset: c * (1 - clamp01(frac)), style: { '--ring-c': `${c * (1 - clamp01(was))}px` } as React.CSSProperties }
   }
-  const a = ring(90, sessions), b = ring(67, cardio), c = ring(44, xp)
+  const a = ring(90, sessions, from.sessions), b = ring(67, cardio, from.cardio), c = ring(44, xp, from.xp)
   return (
     <svg viewBox="0 0 224 224" className="absolute inset-0 -rotate-90 overflow-visible" aria-hidden="true">
       <circle cx="112" cy="112" r="90" fill="none" stroke="currentColor" strokeWidth="16" className="text-panel" />
-      <circle cx="112" cy="112" r="90" fill="none" stroke="currentColor" strokeWidth="16" strokeLinecap="round" strokeDasharray={a.dasharray} strokeDashoffset={a.dashoffset} className="activity-ring text-glow transition-[stroke-dashoffset] duration-700 ease-apple" />
+      <circle cx="112" cy="112" r="90" fill="none" stroke="currentColor" strokeWidth="16" strokeLinecap="round" strokeDasharray={a.dasharray} strokeDashoffset={a.dashoffset} style={a.style} className="ring-draw activity-ring text-glow transition-[stroke-dashoffset] duration-700 ease-apple" />
       <circle cx="112" cy="112" r="67" fill="none" stroke="currentColor" strokeWidth="16" className="text-panel" />
-      <circle cx="112" cy="112" r="67" fill="none" stroke="currentColor" strokeWidth="16" strokeLinecap="round" strokeDasharray={b.dasharray} strokeDashoffset={b.dashoffset} className="activity-ring-soft text-soft transition-[stroke-dashoffset] duration-700 ease-apple" />
+      <circle cx="112" cy="112" r="67" fill="none" stroke="currentColor" strokeWidth="16" strokeLinecap="round" strokeDasharray={b.dasharray} strokeDashoffset={b.dashoffset} style={b.style} className="ring-draw ring-draw-2 activity-ring-soft text-soft transition-[stroke-dashoffset] duration-700 ease-apple" />
       <circle cx="112" cy="112" r="44" fill="none" stroke="currentColor" strokeWidth="16" className="text-panel" />
-      <circle cx="112" cy="112" r="44" fill="none" stroke="currentColor" strokeWidth="16" strokeLinecap="round" strokeDasharray={c.dasharray} strokeDashoffset={c.dashoffset} className="activity-ring-faint text-ice transition-[stroke-dashoffset] duration-700 ease-apple" />
+      <circle cx="112" cy="112" r="44" fill="none" stroke="currentColor" strokeWidth="16" strokeLinecap="round" strokeDasharray={c.dasharray} strokeDashoffset={c.dashoffset} style={c.style} className="ring-draw ring-draw-3 activity-ring-faint text-ice transition-[stroke-dashoffset] duration-700 ease-apple" />
     </svg>
   )
 }
@@ -45,16 +55,22 @@ export default function Home() {
   const discardSession = useStore((s) => s.discardSession)
   const [confirmEnd, setConfirmEnd] = useState(false)
   const rec = useRecommendation()
-  if (!profile || !program) return <Navigate to="/onboarding" replace />
-  if (!rec) return null
 
   const now = new Date()
   const ws = weekStart(now)
   const week = inRange(sessions, ws, addDays(ws, 7))
   const cardio = cardioMinutes(week)
   const lv = levelFor(totalXp(sessions))
+  const days = profile?.daysPerWeek ?? 1
+  const weekPct = Math.round(Math.min(1, week.length / days) * 100)
+  const pctShown = useCountUp(weekPct, { from: shown.pct, ms: 1000, delay: 120 })
+  const ringVals = { sessions: week.length / days, cardio: program ? cardio / program.cardioTargetMin : 0, xp: lv.progress }
+  // Remember what is on screen now, for the next visit's starting point.
+  useEffect(() => { shown = { ...ringVals, pct: weekPct } })
+
+  if (!profile || !program) return <Navigate to="/onboarding" replace />
+  if (!rec) return null
   const streak = weekStreak(sessions, profile, now)
-  const weekPct = Math.round(Math.min(1, week.length / profile.daysPerWeek) * 100)
   const recent = [...sessions].filter((s) => s.endedAt).sort((a, b) => new Date(b.endedAt!).getTime() - new Date(a.endedAt!).getTime()).slice(0, 3)
   const minutes = rec.day.minutes + rec.extraCardio
   const cardioTotal = rec.day.cardioMinutes + rec.extraCardio
@@ -85,10 +101,10 @@ export default function Home() {
 
         <section className="aether-rise rise-1 mt-8 flex justify-center" aria-label="Weekly progress">
           <div className="relative size-[238px]">
-            <Rings sessions={week.length / profile.daysPerWeek} cardio={cardio / program.cardioTargetMin} xp={lv.progress} />
+            <Rings {...ringVals} />
             <div className="absolute inset-0 grid place-items-center text-center">
               <div>
-                <span className="text-[38px] font-bold leading-none">{weekPct}</span><span className="text-sm text-dim">%</span>
+                <span className="text-[38px] font-bold leading-none tabular-nums">{pctShown}</span><span className="text-sm text-dim">%</span>
                 <p className="mt-1 text-xs font-medium text-dim">Week goal</p>
               </div>
             </div>
@@ -207,7 +223,6 @@ export default function Home() {
       {confirmEnd && (
         <Confirm title="Terminate the workout?" body="Everything logged in this session is lost. To keep it, open the session and press Finish." confirmLabel="Terminate" danger onConfirm={() => { discardSession(); setConfirmEnd(false) }} onCancel={() => setConfirmEnd(false)} />
       )}
-      <LiquidDock />
     </main>
   )
 }

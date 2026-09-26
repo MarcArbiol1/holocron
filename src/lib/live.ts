@@ -99,21 +99,29 @@ export async function beep(): Promise<void> {
 
 export function stopLive(): void {
   try {
-    if (audio) { audio.pause(); audio.removeAttribute('src'); audio.load() }
+    if (audio) { audio.onended = null; audio.pause(); audio.removeAttribute('src'); audio.load() }
     if ('mediaSession' in navigator) { navigator.mediaSession.metadata = null; navigator.mediaSession.playbackState = 'none' }
   } catch { /* ignore */ }
 }
 
 /** Keep the screen on while the session page is visible. */
+let wantAwake = false
+let requesting = false
 export async function keepAwake(on: boolean): Promise<void> {
+  wantAwake = on
   try {
     if (!('wakeLock' in navigator)) return
-    if (on && !lock) {
-      lock = await navigator.wakeLock.request('screen')
-      lock.addEventListener('release', () => { lock = null })
+    if (on && !lock && !requesting) {
+      requesting = true
+      const got = await navigator.wakeLock.request('screen').finally(() => { requesting = false })
+      // The workout may have ended while the request was in flight: give the lock straight back.
+      if (!wantAwake) { await got.release(); return }
+      lock = got
+      got.addEventListener('release', () => { if (lock === got) lock = null })
     } else if (!on && lock) {
-      await lock.release()
+      const l = lock
       lock = null
+      await l.release()
     }
   } catch { lock = null }
 }

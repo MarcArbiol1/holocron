@@ -56,10 +56,18 @@ export function suggest(block: Block, sessions: Session[]): Suggestion {
     const next = roundLoad(weight * (daysSince > 56 ? 0.8 : 0.9))
     return { weightKg: next, reps: block.repMin, trend: 'down', note: `First time back after ${Math.round(daysSince / 7)} weeks. Start at ${next} kg; what you lost returns within a few weeks, faster than it was built.` }
   }
+  if (ex?.timed) {
+    // Holds progress by time: reach the target on every set, then add a few seconds.
+    const secs = sets.map((s) => s.seconds ?? 0)
+    const goal = block.seconds ?? 30
+    if (sets.length >= block.sets && secs.every((x) => x >= goal)) return { reps: block.repMin, trend: 'up', note: `You held ${goal} s on every set. Add 5 to 10 seconds, or move to a harder version.` }
+    return { reps: block.repMin, trend: 'same', note: `Last time ${secs.map((x) => `${x} s`).join(' / ')}. Aim for ${goal} s on every set.` }
+  }
   const reps = sets.map((s) => s.reps ?? 0)
   const step = isLowerCompound(block.exerciseId) ? 5 : 2.5
   const allTop = sets.length >= block.sets && reps.every((r) => r >= target)
-  const spare = sets.every((s) => (s.rir ?? 0) >= block.rir)
+  // RIR is optional in the logger: an empty field means the lifter did not flag the set as a grind.
+  const spare = sets.every((s) => s.rir === undefined || s.rir >= block.rir)
   const missed = reps.filter((r) => r < block.repMin).length >= 2
 
   if (!weight) {

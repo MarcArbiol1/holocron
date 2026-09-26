@@ -10,10 +10,11 @@
 export function watchForUpdates(): void {
   if (!('serviceWorker' in navigator)) return
   // Only reload when a previous worker was in charge: the very first install also fires controllerchange.
-  const hadController = !!navigator.serviceWorker.controller
+  let hadController = !!navigator.serviceWorker.controller
   let reloading = false
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloading || !hadController) return
+    if (!hadController) { hadController = true; return } // first install: this page is already current
+    if (reloading) return
     reloading = true
     window.location.reload()
   })

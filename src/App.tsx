@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigationType } from 'react-router-dom'
 import { PROGRAM_VERSION } from './engine/program'
 import { useStore } from './store/store'
@@ -32,6 +32,28 @@ function ScrollToTop() {
   return null
 }
 
+const TABS = ['/', '/routines', '/palantir', '/library', '/order']
+
+/**
+ * Which way the new page enters: pages opened from a list slide in from the right, going back slides
+ * in from the left, switching tabs cross-fades. Transform/opacity only, 280-340 ms, ease-out.
+ */
+function useRouteMotion(pathname: string): string {
+  const type = useNavigationType()
+  // Decided once per pathname change (React's "adjust state while rendering" pattern), so later renders
+  // of the same page (store updates, StrictMode) keep the same class.
+  const [st, setSt] = useState({ path: pathname, cls: 'route-first' })
+  if (st.path !== pathname) {
+    // Going home from a page outside the tabs (Done, Settings) reads as a return, not a new page.
+    const cls = type === 'POP' || (pathname === '/' && !TABS.includes(st.path)) ? 'route-back'
+      : (TABS.includes(pathname) && TABS.includes(st.path)) || type === 'REPLACE' ? 'route-tab'
+      : 'route-push'
+    setSt({ path: pathname, cls })
+    return cls
+  }
+  return st.cls
+}
+
 function Shell() {
   const profile = useStore((s) => s.profile)
   const program = useStore((s) => s.program)
@@ -45,6 +67,14 @@ function Shell() {
   const cloudStatus = useStore((s) => s.cloud.status)
   const loc = useLocation()
   const clearRest = useCallback(() => setRest(undefined), [setRest])
+  const motion = useRouteMotion(loc.pathname)
+
+  // The staggered entrance plays on the first screen after launch only; afterwards the route
+  // transition carries the change and pages appear at once (a replayed stagger on every tab feels slow).
+  useEffect(() => {
+    const t = setTimeout(() => document.documentElement.classList.add('warm'), 900)
+    return () => clearTimeout(t)
+  }, [])
 
   // Rebuild the stored plan whenever the builder's rules have changed since it was saved.
   useEffect(() => {
@@ -61,8 +91,7 @@ function Shell() {
     return () => { document.removeEventListener('visibilitychange', onVis); keepAwake(false) }
   }, [activeId])
 
-  // Home renders its own dock inside its layout; other pages get it from here.
-  const hideNav = ['/', '/onboarding', '/forge', '/done', '/login'].includes(loc.pathname)
+  const hideNav = ['/onboarding', '/forge', '/done', '/login'].includes(loc.pathname)
   if (!profile && loc.pathname !== '/onboarding' && loc.pathname !== '/login') {
     // First launch: offer an account (when the build has one) before building a plan; a sign-in
     // that is still fetching the archive stays on the login page until it lands.
@@ -73,7 +102,8 @@ function Shell() {
   return (
     <>
       <ScrollToTop />
-      <Routes>
+      <div key={loc.pathname} className={`route ${motion}`}>
+      <Routes location={loc}>
         <Route path="/" element={<Home />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/forge" element={<Forge />} />
@@ -90,8 +120,9 @@ function Shell() {
         <Route path="/login" element={<Login />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </div>
       {!hideNav && <LiquidDock />}
-      {active && rest && <RestTimer endsAt={rest.endsAt} startedAt={rest.startedAt} label={rest.label} sound={sound} onDone={clearRest} onSkip={clearRest} />}
+      {active && rest && <RestTimer key={rest.endsAt} endsAt={rest.endsAt} startedAt={rest.startedAt} label={rest.label} sound={sound} onDone={clearRest} onSkip={clearRest} />}
     </>
   )
 }

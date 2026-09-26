@@ -16,7 +16,7 @@ export function Page({ title, sub, children, back, right, kicker }: { title: str
         <header className="aether-rise flex items-end justify-between gap-3">
           <div className="min-w-0 flex items-end gap-3">
             {back && (
-              <button onClick={() => { haptic(); if ((window.history.state?.idx ?? 0) > 0) nav(-1); else nav('/', { replace: true }) }} aria-label="Back" className="profile-orbit grid size-11 shrink-0 place-items-center rounded-full bg-panel text-glow transition-transform active:scale-95">
+              <button onClick={() => { haptic(); if ((window.history.state?.idx ?? 0) > 0) nav(-1); else nav('/', { replace: true }) }} aria-label="Back" className="press profile-orbit grid size-11 shrink-0 place-items-center rounded-full bg-panel text-glow">
                 <ChevronLeft className="size-5" />
               </button>
             )}
@@ -90,9 +90,11 @@ export function LiquidDock() {
   return (
     <>
       {active && loc.pathname !== '/session' && (
-        <NavLink to="/session" onClick={() => haptic()} className="fixed bottom-[max(6.5rem,calc(env(safe-area-inset-bottom)+5.5rem))] left-1/2 z-20 -translate-x-1/2 aether-action rounded-full px-4 py-2 text-sm">
-          Session in progress
-        </NavLink>
+        <div className="fixed bottom-[max(6.5rem,calc(env(safe-area-inset-bottom)+5.5rem))] left-1/2 z-20 -translate-x-1/2">
+          <NavLink to="/session" onClick={() => haptic()} className="pill-in aether-action flex items-center gap-2 rounded-full px-4 py-2 text-sm">
+            <span className="live-dot" aria-hidden="true" />Session in progress
+          </NavLink>
+        </div>
       )}
       <div
         className="dock-wrap fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 z-30 h-[68px] w-[calc(100%-2.5rem)] max-w-[390px] -translate-x-1/2"
@@ -134,11 +136,25 @@ export function LiquidDock() {
 /** Kept for App.tsx compatibility. */
 export const BottomNav = LiquidDock
 
-export function Bar({ value, max, color = 'var(--glow)', className = '' }: { value: number; max: number; color?: string; className?: string }) {
-  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0
+/** Progress bar. Fills from the left when it appears and glides on change (a transform, not a width animation). */
+export function Bar({ value, max, color = 'var(--glow)', className = '', delay = 150 }: { value: number; max: number; color?: string; className?: string; delay?: number }) {
+  const frac = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0
   return (
     <div className={`h-2 rounded-full overflow-hidden ${className}`} style={{ background: 'color-mix(in oklab, var(--ice) 8%, transparent)' }}>
-      <div className="h-full rounded-full transition-all duration-700 ease-apple" style={{ width: `${pct}%`, background: color }} />
+      <div className="bar-fill h-full w-full rounded-full" style={{ transform: `scaleX(${frac})`, background: color, '--bar-delay': `${delay}ms` } as React.CSSProperties} />
+    </div>
+  )
+}
+
+/** Two or three options with a highlight that slides between them (week / month, sign in / create). */
+export function Segment<T extends string>({ value, options, onChange, className = '' }: { value: T; options: { v: T; label: string }[]; onChange: (v: T) => void; className?: string }) {
+  const i = Math.max(0, options.findIndex((o) => o.v === value))
+  return (
+    <div className={`segment glass rounded-full p-1 text-xs font-semibold ${className}`} style={{ '--seg-i': i, '--seg-n': options.length } as React.CSSProperties}>
+      <span aria-hidden="true" className="segment-thumb" />
+      {options.map((o) => (
+        <button key={o.v} type="button" aria-pressed={o.v === value} onClick={() => { haptic(); if (o.v !== value) onChange(o.v) }} className={`press rounded-full px-3 py-1.5 ${o.v === value ? 'text-night' : 'text-dim'}`}>{o.label}</button>
+      ))}
     </div>
   )
 }
@@ -146,7 +162,7 @@ export function Bar({ value, max, color = 'var(--glow)', className = '' }: { val
 /** Level + settings button pair for the home header. */
 export function ProfileButton() {
   return (
-    <NavLink to="/settings" onClick={() => haptic()} aria-label="Profile and settings" className="profile-orbit grid size-11 shrink-0 place-items-center rounded-full bg-panel text-glow transition-transform active:scale-95">
+    <NavLink to="/settings" onClick={() => haptic()} aria-label="Profile and settings" className="press profile-orbit grid size-11 shrink-0 place-items-center rounded-full bg-panel text-glow">
       <Settings2 className="size-5" />
     </NavLink>
   )
@@ -155,7 +171,7 @@ export function ProfileButton() {
 export function LevelPill() {
   const sessions = useStore((s) => s.sessions)
   const lv = levelFor(totalXp(sessions))
-  return <NavLink to="/order" onClick={() => haptic()} className="chip-glow">{lv.name} · {lv.totalXp} XP</NavLink>
+  return <NavLink to="/order" onClick={() => haptic()} className="press chip-glow">{lv.name} · {lv.totalXp} XP</NavLink>
 }
 
 export function Section({ title, children, right, className = '' }: { title: string; children: ReactNode; right?: ReactNode; className?: string }) {

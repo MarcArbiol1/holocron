@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, ChevronRight, Plus } from 'lucide-react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { EXERCISE_BY_ID, EXERCISES } from '../data/exercises'
@@ -39,6 +39,14 @@ export default function Session() {
 
   const [picker, setPicker] = useState<{ mode: 'add' } | { mode: 'swap'; idx: number; only?: string[] } | null>(null)
   const [confirm, setConfirm] = useState<'finish' | 'discard' | { remove: number } | null>(null)
+  // The set that was just ticked (for the row flash) and new rows from "+ set" (they slide in).
+  const [flash, setFlash] = useState<string | null>(null)
+  const [fresh, setFresh] = useState<string | null>(null)
+  const flashTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => () => clearTimeout(flashTimer.current), [])
+  // The header clock (elapsed minutes) ticks on its own instead of only when something is typed.
+  const [, setClock] = useState(0)
+  useEffect(() => { const id = setInterval(() => setClock((c) => c + 1), 30_000); return () => clearInterval(id) }, [])
 
   const day = useMemo(() => program?.days.find((d) => d.key === active?.dayKey), [program, active?.dayKey])
   const blockFor = useCallback((exerciseId: string): Block => {
@@ -55,15 +63,21 @@ export default function Session() {
   const plannedCardio = (day?.cardioMinutes ?? 0)
   const cardioSession = day ? cardioSessionFor(day, sessions) : undefined
   const hardSets = active.exercises.reduce((a, e) => a + e.sets.filter((s) => s.done).length, 0)
+  const anyCardio = active.cardio.some((c) => c.minutes > 0 && c.exerciseId)
+  const nothingLogged = hardSets === 0 && !anyCardio
+  // Stable keys: the n-th occurrence of an exercise keeps its key when another one is removed above it,
+  // so the rows below do not remount (and lose what is being typed) or replay their entrance.
+  const seen: Record<string, number> = {}
+  const keys = active.exercises.map((e) => { seen[e.exerciseId] = (seen[e.exerciseId] ?? 0) + 1; return `${e.exerciseId}#${seen[e.exerciseId]}` })
 
   const finish = () => {
     haptic('success')
-    finishSession()
-    nav('/done', { replace: true })
+    const xp = finishSession()
+    nav(xp ? '/done' : '/', { replace: true })
   }
 
   return (
-    <Page title={active.title} kicker="Session" sub={`${fmtDuration(active.startedAt)} · ${hardSets} sets done`} right={
+    <Page title={active.title} kicker="Session" sub={`${fmtDuration(active.startedAt)} · ${hardSets} set${hardSets === 1 ? '' : 's'} done`} right={
       <button className="btn-primary relative py-2 px-4 text-sm" onClick={() => { haptic(); setConfirm('finish') }}>Finish<HapticSwitch /></button>
     }>
       {active.reason && <p className="aether-rise px-1 text-xs leading-relaxed text-dim">{active.reason}</p>}
@@ -74,8 +88,10 @@ export default function Session() {
         const block = blockFor(log.exerciseId)
         const sug = suggest(block, sessions)
         const alts = block.alternatives.length ? block.alternatives : EXERCISES.filter((e) => e.pattern === ex.pattern && e.id !== ex.id && isAvailable(e, profile.equipment)).map((e) => e.id)
+        const key = keys[idx]
+        const allDone = log.sets.length > 0 && log.sets.every((x) => x.done)
         return (
-          <section key={`${log.exerciseId}-${idx}`} className={`metric-panel aether-rise rise-${Math.min(5, idx + 1)} space-y-3 p-3`}>
+          <section key={key} className={`metric-panel aether-rise rise-${Math.min(5, idx + 1)} space-y-3 p-3 ${allDone ? 'exercise-done' : ''} ${allDone && flash?.startsWith(`${key}/`) ? 'exercise-done-flash' : ''}`}>
             <div className="flex items-start gap-3">
               <Link to={`/exercise/${ex.id}`} onClick={() => haptic()}><Figure animId={ex.anim} size={64} className="shrink-0 rounded-xl" /></Link>
               <div className="min-w-0 flex-1">
@@ -99,7 +115,7 @@ export default function Session() {
               </thead>
               <tbody>
                 {log.sets.map((s, j) => (
-                  <tr key={j} className={s.done ? 'opacity-70' : ''}>
+                  <tr key={j} data-done={s.done} className={`set-row ${s.done ? 'opacity-70' : ''} ${flash === `${key}/${j}` ? 'set-row-flash' : ''} ${fresh === `${key}/${j}` ? 'set-new' : ''}`}>
                     <td className="py-1 font-mono text-xs font-bold text-dim">{j + 1}</td>
                     {!ex.timed && (
                       <td className="py-1 pr-1">
@@ -128,13 +144,18 @@ export default function Session() {
                           if (ex.timed && s.seconds === undefined) patch.seconds = block.seconds ?? 30
                         }
                         setSet(idx, j, patch)
+                        if (done) {
+                          setFlash(`${key}/${j}`)
+                          clearTimeout(flashTimer.current)
+                          flashTimer.current = setTimeout(() => setFlash(null), 900)
+                        }
                         if (done && settings.restTimer && block.restSec > 0) {
                           // Must start inside the tap (autoplay rules); the timer then updates the card.
                           if (settings.liveTimer && !liveActive()) startLive(`Rest ${Math.floor(block.restSec / 60)}:${String(block.restSec % 60).padStart(2, '0')}`, ex.name)
                           const now = Date.now()
                           setRest({ startedAt: now, endsAt: now + block.restSec * 1000, label: ex.name })
                         }
-                      }} className={`relative grid size-10 place-items-center rounded-xl border transition-transform active:scale-90 ${s.done ? 'bg-glow text-night' : 'text-dim'}`}
+                      }} data-done={s.done} className={`set-check ${s.done && flash === `${key}/${j}` ? 'just-done' : ''} relative grid size-10 place-items-center rounded-xl border ${s.done ? 'bg-glow text-night' : 'text-dim'}`}
                         style={s.done ? { borderColor: 'var(--glow)', boxShadow: '0 6px 18px color-mix(in oklab, var(--glow) 28%, transparent)' } : { borderColor: 'color-mix(in oklab, var(--ice) 12%, transparent)', background: 'color-mix(in oklab, var(--panel) 85%, transparent)' }}>
                         <HapticSwitch />
                         <Check className="size-[18px]" strokeWidth={3} />
@@ -145,7 +166,7 @@ export default function Session() {
               </tbody>
             </table>
             <div className="flex gap-2 text-xs">
-              <button className="btn-ghost py-1.5 px-3 text-xs" onClick={() => { haptic(); addSet(idx) }}>+ set</button>
+              <button className="btn-ghost py-1.5 px-3 text-xs" onClick={() => { haptic(); setFresh(`${key}/${log.sets.length}`); addSet(idx) }}>+ set</button>
               {log.sets.length > 1 && <button className="btn-ghost py-1.5 px-3 text-xs" onClick={() => { haptic(); removeSet(idx, log.sets.length - 1) }}>– set</button>}
               <button className="btn-ghost py-1.5 px-3 text-xs" onClick={() => { haptic(); setPicker({ mode: 'swap', idx, only: alts }) }}>Swap</button>
               <button className="btn-ghost ml-auto py-1.5 px-3 text-xs text-dim" onClick={() => { haptic('warning'); setConfirm({ remove: idx }) }}>Remove</button>
@@ -184,7 +205,7 @@ export default function Session() {
               <option value="">Choose…</option>
               {cardioOptions.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select>
-            <input className="input py-2 px-2 text-center font-mono" type="number" inputMode="numeric" placeholder="min" value={c.minutes || ''} onChange={(e) => updateCardio(i, { minutes: Number(e.target.value) })} />
+            <NumField className="input py-2 px-2 text-center font-mono" mode="numeric" ariaLabel="Cardio minutes" placeholder="min" value={c.minutes || undefined} onChange={(v) => updateCardio(i, { minutes: v ?? 0 })} />
             <select className="input py-2 px-1" value={c.intensity} onChange={(e) => updateCardio(i, { intensity: e.target.value as CardioLog['intensity'] })}>
               <option value="moderate">moderate</option><option value="vigorous">vigorous</option>
             </select>
@@ -205,7 +226,9 @@ export default function Session() {
         />
       )}
       {confirm === 'finish' && (
-        <Confirm title="Finish the session?" body={`${hardSets} sets ticked. Unticked sets are dropped and XP is awarded now.`} confirmLabel="Finish" onConfirm={finish} onCancel={() => setConfirm(null)} />
+        nothingLogged
+          ? <Confirm title="Nothing logged yet" body="No set is ticked and no cardio is filled in, so there is nothing to save. End the session without saving it?" confirmLabel="End session" danger onConfirm={finish} onCancel={() => setConfirm(null)} />
+          : <Confirm title="Finish the session?" body={`${hardSets} set${hardSets === 1 ? '' : 's'} ticked${anyCardio ? ' plus cardio' : ''}. Unticked sets are dropped and XP is awarded now.`} confirmLabel="Finish" onConfirm={finish} onCancel={() => setConfirm(null)} />
       )}
       {confirm === 'discard' && (
         <Confirm title="Terminate the workout?" body="Everything logged in this session is lost." confirmLabel="Terminate" danger onConfirm={() => { discardSession(); nav('/', { replace: true }) }} onCancel={() => setConfirm(null)} />

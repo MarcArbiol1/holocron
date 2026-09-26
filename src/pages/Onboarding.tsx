@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { EquipmentAccess, Experience, Goal, Profile, Sex } from '../data/types'
 import { useStore } from '../store/store'
@@ -21,7 +21,7 @@ function Choice<T extends string | number>({ value, options, onChange }: { value
         const on = value === o.v
         return (
           <button key={String(o.v)} type="button" onClick={() => { haptic(); onChange(o.v) }}
-            className={`rounded-2xl border px-3 py-2.5 text-left transition ${on ? 'text-ice' : 'workout-row text-ice'}`}
+            className={`press-soft rounded-2xl border px-3 py-2.5 text-left transition-colors duration-200 ${on ? 'selected-pop text-ice' : 'workout-row text-ice'}`}
             style={on ? SELECTED : undefined} aria-pressed={on}>
             <div className="text-sm font-semibold">{o.label}</div>
             {o.hint && <div className="text-[11px] leading-snug text-dim">{o.hint}</div>}
@@ -42,12 +42,14 @@ export default function Onboarding() {
   const up = <K extends keyof Profile>(k: K, v: Profile[K]) => setP((prev) => ({ ...prev, [k]: v }))
   const valid = p.age >= 12 && p.age <= 99 && p.heightCm >= 120 && p.heightCm <= 230 && p.weightKg >= 30 && p.weightKg <= 250
   const [building, setBuilding] = useState<'new' | 'rebuild' | null>(null)
+  const buildTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => () => clearTimeout(buildTimer.current), [])
 
   // The plan builds in a few milliseconds; the logo gets one full loop so the moment reads as work being done.
   const build = () => {
     setBuilding(existing ? 'rebuild' : 'new')
     setProfile({ ...p, createdAt: existing?.createdAt ?? new Date().toISOString() })
-    setTimeout(() => nav('/', { replace: true }), 4400)
+    buildTimer.current = setTimeout(() => nav('/', { replace: true }), 4400)
   }
 
   if (building) return <LogoLoader label={building === 'rebuild' ? 'Rebuilding your plan' : 'Forging your plan'} />
@@ -102,7 +104,6 @@ export default function Onboarding() {
               { v: 'health', label: 'Health and energy' }, { v: 'muscle', label: 'Build muscle' }, { v: 'strength', label: 'Get strong', hint: 'heavier, fewer reps' }, { v: 'fatloss', label: 'Lose fat', hint: 'more cardio minutes' },
             ]} />
           </div>
-        </div>
           <div>
             <label className="label">Separate cardio day</label>
             <Choice<'yes' | 'no'> value={(p.cardioDay ?? true) ? 'yes' : 'no'} onChange={(v) => up('cardioDay', v === 'yes')} options={[
@@ -111,10 +112,11 @@ export default function Onboarding() {
             ]} />
             <p className="text-[11px] text-dim mt-1.5">Needs 3 or more days. Aerobic work plus lifting carries the lowest mortality risk in the big cohorts.</p>
           </div>
+        </div>
 
         <div className="aether-rise rise-3 space-y-2">
           <button className="btn-primary w-full" disabled={!valid} type="submit">{existing ? 'Save and rebuild plan' : 'Build my plan'}</button>
-          {!valid && <p className="text-center text-xs text-legs">Check age, height and weight.</p>}
+          {!valid && <p className="swap-in text-center text-xs text-legs">Check age, height and weight.</p>}
         </div>
       </form>
     </Page>
