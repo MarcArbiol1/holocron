@@ -2,7 +2,7 @@
 
 Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 
-## State as of 26 Sep 2026 (bug review + motion pass; icon another 10% bigger) — NOT committed yet
+## State as of 26 Sep 2026 (bug review + motion pass; icon another 10% bigger) — pushed as c162dfa
 
 - **Icon:** regenerated from Marc's original drawing (Downloads/063EC7F0...PNG, full resolution, ink darkness -> alpha 15..235, ice on night) at 75.8% of the square (was 68.9%); maskable 60.6% (inside the 80% safe circle). Script: `scratch/make_icons.py <frac> <maskable-frac>`. `index.html` links carry `?v=3`. iOS only reads the icon when the app is added: **delete the home-screen app and Add to Home Screen again** to see it.
 - **Bugs fixed (engine/sync):** Erase while signed in wiped the cloud row (now signs out first); pushes were blind overwrites (now pull+merge before every push, and on return to the app after 60 s); deleted sessions came back (tombstones `deleted` / `deletedIds`); a different account signing in absorbed the previous one's data (`lastUserId`, replace instead of merge); weight never went up without RIR logged (empty RIR = reps to spare); timed holds said "0/0/0" (now seconds); recommendation froze while the app stayed open (hour tick); an off-plan day restarted the rotation; fresh install ignored account settings; empty Finish saved a +100 XP session (now "Nothing logged yet", discards); wake-lock race; stale beep handler; second update in one page never reloaded; progression tests used a fixed date that would break on 29 Sep. 39 tests.
