@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Mail } from 'lucide-react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { NAMES } from '../theme/names'
@@ -23,8 +23,20 @@ export default function Login() {
   const profile = useStore((s) => s.profile)
   const setLoginSkipped = useStore((s) => s.setLoginSkipped)
   const [mode, setMode] = useState<'in' | 'up'>('in')
+  // The fields are uncontrolled on purpose. iOS Password AutoFill (the key bar above the keyboard) writes
+  // the values straight into the inputs; a React-controlled input does not see that write and resets the
+  // field to its own empty state on the next render, so the fill vanished. The DOM holds the values and
+  // they are read from it when needed; the state copies only drive the button's enabled look.
+  const emailRef = useRef<HTMLInputElement>(null)
+  const passRef = useRef<HTMLInputElement>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const readFields = () => {
+    const e = emailRef.current?.value.trim() ?? ''
+    const p = passRef.current?.value ?? ''
+    setEmail(e); setPassword(p)
+    return { e, p }
+  }
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -33,19 +45,23 @@ export default function Login() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email.trim() || (!password && mode !== 'in')) return
+    const { e: mail, p: pass } = readFields()
+    if (!mail) { setMsg('Type your email first.'); return }
+    if (mode === 'in' && !pass) { setMsg('Type your password, or use the sign-in link below.'); return }
+    if (mode === 'up' && pass.length < 8) { setMsg('Choose a password of 8 characters or more.'); return }
     haptic()
     setBusy(true); setMsg('')
-    const err = mode === 'in' ? await signInWithEmail(email.trim(), password) : await signUpWithEmail(email.trim(), password)
+    const err = mode === 'in' ? await signInWithEmail(mail, pass) : await signUpWithEmail(mail, pass)
     setBusy(false)
     if (err === 'CHECK_EMAIL') setMsg('Account created. Open the confirmation mail we just sent, then come back and sign in.')
     else if (err) setMsg(err)
     else after()
   }
   const magic = async () => {
-    if (!email.trim()) { setMsg('Type your email first.'); return }
+    const { e: mail } = readFields()
+    if (!mail) { setMsg('Type your email first.'); return }
     haptic(); setBusy(true); setMsg('')
-    const err = await sendMagicLink(email.trim())
+    const err = await sendMagicLink(mail)
     setBusy(false)
     setMsg(err ?? 'Link sent. Open it on this phone, in the same browser, and you are in.')
   }
@@ -78,9 +94,11 @@ export default function Login() {
             </div>
             <form className="aether-rise rise-3 metric-panel mt-4 space-y-3 p-4" onSubmit={submit}>
               <Segment value={mode} options={[{ v: 'in', label: 'Sign in' }, { v: 'up', label: 'Create account' }]} onChange={(m) => { setMode(m); setMsg('') }} />
-              <input className="input" type="email" inputMode="email" autoComplete="email" autoCapitalize="off" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <input className="input" type="password" autoComplete={mode === 'in' ? 'current-password' : 'new-password'} placeholder={mode === 'in' ? 'Password' : 'Choose a password (8+ characters)'} value={password} onChange={(e) => setPassword(e.target.value)} />
-              <button className="btn-primary w-full" type="submit" disabled={busy || !email.trim() || password.length < (mode === 'in' ? 1 : 8)}>
+              {/* autoComplete="username" (not "email") is what pairs this field with the saved password in iCloud Keychain. */}
+              <input ref={emailRef} className="input" type="email" name="email" id="login-email" inputMode="email" autoComplete="username" autoCapitalize="off" autoCorrect="off" spellCheck={false} placeholder="Email" defaultValue="" onInput={readFields} onChange={readFields} onBlur={readFields} />
+              <input ref={passRef} key={mode} className="input" type="password" name="password" id="login-password" autoComplete={mode === 'in' ? 'current-password' : 'new-password'} placeholder={mode === 'in' ? 'Password' : 'Choose a password (8+ characters)'} defaultValue="" onInput={readFields} onChange={readFields} onBlur={readFields} />
+              {/* Not disabled on empty fields: an AutoFill that React has not seen yet must still be able to submit. */}
+              <button className={`btn-primary w-full ${!busy && (!email || password.length < (mode === 'in' ? 1 : 8)) ? 'opacity-60' : ''}`} type="submit" disabled={busy}>
                 <Mail className="size-4" /> {mode === 'in' ? 'Sign in with email' : 'Create account'}
               </button>
               {mode === 'in' && <button type="button" className="w-full text-center text-xs text-glow" disabled={busy} onClick={magic}>Email me a sign-in link instead</button>}
