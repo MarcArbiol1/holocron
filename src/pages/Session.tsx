@@ -16,7 +16,6 @@ import { liveActive, startLive } from '../lib/live'
 import { cardioSessionFor } from '../engine/cardio'
 import type { Block, CardioLog } from '../data/types'
 
-const GLOW_TINT: React.CSSProperties = { background: 'color-mix(in oklab, var(--glow) 14%, transparent)' }
 
 export default function Session() {
   const nav = useNavigate()
@@ -78,9 +77,9 @@ export default function Session() {
 
   return (
     <Page title={active.title} kicker="Session" sub={`${fmtDuration(active.startedAt)} · ${hardSets} set${hardSets === 1 ? '' : 's'} done`} right={
-      <button className="btn-primary relative py-2 px-4 text-sm" onClick={() => { haptic(); setConfirm('finish') }}>Finish<HapticSwitch /></button>
+      <button className="nav-action relative" onClick={() => { haptic(); setConfirm('finish') }}>Finish<HapticSwitch /></button>
     }>
-      {active.reason && <p className="aether-rise px-1 text-xs leading-relaxed text-dim">{active.reason}</p>}
+      {active.reason && <p className="aether-rise -mt-3 px-1 text-footnote text-dim">{active.reason}</p>}
 
       {active.exercises.map((log, idx) => {
         const ex = EXERCISE_BY_ID[log.exerciseId]
@@ -91,21 +90,21 @@ export default function Session() {
         const key = keys[idx]
         const allDone = log.sets.length > 0 && log.sets.every((x) => x.done)
         return (
-          <section key={key} className={`metric-panel aether-rise rise-${Math.min(5, idx + 1)} space-y-3 p-3 ${allDone ? 'exercise-done' : ''} ${allDone && flash?.startsWith(`${key}/`) ? 'exercise-done-flash' : ''}`}>
+          <section key={key} className={`metric-panel aether-rise rise-${Math.min(5, idx + 1)} space-y-3 p-4 ${allDone ? 'exercise-done' : ''} ${allDone && flash?.startsWith(`${key}/`) ? 'exercise-done-flash' : ''}`}>
             <div className="flex items-start gap-3">
-              <Link to={`/exercise/${ex.id}`} onClick={() => haptic()}><Figure animId={ex.anim} size={64} className="shrink-0 rounded-xl" /></Link>
+              <Link to={`/exercise/${ex.id}`} onClick={() => haptic()}><Figure animId={ex.anim} size={64} className="shrink-0 rounded-[12px]" /></Link>
               <div className="min-w-0 flex-1">
-                <Link to={`/exercise/${ex.id}`} onClick={() => haptic()} className="flex items-center gap-1 font-semibold leading-tight">
+                <Link to={`/exercise/${ex.id}`} onClick={() => haptic()} className="flex items-center gap-1 text-base font-semibold">
                   <span className="truncate">{ex.name}</span><ChevronRight className="size-4 shrink-0 text-dim" />
                 </Link>
-                <div className="mt-0.5 text-[11px] text-dim">{ex.primary.map((m) => MUSCLES[m].label).join(', ')} · target {block.sets} × {block.seconds ? `${block.seconds} s` : `${block.repMin}–${block.repMax}`}{ex.unilateral ? ' each side' : ''} · {block.rir} in reserve</div>
-                <p className={`mt-1 text-xs leading-snug ${sug.trend === 'up' ? 'text-soft' : sug.trend === 'down' ? 'text-legs' : 'text-dim'}`}>{sug.note}</p>
+                <div className="mt-0.5 text-footnote text-dim">{ex.primary.map((m) => MUSCLES[m].label).join(', ')} · target {block.sets} × {block.seconds ? `${block.seconds} s` : `${block.repMin}–${block.repMax}`}{ex.unilateral ? ' each side' : ''} · {block.rir} in reserve</div>
+                <p className={`mt-1 text-footnote ${sug.trend === 'up' ? 'text-soft' : sug.trend === 'down' ? 'text-legs' : 'text-dim'}`}>{sug.note}</p>
               </div>
             </div>
 
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-[10px] font-semibold uppercase tracking-[0.12em] text-dim">
+                <tr className="text-footnote font-semibold text-dim">
                   <th className="w-7 text-left font-semibold">Set</th>
                   {!ex.timed && <th className="text-left font-semibold">kg</th>}
                   <th className="text-left font-semibold">{ex.timed ? 'seconds' : 'reps'}</th>
@@ -156,7 +155,7 @@ export default function Session() {
                           setRest({ startedAt: now, endsAt: now + block.restSec * 1000, label: ex.name })
                         }
                       }} data-done={s.done} className={`set-check ${s.done && flash === `${key}/${j}` ? 'just-done' : ''} relative grid size-10 place-items-center rounded-xl border ${s.done ? 'bg-glow text-night' : 'text-dim'}`}
-                        style={s.done ? { borderColor: 'var(--glow)', boxShadow: '0 6px 18px color-mix(in oklab, var(--glow) 28%, transparent)' } : { borderColor: 'color-mix(in oklab, var(--ice) 12%, transparent)', background: 'color-mix(in oklab, var(--panel) 85%, transparent)' }}>
+                        style={s.done ? { borderColor: 'var(--glow)', } : { borderColor: 'color-mix(in oklab, var(--ice) 12%, transparent)', background: 'color-mix(in oklab, var(--panel) 85%, transparent)' }}>
                         <HapticSwitch />
                         <Check className="size-[18px]" strokeWidth={3} />
                       </button>
@@ -166,26 +165,22 @@ export default function Session() {
               </tbody>
             </table>
             <div className="flex gap-2 text-xs">
-              <button className="btn-ghost py-1.5 px-3 text-xs" onClick={() => { haptic(); setFresh(`${key}/${log.sets.length}`); addSet(idx) }}>+ set</button>
-              {log.sets.length > 1 && <button className="btn-ghost py-1.5 px-3 text-xs" onClick={() => { haptic(); removeSet(idx, log.sets.length - 1) }}>– set</button>}
-              <button className="btn-ghost py-1.5 px-3 text-xs" onClick={() => { haptic(); setPicker({ mode: 'swap', idx, only: alts }) }}>Swap</button>
-              <button className="btn-ghost ml-auto py-1.5 px-3 text-xs text-dim" onClick={() => { haptic('warning'); setConfirm({ remove: idx }) }}>Remove</button>
+              <button className="btn-small" onClick={() => { haptic(); setFresh(`${key}/${log.sets.length}`); addSet(idx) }}>+ set</button>
+              {log.sets.length > 1 && <button className="btn-small" onClick={() => { haptic(); removeSet(idx, log.sets.length - 1) }}>– set</button>}
+              <button className="btn-small" onClick={() => { haptic(); setPicker({ mode: 'swap', idx, only: alts }) }}>Swap</button>
+              <button className="btn-small ml-auto !text-[color:var(--red)]" onClick={() => { haptic('warning'); setConfirm({ remove: idx }) }}>Remove</button>
             </div>
           </section>
         )
       })}
 
-      <button className="primary-action aether-rise flex w-full items-center justify-between rounded-2xl p-4 text-left" onClick={() => { haptic(); setPicker({ mode: 'add' }) }}>
-        <span className="flex items-center gap-3">
-          <span className="grid size-11 place-items-center rounded-xl text-glow" style={GLOW_TINT}><Plus className="size-5" /></span>
-          <span><span className="block text-sm font-semibold">Add an exercise</span><span className="mt-0.5 block text-xs text-dim">Search the Archive</span></span>
-        </span>
-        <ChevronRight className="size-5 text-dim" />
+      <button className="btn-ghost aether-rise w-full" onClick={() => { haptic(); setPicker({ mode: 'add' }) }}>
+        <Plus className="size-5" /> Add Exercise
       </button>
 
       <section className="metric-panel aether-rise space-y-3 p-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold">Cardio</h2>
+          <h2 className="text-lg font-semibold">Cardio</h2>
           <span className={plannedCardio > 0 ? 'chip-glow' : 'chip-dim'}>{plannedCardio > 0 ? `planned ${plannedCardio} min` : 'optional'}</span>
         </div>
         {cardioSession && (
@@ -211,11 +206,13 @@ export default function Session() {
             </select>
           </div>
         ))}
-        <p className="text-[11px] leading-snug text-dim">Moderate: you can talk but not sing. Vigorous: a few words at a time. Vigorous minutes count double.</p>
+        <p className="text-footnote text-dim">Moderate: you can talk but not sing. Vigorous: a few words at a time. Vigorous minutes count double.</p>
       </section>
 
-      <button className="btn-danger relative w-full" onClick={() => { haptic('warning'); setConfirm('discard') }}>Terminate workout<HapticSwitch /></button>
-      <p className="text-center text-[11px] text-dim">Ends the session without saving it. Use Finish to keep what you logged.</p>
+      <div>
+        <button className="btn-danger relative w-full" onClick={() => { haptic('warning'); setConfirm('discard') }}>End Without Saving<HapticSwitch /></button>
+        <p className="list-footer text-center">Use Finish to keep what you logged.</p>
+      </div>
 
       {picker && (
         <ExercisePicker
@@ -227,14 +224,14 @@ export default function Session() {
       )}
       {confirm === 'finish' && (
         nothingLogged
-          ? <Confirm title="Nothing logged yet" body="No set is ticked and no cardio is filled in, so there is nothing to save. End the session without saving it?" confirmLabel="End session" danger onConfirm={finish} onCancel={() => setConfirm(null)} />
+          ? <Confirm title="Nothing logged yet" body="No set is ticked and no cardio is filled in, so there is nothing to save. End the session without saving it?" confirmLabel="End Session" danger onConfirm={finish} onCancel={() => setConfirm(null)} />
           : <Confirm title="Finish the session?" body={`${hardSets} set${hardSets === 1 ? '' : 's'} ticked${anyCardio ? ' plus cardio' : ''}. Unticked sets are dropped and XP is awarded now.`} confirmLabel="Finish" onConfirm={finish} onCancel={() => setConfirm(null)} />
       )}
       {confirm === 'discard' && (
-        <Confirm title="Terminate the workout?" body="Everything logged in this session is lost." confirmLabel="Terminate" danger onConfirm={() => { discardSession(); nav('/', { replace: true }) }} onCancel={() => setConfirm(null)} />
+        <Confirm title="End the workout without saving?" body="Everything logged in this session is lost." confirmLabel="End Workout" danger onConfirm={() => { discardSession(); nav('/', { replace: true }) }} onCancel={() => setConfirm(null)} />
       )}
       {confirm && typeof confirm === 'object' && (
-        <Confirm title="Remove this exercise?" body={(() => { const n = active.exercises[confirm.remove]?.sets.filter((s) => s.done).length ?? 0; return `${EXERCISE_BY_ID[active.exercises[confirm.remove]?.exerciseId]?.name ?? 'It'} leaves this session${n ? ` with its ${n} ticked set${n === 1 ? '' : 's'}` : ''}.` })()} confirmLabel="Remove" danger onConfirm={() => { removeExercise(confirm.remove); setConfirm(null) }} onCancel={() => setConfirm(null)} />
+        <Confirm title="Remove this exercise?" body={(() => { const n = active.exercises[confirm.remove]?.sets.filter((s) => s.done).length ?? 0; return `${EXERCISE_BY_ID[active.exercises[confirm.remove]?.exerciseId]?.name ?? 'It'} leaves this session${n ? ` with its ${n} ticked set${n === 1 ? '' : 's'}` : ''}.` })()} confirmLabel="Remove Exercise" danger onConfirm={() => { removeExercise(confirm.remove); setConfirm(null) }} onCancel={() => setConfirm(null)} />
       )}
     </Page>
   )

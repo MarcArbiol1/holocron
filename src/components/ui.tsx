@@ -7,28 +7,46 @@ import { useStore } from '../store/store'
 import { levelFor, totalXp } from '../engine/levels'
 import { HapticSwitch, haptic } from '../lib/haptics'
 
-/** Standard page: kicker line, big title, optional back button and right slot. Content is centred at phone width. */
-export function Page({ title, sub, children, back, right, kicker }: { title: string; sub?: string; children: ReactNode; back?: boolean; right?: ReactNode; kicker?: string }) {
+/**
+ * Standard page in the iOS pattern (HIG Toolbars): a navigation bar with the back button and actions,
+ * a Large Title under it that scrolls with the content, and a compact centred title that fades into the
+ * bar once the large one has scrolled away. `kicker`/`sub` render as a subtitle under the large title.
+ */
+export function Page({ title, sub, children, back, right, kicker, leading }: { title: string; sub?: string; children: ReactNode; back?: boolean; right?: ReactNode; kicker?: string; leading?: ReactNode }) {
   const nav = useNavigate()
+  const titleRef = useRef<HTMLHeadingElement>(null)
+  const [compact, setCompact] = useState(false)
+  useEffect(() => {
+    const el = titleRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    // The bar is ~52 px tall under the safe area; the title counts as gone once it slides under it.
+    const io = new IntersectionObserver(([e]) => setCompact(!e.isIntersecting), { rootMargin: '-60px 0px 0px 0px', threshold: 0 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+  const subtitle = [kicker, sub].filter(Boolean).join(' · ')
+  const hasBar = back || right || leading
   return (
     <main className="relative min-h-dvh overflow-x-hidden bg-night text-ice">
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col px-6 pb-36 pt-[max(1.5rem,env(safe-area-inset-top))]">
-        <header className="aether-rise flex items-end justify-between gap-3">
-          <div className="min-w-0 flex items-end gap-3">
-            {back && (
-              <button onClick={() => { haptic(); if ((window.history.state?.idx ?? 0) > 0) nav(-1); else nav('/', { replace: true }) }} aria-label="Back" className="press profile-orbit grid size-11 shrink-0 place-items-center rounded-full bg-panel text-glow">
-                <ChevronLeft className="size-5" />
+      <div className={`nav-bar ${compact ? 'nav-bar-compact' : ''}`}>
+        <div className="mx-auto flex h-[52px] w-full max-w-[430px] items-center gap-2 px-4">
+          <div className="flex min-w-[44px] items-center">
+            {back ? (
+              <button onClick={() => { haptic(); if ((window.history.state?.idx ?? 0) > 0) nav(-1); else nav('/', { replace: true }) }} aria-label="Back" className="press nav-circle">
+                <ChevronLeft className="size-[22px]" strokeWidth={2.4} />
               </button>
-            )}
-            <div className="min-w-0">
-              <p className="kicker truncate">{kicker ?? sub ?? ''}</p>
-              <h1 className="mt-1 text-[28px] font-bold leading-[1.05] break-words">{title}</h1>
-              {kicker && sub && <p className="mt-1.5 text-xs text-dim">{sub}</p>}
-            </div>
+            ) : leading}
           </div>
-          {right}
+          <p className="nav-title min-w-0 flex-1 truncate text-center text-base font-semibold" aria-hidden={!compact}>{title}</p>
+          <div className="flex min-w-[44px] items-center justify-end">{right}</div>
+        </div>
+      </div>
+      <div className={`relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col px-4 pb-36 ${hasBar ? 'pt-[calc(env(safe-area-inset-top)+56px)]' : 'pt-[calc(env(safe-area-inset-top)+56px)]'}`}>
+        <header className="aether-rise px-1">
+          <h1 ref={titleRef} className="text-3xl font-bold break-words">{title}</h1>
+          {subtitle && <p className="mt-0.5 text-sm text-dim">{subtitle}</p>}
         </header>
-        <div className="mt-6 space-y-6">{children}</div>
+        <div className="mt-5 space-y-7">{children}</div>
       </div>
     </main>
   )
@@ -89,7 +107,7 @@ export function LiquidDock() {
   const Active = tabs[activeIndex].icon
   return (
     <>
-      {active && loc.pathname !== '/session' && (
+      {active && loc.pathname !== '/session' && loc.pathname !== '/' && (
         <div className="fixed bottom-[max(6.5rem,calc(env(safe-area-inset-bottom)+5.5rem))] left-1/2 z-20 -translate-x-1/2">
           <NavLink to="/session" onClick={() => haptic()} className="pill-in aether-action flex items-center gap-2 rounded-full px-4 py-2 text-sm">
             <span className="live-dot" aria-hidden="true" />Session in progress
@@ -162,7 +180,7 @@ export function Segment<T extends string>({ value, options, onChange, className 
 /** Level + settings button pair for the home header. */
 export function ProfileButton() {
   return (
-    <NavLink to="/settings" onClick={() => haptic()} aria-label="Profile and settings" className="press profile-orbit grid size-11 shrink-0 place-items-center rounded-full bg-panel text-glow">
+    <NavLink to="/settings" onClick={() => haptic()} aria-label="Profile and settings" className="press nav-circle">
       <Settings2 className="size-5" />
     </NavLink>
   )
@@ -178,7 +196,7 @@ export function Section({ title, children, right, className = '' }: { title: str
   return (
     <section className={`space-y-3 ${className}`}>
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">{title}</h2>
+        <h2 className="px-1 text-xl font-bold">{title}</h2>
         {right}
       </div>
       {children}

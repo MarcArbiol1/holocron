@@ -10,13 +10,19 @@
 :root {
   color-scheme: dark;
   -webkit-tap-highlight-color: transparent;
-  --night: oklch(0.145 0.006 240);
-  --panel: oklch(0.225 0.008 240);
-  --ice: oklch(0.965 0.006 210);
-  --dim: oklch(0.62 0.015 220);
-  --glow: oklch(0.82 0.115 185);
-  --glow-soft: oklch(0.72 0.09 170);
-  --gold: oklch(0.79 0.08 75);
+  /* iOS dark semantic colours (HIG Color / Dark Mode). */
+  --night: #000000;          /* systemBackground */
+  --panel: #1c1c1e;          /* secondarySystemGroupedBackground: cards, grouped lists */
+  --raised: #2c2c2e;         /* tertiary: fields, elevated sheets, pressed rows */
+  --ice: #ffffff;            /* label */
+  --dim: rgba(235, 235, 245, 0.6);   /* secondaryLabel */
+  --faint: rgba(235, 235, 245, 0.3); /* tertiaryLabel */
+  --separator: rgba(84, 84, 88, 0.6);
+  --fill: rgba(118, 118, 128, 0.24); /* tertiarySystemFill: gray buttons, segmented track */
+  --glow: #5cdcce;           /* the app tint (Holocron teal) */
+  --glow-soft: #30d158;      /* systemGreen */
+  --gold: #ffd600;           /* systemYellow */
+  --red: #ff4245;            /* systemRed (iOS 26) */
   --spring: linear(0, 0.0772, 0.2473, 0.4431, 0.6252, 0.7746, 0.8857, 0.9608, 1.0063, 1.0296, 1.0379, 1.037, 1.0314, 1.024, 1.0167, 1.0105, 1.0057, 1.0024, 1.0003, 0.9991, 0.9986, 0.9985, 0.9987, 0.999, 0.9993, 0.9995, 0.9997, 0.9999, 1, 1, 1, 1.0001, 1);
   --apple: cubic-bezier(0.32, 0.72, 0, 1);
   /* Strong ease-out for anything entering or answering a tap: fast start, soft landing. */
@@ -32,9 +38,12 @@
 }
 
 html, body, #root { height: 100%; }
+.font-mono { font-variant-numeric: tabular-nums; }
 
 body {
-  @apply bg-night text-ice antialiased font-sans;
+  @apply bg-night text-ice antialiased font-sans text-base;
+  font-feature-settings: "kern";
+  caret-color: var(--glow);
   margin: 0;
   overscroll-behavior-y: none;
   touch-action: manipulation;
@@ -47,88 +56,74 @@ button { cursor: pointer; }
 
 /* ---------- glass surfaces ---------- */
 @layer components {
+  /* Liquid Glass belongs to the control layer only (tab bar, floating timer, sheets): HIG Materials. */
   .glass {
-    background: color-mix(in oklab, var(--ice) 5%, transparent);
-    border: 1px solid color-mix(in oklab, var(--ice) 11%, transparent);
-    -webkit-backdrop-filter: blur(24px) saturate(135%);
-    backdrop-filter: blur(24px) saturate(135%);
-    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--ice) 10%, transparent), 0 20px 60px color-mix(in oklab, var(--night) 75%, transparent);
+    background: color-mix(in srgb, var(--raised) 62%, transparent);
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+    box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.18), 0 12px 40px rgba(0, 0, 0, 0.5);
   }
-  .metric-panel {
-    border-radius: 1.25rem;
-    background: color-mix(in oklab, var(--panel) 78%, transparent);
-    border: 1px solid color-mix(in oklab, var(--ice) 7%, transparent);
-    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--ice) 4%, transparent);
-  }
-  .workout-row {
-    background: color-mix(in oklab, var(--panel) 72%, transparent);
-    border: 1px solid color-mix(in oklab, var(--ice) 7%, transparent);
-    transition: background 220ms ease, transform 260ms var(--ease-out);
-  }
-  .workout-row:active { transform: scale(0.975); background: color-mix(in oklab, var(--panel) 92%, transparent); transition-duration: 90ms; }
-  .primary-action {
-    background: color-mix(in oklab, var(--panel) 82%, transparent);
-    border: 1px solid color-mix(in oklab, var(--glow) 16%, transparent);
-    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--ice) 7%, transparent);
-    transition: background 220ms ease, transform 260ms var(--ease-out);
-  }
-  .primary-action:active { transform: scale(0.975); background: color-mix(in oklab, var(--panel) 96%, transparent); transition-duration: 90ms; }
-  .profile-orbit {
-    border: 1px solid color-mix(in oklab, var(--glow) 25%, transparent);
-    box-shadow: 0 0 0 4px color-mix(in oklab, var(--glow) 5%, transparent), inset 0 1px 0 color-mix(in oklab, var(--ice) 9%, transparent);
-  }
-  /* The glowing call-to-action (solid glow fill). */
-  .aether-action {
-    @apply bg-glow text-night font-semibold;
-    box-shadow: 0 10px 35px color-mix(in oklab, var(--glow) 28%, transparent), inset 0 1px 0 color-mix(in oklab, var(--ice) 45%, transparent);
-    transition: transform 260ms var(--ease-out), box-shadow 220ms ease;
-  }
-  .aether-action:active { transform: scale(0.97); transition-duration: 90ms; }
-  .aether-sheen { position: relative; overflow: hidden; }
-  .aether-sheen::after {
-    content: ""; position: absolute; inset-block: 0; left: 0; width: 38%;
-    background: linear-gradient(100deg, transparent, color-mix(in oklab, var(--ice) 24%, transparent), transparent);
-    transform: translateX(-150%) skewX(-12deg);
-  }
-  .aether-sheen:active::after { animation: aether-sheen 0.7s var(--ease-out); }
-  @media (hover: hover) and (pointer: fine) {
-    .workout-row:hover { background: color-mix(in oklab, var(--panel) 92%, transparent); }
-    .primary-action:hover { background: color-mix(in oklab, var(--panel) 96%, transparent); }
-    .aether-action:hover { box-shadow: 0 12px 44px color-mix(in oklab, var(--glow) 42%, transparent), inset 0 1px 0 color-mix(in oklab, var(--ice) 55%, transparent); }
-    .aether-sheen:hover::after { animation: aether-sheen 0.7s var(--ease-out); }
-  }
-  /* Generic press feedback for small controls (chips, icon buttons). */
-  .press { transition: transform 260ms var(--ease-out), background-color 220ms ease, color 220ms ease; }
-  .press:active { transform: scale(0.94); transition-duration: 90ms; }
-  .press-soft { transition: transform 260ms var(--ease-out); }
-  .press-soft:active { transform: scale(0.97); transition-duration: 90ms; }
-
-  /* chips + inputs in the new skin */
-  .chip { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold; }
-  .chip-glow { @apply chip text-glow; background: color-mix(in oklab, var(--glow) 14%, transparent); }
-  .chip-ice { @apply chip text-ice; background: color-mix(in oklab, var(--ice) 9%, transparent); }
-  .chip-dim { @apply chip text-dim; background: color-mix(in oklab, var(--panel) 90%, transparent); border: 1px solid color-mix(in oklab, var(--ice) 7%, transparent); }
-  .input {
-    @apply w-full rounded-xl px-3 py-3 text-base text-ice placeholder:text-dim focus:outline-none;
-    background: color-mix(in oklab, var(--panel) 85%, transparent);
-    border: 1px solid color-mix(in oklab, var(--ice) 9%, transparent);
-  }
-  .input:focus { border-color: color-mix(in oklab, var(--glow) 45%, transparent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--glow) 10%, transparent); }
-  .label { @apply block text-[11px] font-semibold uppercase tracking-[0.12em] text-dim mb-1.5; }
-  .kicker { @apply text-xs font-semibold uppercase tracking-[0.12em] text-dim; }
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3.5 font-semibold disabled:opacity-40; transition: transform 260ms var(--ease-out), opacity 200ms ease, background-color 200ms ease, box-shadow 220ms ease; }
-  .btn:active:not(:disabled) { transform: scale(0.97); transition-duration: 90ms; }
-  .btn-primary { @apply btn aether-action; }
-  .btn-ghost { @apply btn primary-action text-ice; }
-  .btn-danger { @apply btn text-legs; background: color-mix(in oklab, #e0553f 14%, transparent); border: 1px solid color-mix(in oklab, #e0553f 25%, transparent); }
+  /* Content layer: opaque grouped surfaces, no borders, no glows. */
+  .metric-panel { border-radius: 22px; background: var(--panel); }
   .card { @apply metric-panel; }
-  /* Legacy alias kept for components not yet restyled. */
+  /* A tappable row inside or outside a grouped list: iOS highlights a pressed row, it does not shrink it. */
+  .workout-row { background: var(--panel); transition: background-color 250ms ease; -webkit-user-select: none; user-select: none; }
+  .workout-row:active { background: var(--raised); transition-duration: 0ms; }
+  .primary-action { background: var(--panel); transition: background-color 250ms ease; }
+  .primary-action:active { background: var(--raised); transition-duration: 0ms; }
+  /* Inset grouped list (Settings app): one rounded surface, rows split by hairlines that start after the leading icon. */
+  .ios-list { border-radius: 22px; background: var(--panel); overflow: hidden; }
+  .ios-list > * { position: relative; }
+  .ios-list > * + *::before { content: ""; position: absolute; top: 0; right: 0; left: var(--sep-inset, 16px); height: 0.5px; background: var(--separator); z-index: 1; pointer-events: none; }
+  .ios-list .workout-row, .ios-list .primary-action { border-radius: 0; background: transparent; }
+  .ios-list .workout-row:active, .ios-list .primary-action:active { background: var(--raised); }
+  .ios-row { @apply flex min-h-[44px] w-full items-center gap-3 px-4 py-2.5 text-left; }
+  /* Section header / footer of a grouped list. */
+  .list-header { @apply px-4 pb-1.5 text-footnote font-semibold text-dim; }
+  .list-footer { @apply px-4 pt-1.5 text-footnote text-dim; }
+  .profile-orbit { background: var(--fill); }
+  /* The filled (prominent) button: one per view (HIG Buttons). */
+  .aether-action { @apply bg-glow text-night font-semibold; transition: transform 260ms var(--ease-out), opacity 200ms ease; }
+  .aether-action:active { transform: scale(0.97); opacity: 0.85; transition-duration: 90ms; }
+  .aether-sheen { position: relative; }
+  /* Generic press feedback for small controls. */
+  .press { transition: transform 260ms var(--ease-out), background-color 220ms ease, color 220ms ease, opacity 200ms ease; }
+  .press:active { transform: scale(0.94); opacity: 0.8; transition-duration: 90ms; }
+  .press-soft { transition: transform 260ms var(--ease-out), opacity 200ms ease; }
+  .press-soft:active { transform: scale(0.97); opacity: 0.85; transition-duration: 90ms; }
+
+  /* Badges (Caption 1, semibold, tinted capsule) */
+  .chip { @apply inline-flex items-center rounded-full px-2.5 py-[3px] text-xs font-semibold; }
+  .chip-glow { @apply chip text-glow; background: color-mix(in srgb, var(--glow) 16%, transparent); }
+  .chip-ice { @apply chip text-ice; background: var(--fill); }
+  .chip-dim { @apply chip text-dim; background: var(--fill); }
+  /* Text fields: filled, no border, 17 pt so iOS does not zoom on focus. */
+  .input { @apply w-full rounded-xl px-3 py-[11px] text-base text-ice placeholder:text-[color:var(--faint)] focus:outline-none; background: var(--raised); border: 0; }
+  .input:focus { box-shadow: 0 0 0 2px color-mix(in srgb, var(--glow) 55%, transparent); }
+  .label { @apply mb-1.5 block px-1 text-footnote text-dim; }
+  .kicker { @apply text-footnote font-semibold text-dim; }
+  /* Buttons (HIG Buttons, iOS 26 capsules): filled = prominent, gray = secondary, destructive = red label. */
+  .btn { @apply inline-flex min-h-[50px] items-center justify-center gap-2 rounded-full px-5 text-base font-semibold disabled:opacity-40; transition: transform 260ms var(--ease-out), opacity 200ms ease, background-color 200ms ease; }
+  .btn:active:not(:disabled) { transform: scale(0.97); opacity: 0.85; transition-duration: 90ms; }
+  .btn-primary { @apply btn bg-glow text-night; }
+  .btn-ghost { @apply btn text-glow; background: var(--fill); }
+  .btn-danger { @apply btn; color: var(--red); background: color-mix(in srgb, var(--red) 15%, transparent); }
   .btn-glass { @apply btn glass text-ice; }
+  /* Small capsule buttons inside cards (+ set, Swap) */
+  .btn-small { @apply inline-flex min-h-[34px] items-center justify-center rounded-full px-3.5 text-sm font-semibold text-glow; background: var(--fill); transition: transform 260ms var(--ease-out), opacity 200ms ease; }
+  .btn-small:active { transform: scale(0.95); opacity: 0.8; transition-duration: 90ms; }
+
+  /* iOS switch: 51 x 31, green when on (HIG Toggles). */
+  .ios-switch { position: relative; flex-shrink: 0; width: 51px; height: 31px; border-radius: 9999px; background: var(--fill); transition: background-color 250ms ease; }
+  .ios-switch[data-on="true"] { background: #30d158; }
+  .ios-switch > span { position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 9999px; background: #fff; box-shadow: 0 3px 8px rgba(0,0,0,0.15), 0 3px 1px rgba(0,0,0,0.06); transition: transform 300ms var(--spring-snappy); }
+  .ios-switch[data-on="true"] > span { transform: translateX(20px); }
 
   /* Activity rings */
-  .activity-ring { filter: drop-shadow(0 0 9px color-mix(in oklab, var(--glow) 34%, transparent)); }
-  .activity-ring-soft { filter: drop-shadow(0 0 7px color-mix(in oklab, var(--glow-soft) 22%, transparent)); }
-  .activity-ring-faint { opacity: 0.72; }
+  .activity-ring { filter: none; }
+  .activity-ring-soft { filter: none; }
+  .activity-ring-faint { opacity: 1; }
 
   /* Entrance */
   .aether-rise { animation: aether-rise 460ms var(--ease-out) both; }
@@ -175,10 +170,26 @@ button { cursor: pointer; }
   .dock-tab:active { transform: scale(0.88); transition-duration: 90ms; }
 }
 
+/* ---------- navigation bar (HIG Toolbars) ---------- */
+/* Transparent over the large title; once it has scrolled away the bar gets its material and a hairline
+   and the compact title fades in. Fixed, so it sits outside the page transform during transitions. */
+.nav-bar { position: fixed; inset-inline: 0; top: 0; z-index: 30; padding-top: env(safe-area-inset-top); transition: background-color 200ms ease, box-shadow 200ms ease; }
+.nav-bar::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0; transition: opacity 200ms ease; background: color-mix(in srgb, var(--night) 72%, transparent); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); box-shadow: 0 0.5px 0 var(--separator); }
+.nav-bar-compact::before { opacity: 1; }
+.nav-title { opacity: 0; transform: translateY(6px); transition: opacity 180ms ease, transform 220ms var(--ease-out); }
+.nav-bar-compact .nav-title { opacity: 1; transform: none; }
+/* Circular glass button for Back / Close / Settings (iOS 26 bar buttons). */
+.nav-action { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; border-radius: 9999px; background: var(--glow); color: var(--night); font-size: 17px; font-weight: 600; letter-spacing: -0.43px; transition: transform 260ms var(--ease-out), opacity 200ms ease; }
+.nav-action:active { transform: scale(0.95); opacity: 0.85; transition-duration: 90ms; }
+.nav-circle { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 9999px; color: var(--ice);
+  background: color-mix(in srgb, var(--raised) 70%, transparent); -webkit-backdrop-filter: blur(16px) saturate(180%); backdrop-filter: blur(16px) saturate(180%);
+  box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.18), 0 0 0 0.5px rgba(255,255,255,0.08); }
+
 /* ---------- page transitions (App.tsx picks the class) ---------- */
-.route-push { animation: route-push 340ms var(--ease-out) both; }
-.route-back { animation: route-back 300ms var(--ease-out) both; }
-.route-tab { animation: route-tab 240ms var(--ease-out) both; }
+/* backwards, not both: once finished the wrapper keeps no transform/opacity, so fixed children are not trapped. */
+.route-push { animation: route-push 340ms var(--ease-out) backwards; }
+.route-back { animation: route-back 300ms var(--ease-out) backwards; }
+.route-tab { animation: route-tab 240ms var(--ease-out) backwards; }
 @keyframes route-push { from { opacity: 0; transform: translate3d(28px, 0, 0); } to { opacity: 1; transform: none; } }
 @keyframes route-back { from { opacity: 0; transform: translate3d(-22px, 0, 0); } to { opacity: 1; transform: none; } }
 @keyframes route-tab { from { opacity: 0; transform: translate3d(0, 6px, 0); } to { opacity: 1; transform: none; } }
@@ -238,15 +249,20 @@ button { cursor: pointer; }
 @keyframes sheet-up { from { opacity: 0; transform: translateY(28px) scale(0.97); } to { opacity: 1; transform: none; } }
 @keyframes sheet-down { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(20px) scale(0.98); } }
 @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
-@keyframes panel-in { from { opacity: 0; transform: translateY(6%); } to { opacity: 1; transform: none; } }
-@keyframes panel-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(4%); } }
+@keyframes panel-in { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes panel-out { to { transform: translateY(100%); } }
 /* The backdrop is a plain dim layer: a full-screen blur is re-rasterised every frame on iOS. */
 .confirm-backdrop { background: color-mix(in oklab, var(--night) 72%, transparent); animation: fade-in 200ms ease both; }
 .confirm-sheet { animation: sheet-up 440ms var(--spring-snappy) both; }
+.action-group { overflow: hidden; border-radius: 14px; background: color-mix(in srgb, #2c2c2e 88%, transparent); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); }
+.action-btn { display: block; width: 100%; min-height: 57px; border-top: 0.5px solid var(--separator); font-size: 20px; letter-spacing: -0.45px; transition: background-color 200ms ease; }
+.action-group > .action-btn:first-child { border-top: 0; }
+.action-btn:active { background: rgba(255, 255, 255, 0.08); transition-duration: 0ms; }
 .confirm-backdrop[data-leaving="true"] { animation: fade-out 200ms ease both; }
 .confirm-backdrop[data-leaving="true"] .confirm-sheet { animation: sheet-down 200ms var(--ease-in-out) both; }
-.picker-panel { animation: panel-in 380ms var(--ease-out) both; }
-.picker-panel[data-leaving="true"] { animation: panel-out 200ms var(--ease-in-out) both; }
+.ios-sheet { border-radius: 22px 22px 0 0; background: var(--panel); box-shadow: 0 -8px 40px rgba(0,0,0,0.5); transition: transform 300ms var(--spring-snappy); }
+.picker-panel { animation: panel-in 440ms var(--spring-snappy) both; }
+.picker-panel[data-leaving="true"] { animation: panel-out 220ms var(--ease-in-out) both; }
 .picker-row { animation: aether-rise 360ms var(--ease-out) both; }
 .rest-timer { animation: sheet-up 480ms var(--spring-snappy) both; }
 .rest-timer[data-leaving="true"] { animation: sheet-down 200ms var(--ease-in-out) both; }
@@ -296,8 +312,9 @@ button { cursor: pointer; }
 @keyframes pill-in { from { opacity: 0; transform: translateY(12px) scale(0.9); } to { opacity: 1; transform: none; } }
 /* a sliding highlight for two-way segmented controls */
 .segment { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
-.segment-thumb { position: absolute; top: 0.25rem; bottom: 0.25rem; left: 0.25rem; width: calc((100% - 0.5rem) / var(--seg-n)); border-radius: 9999px; background: var(--glow); transform: translateX(calc(var(--seg-i) * 100%)); transition: transform var(--spring-snappy-duration) var(--spring-snappy); }
-.segment > button { position: relative; z-index: 1; transition: color 250ms ease; }
+.segment { background: var(--fill); border-radius: 9999px; padding: 2px; }
+.segment-thumb { position: absolute; top: 2px; bottom: 2px; left: 2px; width: calc((100% - 4px) / var(--seg-n)); border-radius: 9999px; background: #636366; box-shadow: 0 3px 8px rgba(0,0,0,0.12); transform: translateX(calc(var(--seg-i) * 100%)); transition: transform var(--spring-snappy-duration) var(--spring-snappy); }
+.segment > button { position: relative; z-index: 1; min-height: 28px; font-size: 13px; font-weight: 600; letter-spacing: -0.08px; transition: color 250ms ease; }
 /* content swaps (period, filter): a quick cross-fade instead of a hard cut */
 .swap-in { animation: swap-in 320ms var(--ease-out) both; }
 @keyframes swap-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -352,3 +369,13 @@ input[type=search]::-webkit-search-decoration, input[type=search]::-webkit-searc
 
 input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 input[type=number] { -moz-appearance: textfield; }
+
+/* Settings > Accessibility > Display & Text Size (HIG Accessibility / Materials). */
+@media (prefers-reduced-transparency: reduce) {
+  .glass, .liquid-dock, .dock-mini, .nav-circle, .action-group, .nav-bar::before {
+    -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--raised) !important;
+  }
+}
+@media (prefers-contrast: more) {
+  :root { --dim: rgba(235, 235, 245, 0.7); --faint: rgba(235, 235, 245, 0.45); --separator: rgba(84, 84, 88, 1); --glow: #6ff0e2; }
+}

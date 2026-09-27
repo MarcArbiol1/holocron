@@ -30,7 +30,7 @@ export default function Codex() {
             </div>
             <p className="mt-2 text-sm text-ice leading-relaxed">{r.rule}</p>
             <p className="mt-2 text-sm text-dim leading-relaxed">{r.why}</p>
-            <p className="mt-3 text-[11px] text-dim">
+            <p className="mt-3 text-caption2 text-dim">
               {r.source}
               {r.doi && (
                 <a href={`https://doi.org/${r.doi}`} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center gap-1 text-glow">doi <ExternalLink className="size-3" /></a>
@@ -39,7 +39,7 @@ export default function Codex() {
           </li>
         ))}
       </ul>
-      <p className="text-[11px] text-dim leading-relaxed">Rules are population averages from published studies, not medical advice. The full list with numbers lives in the repo as docs/EVIDENCE.md and docs/AUDIT.md.</p>
+      <p className="text-caption2 text-dim leading-relaxed">Rules are population averages from published studies, not medical advice. The full list with numbers lives in the repo as docs/EVIDENCE.md and docs/AUDIT.md.</p>
     </Page>
   )
 }

@@ -63,11 +63,11 @@ export function MuscleMap({ levels, onPick }: { levels: Partial<Record<Muscle, n
     <div className="muscle-map-in grid grid-cols-2 gap-3">
       <div>
         <Body regions={FRONT} level={level} onPick={onPick} />
-        <p className="kicker mt-1 text-center text-[10px]">front</p>
+        <p className="kicker mt-1 text-center text-caption2">front</p>
       </div>
       <div>
         <Body regions={BACK} level={level} onPick={onPick} />
-        <p className="kicker mt-1 text-center text-[10px]">back</p>
+        <p className="kicker mt-1 text-center text-caption2">back</p>
       </div>
     </div>
   )

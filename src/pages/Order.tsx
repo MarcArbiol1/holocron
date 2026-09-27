@@ -18,8 +18,8 @@ export default function Order() {
       </div>
 
       <section className="aether-rise rise-2" aria-labelledby="ladder-title">
-        <h2 id="ladder-title" className="text-lg font-semibold">The ladder</h2>
-        <ol className="metric-panel mt-3 divide-y divide-ice/5 overflow-hidden">
+        <h2 id="ladder-title" className="px-1 text-xl font-bold">The ladder</h2>
+        <ol className="ios-list mt-3">
           {NAMES.levels.map((name, i) => {
             const reached = i <= lv.index
             const current = i === lv.index
@@ -37,7 +37,7 @@ export default function Order() {
       </section>
 
       <section className="aether-rise rise-3" aria-labelledby="xp-title">
-        <h2 id="xp-title" className="text-lg font-semibold">How XP is earned</h2>
+        <h2 id="xp-title" className="px-1 text-xl font-bold">How XP is earned</h2>
         <ul className="metric-panel mt-3 space-y-2 p-4 text-sm text-ice/90">
           <li className="flex gap-3"><span className="chip-glow shrink-0 font-mono">+100</span><span>for every session you finish</span></li>
           <li className="flex gap-3"><span className="chip-glow shrink-0 font-mono">+5</span><span>per hard set (up to 40 sets)</span></li>

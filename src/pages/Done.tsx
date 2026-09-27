@@ -34,7 +34,7 @@ export default function Done() {
   if (!xp) return <Navigate to="/" replace />
   return (
     <Page title="Session archived" kicker="Nice work.">
-      <div className="metric-panel aether-rise rise-1 relative space-y-2 p-6 text-center" style={{ borderColor: 'color-mix(in oklab, var(--glow) 30%, transparent)', boxShadow: '0 0 40px color-mix(in oklab, var(--glow) 10%, transparent), inset 0 1px 0 color-mix(in oklab, var(--ice) 8%, transparent)' }}>
+      <div className="metric-panel aether-rise rise-1 relative space-y-2 p-6 text-center">
         <div className="kicker">Experience</div>
         <div className="relative inline-block">
           <Burst />
@@ -51,7 +51,7 @@ export default function Done() {
       </div>
       <div className="aether-rise rise-3 grid grid-cols-2 gap-3">
         <Link to="/palantir" onClick={() => haptic()} className="btn-ghost whitespace-nowrap px-3 text-sm">Open {NAMES.pages.palantir}</Link>
-        <Link to="/" onClick={() => haptic()} className="btn-primary whitespace-nowrap px-3 text-sm">Back home</Link>
+        <Link to="/" onClick={() => haptic()} className="btn-primary whitespace-nowrap px-3 text-sm">Back Home</Link>
       </div>
     </Page>
   )

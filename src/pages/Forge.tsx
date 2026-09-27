@@ -18,7 +18,7 @@ export default function Forge() {
 
   return (
     <Page title={NAMES.pages.forge} kicker={`Before ${active.title}${warmup ? ` · about ${warmup.totalMinutes} min` : ''}`}>
-      <div className="metric-panel aether-rise rise-1 flex items-start gap-3 p-4" style={{ borderColor: 'color-mix(in oklab, var(--glow) 22%, transparent)' }}>
+      <div className="metric-panel aether-rise rise-1 flex items-start gap-3 p-4">
         <span className="grid size-11 shrink-0 place-items-center rounded-xl text-glow" style={{ background: 'color-mix(in oklab, var(--glow) 14%, transparent)' }}><Flame className="size-5" /></span>
         <p className="text-sm leading-relaxed text-ice">
           Warm muscles lift more and get hurt less. A warm-up improved performance in four out of five studies tested. Three steps, then the real work.
@@ -57,7 +57,7 @@ function Step({ n, title, sub, rise, children }: { n: number; title: string; sub
   return (
     <section className={`metric-panel aether-rise ${rise} space-y-3 p-3`}>
       <div className="flex items-baseline gap-2 px-1">
-        <span className="grid size-6 place-items-center rounded-full bg-glow text-[11px] font-bold text-night">{n}</span>
+        <span className="grid size-6 place-items-center rounded-full bg-glow text-caption2 font-bold text-night">{n}</span>
         <h2 className="font-semibold">{title}</h2>
         <span className="text-xs text-dim">{sub}</span>
       </div>

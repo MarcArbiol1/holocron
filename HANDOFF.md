@@ -2,6 +2,18 @@
 
 Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 
+## 27 Sep 2026: Apple (HIG) restyle, Marc chose "full iOS feel" — pushed
+
+- Research: Apple HIG pages read via `developer.apple.com/tutorials/data/design/human-interface-guidelines/<page>.json` (the site itself is JS-rendered).
+- Font: SF Pro via `-apple-system`; Space Grotesk/Mono and @fontsource removed. Tailwind `fontSize` is Apple's ramp with tracking (xs=Caption1 12, footnote 13, sm=Subhead 15, base=Body 17, lg=Title3 20, xl=Title2 22, 2xl=Title1 28, 3xl=Large Title 34, caption2 11). Numbers: `.font-mono` = SF + tabular figures.
+- Colours: iOS dark semantics (black, #1c1c1e grouped, #2c2c2e raised, secondary label, separator, fill, systemGreen, systemRed); teal `glow` kept as the one tint.
+- Glass only on the control layer (tab bar, nav buttons, rest timer, sheets); content is opaque (HIG Materials). No glows or borders on cards.
+- `Page` = iOS nav bar (glass circle back button, `right` actions, `leading` slot) + 34 pt Large Title that collapses into a centred inline title with a blurred bar on scroll. Home is titled "Today" (HIG: never the app name) with the logo in the bar.
+- Components in `index.css`: `.ios-list` (inset grouped, hairlines from `--sep-inset`), `.ios-row`, `.list-header/.list-footer`, capsule `.btn*` (50 px), `.btn-small`, `.nav-action`, `.nav-circle`, `.ios-switch` (51x31 green), iOS segmented control, `.ios-sheet`. Confirm = iOS action sheet (message + action, separate Cancel; destructive red). Picker = sheet with grabber, drag-to-dismiss, Cancel leading. Both portalled to <body> (the route wrapper traps fixed children); route animations use fill `backwards` for the same reason.
+- Accessibility: `prefers-reduced-transparency` makes glass solid; `prefers-contrast: more` strengthens labels and separators.
+- Kept on purpose: icon-only tab bar (Marc's choice; HIG prefers labels), THE FORGE caps name, rings.
+- Not done: Dynamic Type (text size setting) — would need `font: -apple-system-body` + rem rework.
+
 ## State as of 26 Sep 2026 (bug review + motion pass; icon another 10% bigger) — pushed as c162dfa
 
 - **Icon:** regenerated from Marc's original drawing (Downloads/063EC7F0...PNG, full resolution, ink darkness -> alpha 15..235, ice on night) at 75.8% of the square (was 68.9%); maskable 60.6% (inside the 80% safe circle). Script: `scratch/make_icons.py <frac> <maskable-frac>`. `index.html` links carry `?v=3`. iOS only reads the icon when the app is added: **delete the home-screen app and Add to Home Screen again** to see it.

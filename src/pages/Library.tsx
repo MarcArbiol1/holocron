@@ -41,7 +41,7 @@ export default function Library() {
             <Link to={`/exercise/${e.id}`} onClick={() => haptic()} className="press-soft metric-panel block p-2">
               <Figure animId={e.anim} size="100%" playing={false} className="h-auto w-full rounded-xl" />
               <div className="mt-2 px-1 text-sm font-semibold leading-tight">{e.name}</div>
-              <div className="mb-1 px-1 text-[11px] text-dim truncate">{e.primary.map((m) => MUSCLES[m].label).join(', ')}</div>
+              <div className="mb-1 px-1 text-caption2 text-dim truncate">{e.primary.map((m) => MUSCLES[m].label).join(', ')}</div>
             </Link>
           </li>
         ))}

@@ -33,7 +33,7 @@ export default function ExerciseDetail() {
       </div>
 
       <section className="aether-rise rise-2" aria-labelledby="how-title">
-        <h2 id="how-title" className="text-lg font-semibold">How to do it</h2>
+        <h2 id="how-title" className="px-1 text-xl font-bold">How to do it</h2>
         <ol className="metric-panel mt-3 space-y-3 p-4 text-sm text-ice/90">
           {ex.steps.map((s, i) => (
             <li key={i} className="flex gap-3">
@@ -46,7 +46,7 @@ export default function ExerciseDetail() {
 
       {ex.cues.length > 0 && (
         <section className="aether-rise rise-3" aria-labelledby="cues-title">
-          <h2 id="cues-title" className="text-lg font-semibold">Keep in mind</h2>
+          <h2 id="cues-title" className="px-1 text-xl font-bold">Keep in mind</h2>
           <ul className="metric-panel mt-3 space-y-2 p-4 text-sm text-ice/90">
             {ex.cues.map((c) => <li key={c} className="flex gap-2.5"><Check className="mt-0.5 size-4 shrink-0 text-soft" /><span>{c}</span></li>)}
           </ul>
@@ -55,7 +55,7 @@ export default function ExerciseDetail() {
 
       {ex.mistakes.length > 0 && (
         <section className="aether-rise rise-4" aria-labelledby="mistakes-title">
-          <h2 id="mistakes-title" className="text-lg font-semibold">Common mistakes</h2>
+          <h2 id="mistakes-title" className="px-1 text-xl font-bold">Common mistakes</h2>
           <ul className="metric-panel mt-3 space-y-2 p-4 text-sm text-ice/90">
             {ex.mistakes.map((c) => <li key={c} className="flex gap-2.5"><X className="mt-0.5 size-4 shrink-0 text-legs" /><span>{c}</span></li>)}
           </ul>
@@ -63,7 +63,7 @@ export default function ExerciseDetail() {
       )}
 
       <section className="aether-rise rise-5" aria-labelledby="history-title">
-        <h2 id="history-title" className="text-lg font-semibold">Your history</h2>
+        <h2 id="history-title" className="px-1 text-xl font-bold">Your history</h2>
         <div className="metric-panel mt-3 space-y-1.5 p-4 text-sm">
           {best > 0 && <div className="flex items-center justify-between"><span className="text-ice/90">Best estimated 1RM</span><span className="chip-glow font-mono">{Math.round(best)} kg</span></div>}
           {last

@@ -9,9 +9,8 @@ import { LogoLoader } from '../components/LogoLoader'
 import { haptic } from '../lib/haptics'
 
 const SELECTED: React.CSSProperties = {
-  background: 'color-mix(in oklab, var(--glow) 12%, transparent)',
-  borderColor: 'color-mix(in oklab, var(--glow) 55%, transparent)',
-  boxShadow: 'inset 0 1px 0 color-mix(in oklab, var(--ice) 10%, transparent), 0 0 18px color-mix(in oklab, var(--glow) 10%, transparent)',
+  background: 'color-mix(in srgb, var(--glow) 14%, transparent)',
+  borderColor: 'var(--glow)',
 }
 
 function Choice<T extends string | number>({ value, options, onChange }: { value: T; options: { v: T; label: string; hint?: string }[]; onChange: (v: T) => void }) {
@@ -21,10 +20,10 @@ function Choice<T extends string | number>({ value, options, onChange }: { value
         const on = value === o.v
         return (
           <button key={String(o.v)} type="button" onClick={() => { haptic(); onChange(o.v) }}
-            className={`press-soft rounded-2xl border px-3 py-2.5 text-left transition-colors duration-200 ${on ? 'selected-pop text-ice' : 'workout-row text-ice'}`}
+            className={`press-soft rounded-[14px] border-[1.5px] px-3 py-2.5 text-left transition-colors duration-200 ${on ? 'selected-pop text-ice' : 'border-transparent bg-raised text-ice'}`}
             style={on ? SELECTED : undefined} aria-pressed={on}>
             <div className="text-sm font-semibold">{o.label}</div>
-            {o.hint && <div className="text-[11px] leading-snug text-dim">{o.hint}</div>}
+            {o.hint && <div className="text-caption2 leading-snug text-dim">{o.hint}</div>}
           </button>
         )
       })}
@@ -70,7 +69,7 @@ export default function Onboarding() {
           <div>
             <label className="label">Sex</label>
             <Choice<Sex> value={p.sex} onChange={(v) => up('sex', v)} options={[{ v: 'male', label: 'Male' }, { v: 'female', label: 'Female' }, { v: 'other', label: 'Other / skip' }]} />
-            <p className="mt-2 text-[11px] leading-snug text-dim">Used only for the explanation page. The evidence says the plan should not change by sex.</p>
+            <p className="mt-2 text-caption2 leading-snug text-dim">Used only for the explanation page. The evidence says the plan should not change by sex.</p>
           </div>
         </div>
 
@@ -86,7 +85,7 @@ export default function Onboarding() {
           <div>
             <label className="label">Days per week you will actually show up</label>
             <Choice<Profile['daysPerWeek']> value={p.daysPerWeek} onChange={(v) => up('daysPerWeek', v)} options={[1, 2, 3, 4, 5, 6].map((n) => ({ v: n as Profile['daysPerWeek'], label: `${n} day${n > 1 ? 's' : ''}`, hint: n <= 2 ? 'Full body each time' : n === 3 ? 'Two lifting days + cardio' : n === 4 ? 'Chest & back / legs / arms + cardio' : n === 5 ? 'Adds an upper day' : 'Push / pull / legs + cardio' }))} />
-            <p className="mt-2 text-[11px] leading-snug text-dim">Be honest. The plan is built for the days you really have, and it adapts if you miss some.</p>
+            <p className="mt-2 text-caption2 leading-snug text-dim">Be honest. The plan is built for the days you really have, and it adapts if you miss some.</p>
           </div>
           <div>
             <label className="label">Session length</label>
@@ -110,7 +109,7 @@ export default function Onboarding() {
               { v: 'yes', label: 'Yes, one visit is cardio', hint: 'Mount Doom: 30 to 40 min; the lifting days keep their full volume' },
               { v: 'no', label: 'No, short finishers only', hint: 'All visits are lifting days' },
             ]} />
-            <p className="text-[11px] text-dim mt-1.5">Needs 3 or more days. Aerobic work plus lifting carries the lowest mortality risk in the big cohorts.</p>
+            <p className="text-caption2 text-dim mt-1.5">Needs 3 or more days. Aerobic work plus lifting carries the lowest mortality risk in the big cohorts.</p>
           </div>
         </div>
 

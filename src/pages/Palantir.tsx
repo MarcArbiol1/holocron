@@ -64,8 +64,8 @@ export default function Palantir() {
       </div>
 
       <section className="aether-rise rise-3" aria-labelledby="muscles-title">
-        <h2 id="muscles-title" className="text-lg font-semibold">Sets per muscle</h2>
-        <p className="mt-1 text-xs text-dim">versus the {targetLo}–{targetHi} target · tap a muscle</p>
+        <h2 id="muscles-title" className="px-1 text-xl font-bold">Sets per muscle</h2>
+        <p className="mt-0.5 px-1 text-footnote text-dim">versus the {targetLo}–{targetHi} target · tap a muscle</p>
         <div className="metric-panel mt-3 space-y-3 p-4">
           <MuscleMap levels={levels} onPick={(m) => { haptic(); setPicked(m) }} />
           {picked && (
@@ -86,11 +86,11 @@ export default function Palantir() {
 
       {r.prs.length > 0 && (
         <section className="aether-rise rise-4" aria-labelledby="prs-title">
-          <h2 id="prs-title" className="text-lg font-semibold">New records</h2>
-          <p className="mt-1 text-xs text-dim">estimated one-rep max</p>
-          <ul className="metric-panel mt-3 divide-y divide-ice/5 px-4">
+          <h2 id="prs-title" className="px-1 text-xl font-bold">New records</h2>
+          <p className="mt-0.5 px-1 text-footnote text-dim">estimated one-rep max</p>
+          <ul className="ios-list mt-3">
             {r.prs.map((p) => (
-              <li key={p.exerciseId} className="flex items-center justify-between py-2.5 text-sm">
+              <li key={p.exerciseId} className="ios-row justify-between text-base">
                 <span>{EXERCISE_BY_ID[p.exerciseId]?.name ?? p.exerciseId}</span>
                 <span className="chip-glow">{p.e1rm} kg</span>
               </li>
@@ -100,29 +100,29 @@ export default function Palantir() {
       )}
 
       <section className="aether-rise rise-5" aria-labelledby="sessions-title">
-        <h2 id="sessions-title" className="text-lg font-semibold">Sessions</h2>
+        <h2 id="sessions-title" className="px-1 text-xl font-bold">Sessions</h2>
         {history.length === 0 ? (
           <p className="mt-3 text-sm text-dim">Nothing here yet.</p>
         ) : (
-          <div className="mt-3 space-y-3">
+          <ul className="ios-list mt-3" style={{ '--sep-inset': '64px' } as React.CSSProperties}>
             {history.map((s) => {
               const sets = s.exercises.reduce((a, e) => a + e.sets.filter((x) => x.done).length, 0)
               const isCardio = s.dayId === 'cardio'
               return (
-                <Link key={s.id} to={`/history/${s.id}`} onClick={() => haptic()} className="workout-row flex w-full items-center gap-4 rounded-2xl p-4 text-left">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-xl" style={{ background: isCardio ? 'color-mix(in oklab, var(--ice) 9%, transparent)' : 'color-mix(in oklab, var(--glow) 14%, transparent)', color: isCardio ? 'var(--ice)' : 'var(--glow)' }}>
-                    {isCardio ? <Flame className="size-5" /> : <Dumbbell className="size-5" />}
+                <li key={s.id}><Link to={`/history/${s.id}`} onClick={() => haptic()} className="workout-row ios-row">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full" style={{ background: isCardio ? 'color-mix(in srgb, var(--glow-soft) 18%, transparent)' : 'color-mix(in srgb, var(--glow) 16%, transparent)', color: isCardio ? 'var(--glow-soft)' : 'var(--glow)' }}>
+                    {isCardio ? <Flame className="size-[18px]" /> : <Dumbbell className="size-[18px]" />}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold truncate">{s.title}</span>
-                    <span className="mt-1 block text-xs text-dim">{fmtDate(s.endedAt!)} · {fmtDuration(s.startedAt, s.endedAt)} · {sets} sets</span>
+                    <span className="block text-base truncate">{s.title}</span>
+                    <span className="block text-sm text-dim">{fmtDate(s.endedAt!)} · {fmtDuration(s.startedAt, s.endedAt)} · {sets} sets</span>
                   </span>
-                  <span className="text-sm font-semibold text-glow">+{s.xp ?? 0}</span>
-                  <ChevronRight className="size-5 text-dim" />
-                </Link>
+                  <span className="text-sm text-dim tabular-nums">+{s.xp ?? 0}</span>
+                  <ChevronRight className="size-4 shrink-0 text-[color:var(--faint)]" strokeWidth={2.6} />
+                </Link></li>
               )
             })}
-          </div>
+          </ul>
         )}
       </section>
     </Page>
@@ -132,9 +132,9 @@ export default function Palantir() {
 function Tile({ label, value, sub, good, wide }: { label: string; value: string; sub?: string; good?: boolean; wide?: boolean }) {
   return (
     <div className={`metric-panel p-3.5 ${wide ? 'col-span-3' : ''}`}>
-      <p className="text-xs font-semibold text-glow">{label}</p>
-      <p className={`mt-1 text-xl font-bold leading-tight ${good ? 'text-soft' : ''}`}>{value}</p>
-      {sub && <p className="mt-0.5 text-[11px] font-medium text-dim">{sub}</p>}
+      <p className="text-footnote font-semibold text-dim">{label}</p>
+      <p className={`mt-0.5 text-xl font-bold tabular-nums ${good ? 'text-soft' : ''}`}>{value}</p>
+      {sub && <p className="mt-0.5 text-caption2 font-medium text-dim">{sub}</p>}
     </div>
   )
 }
