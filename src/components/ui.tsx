@@ -284,6 +284,7 @@ export function LiquidDock() {
         className="dock-wrap fixed bottom-[max(0.75rem,calc(env(safe-area-inset-bottom)-0.8rem))] left-1/2 z-30 h-[62px] w-[calc(100%-2.625rem)] max-w-[420px] -translate-x-1/2"
         data-min={min ? 'true' : 'false'}
       >
+        {/* One piece of glass for both states: collapsing clips the bar's frost into the centre circle. */}
         <div
           ref={innerRef}
           className="liquid-dock absolute inset-0"
@@ -302,6 +303,8 @@ export function LiquidDock() {
                 aria-current={i === shown ? 'page' : undefined}
                 aria-label={label}
                 className="dock-tab relative flex flex-col items-center justify-center text-ice"
+                // distance from the centre tab: the collapse folds tabs in from the edges, the expansion deals them out
+                style={{ '--d': Math.abs(i - (tabs.length - 1) / 2) } as React.CSSProperties}
               >
                 <span ref={(el) => { iconRefs.current[i] = el }} className="dock-icon flex flex-col items-center gap-[2px]">
                   <Icon className="size-[25px]" strokeWidth={i === shown ? 2.1 : 1.8} fill={i === shown ? 'currentColor' : 'none'} fillOpacity={i === shown ? 0.28 : 0} />
@@ -320,8 +323,7 @@ export function LiquidDock() {
           aria-label="Show navigation"
           className="dock-mini absolute left-1/2 top-1/2 grid size-[62px] place-items-center"
         >
-          <span className="dock-glass" aria-hidden="true" />
-          <img className="relative" src={`${import.meta.env.BASE_URL}logo.png`} alt="" width={38} height={38} draggable={false} />
+          <img className="dock-logo relative" src={`${import.meta.env.BASE_URL}logo.png`} alt="" width={38} height={38} draggable={false} />
           <HapticSwitch />
         </button>
       </div>

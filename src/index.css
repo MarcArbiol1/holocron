@@ -142,7 +142,7 @@ button { cursor: pointer; }
   .liquid-dock[data-pressed="true"] { transform: scale(1.038) translateZ(0); transition-timing-function: linear(0, 0.148 9%, 0.46 18%, 0.752 27%, 0.951 36%, 1.052 45%, 1.081 54%, 1.058 72%, 1.019 86%, 1), ease, linear; }
   /* The frost: see-through dark glass with Konsta's dark rim. */
   .dock-glass {
-    position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    position: absolute; top: 0; bottom: 0; border-radius: 31px; pointer-events: none;
     background: rgba(40, 40, 43, 0.58);
     -webkit-backdrop-filter: blur(9px) saturate(180%) brightness(1.05);
     backdrop-filter: blur(9px) saturate(180%) brightness(1.05);
@@ -197,11 +197,23 @@ button { cursor: pointer; }
   .dock-tab { border-radius: 27px; }
   .dock-icon { transition: transform 300ms var(--ease-out); transform-origin: 50% 60%; }
   .liquid-dock[data-pressed="true"] .dock-icon { transition: none; }
-  /* Collapsed state: one glass circle with the logo. */
-  .dock-mini { border-radius: 9999px; opacity: 0; visibility: hidden; transform: translate3d(-50%, -50%, 0) scale(0.6); transition: transform var(--spring-smooth-duration) var(--spring-smooth), opacity 260ms ease, visibility 0s linear 260ms; }
-  .dock-mini:active { transform: translate3d(-50%, -50%, 0) scale(0.92); transition-duration: 120ms; }
-  .dock-wrap[data-min="true"] .liquid-dock { opacity: 0; visibility: hidden; transform: translateZ(0) scale(0.86); transition-delay: 0s, 0s, 260ms; }
-  .dock-wrap[data-min="true"] .dock-mini { opacity: 1; visibility: visible; transform: translate3d(-50%, -50%, 0) scale(1); transition-delay: 0s, 0s, 0s; }
+  /* ---------- collapse / expand: the bar's own glass morphs into the centre circle ---------- */
+  /* The frost is clipped from both sides into a 62 px circle (a spring, so it wobbles as it lands);
+     tabs fold in from the edges; the logo pops in once the circle has formed. Expansion runs it back
+     with a livelier spring and deals the tabs out from the centre. */
+  .dock-glass { left: 0; right: 0; transition: left 620ms var(--spring-bouncy), right 620ms var(--spring-bouncy); }
+  .dock-wrap[data-min="true"] .dock-glass { left: calc(50% - 31px); right: calc(50% - 31px); transition: left 520ms var(--spring-smooth), right 520ms var(--spring-smooth); animation: dock-land 520ms var(--ease-out) 300ms both; }
+  @keyframes dock-land { 0% { transform: scale(1, 1); } 35% { transform: scale(1.07, 0.95); } 70% { transform: scale(0.98, 1.02); } 100% { transform: none; } }
+  .dock-tab { transition: opacity 260ms ease, transform 480ms var(--spring-bouncy); transition-delay: calc(var(--d, 0) * 40ms + 80ms); }
+  .dock-wrap[data-min="true"] .dock-tab { opacity: 0; transform: scale(0.6); transition: opacity 180ms ease, transform 300ms var(--ease-in-out); transition-delay: calc((2 - var(--d, 0)) * 45ms); }
+  .dock-wrap[data-min="true"] .dock-pill { opacity: 0; transition: opacity 150ms ease; }
+  .dock-wrap[data-min="true"] .liquid-dock { pointer-events: none; }
+  /* The circle's button: no glass of its own, just the logo on the morphed frost. */
+  .dock-mini { border-radius: 9999px; transform: translate3d(-50%, -50%, 0); visibility: hidden; transition: visibility 0s linear 200ms; -webkit-tap-highlight-color: transparent; }
+  .dock-logo { opacity: 0; transform: scale(0.4) rotate(-25deg); transition: opacity 140ms ease, transform 200ms var(--ease-in-out); }
+  .dock-wrap[data-min="true"] .dock-mini { visibility: visible; transition-delay: 0s; }
+  .dock-wrap[data-min="true"] .dock-logo { opacity: 1; transform: none; transition: opacity 220ms ease 300ms, transform 560ms var(--spring-bouncy) 280ms; }
+  .dock-mini:active .dock-logo { transform: scale(0.88); transition: transform 90ms ease; }
 }
 
 /* ---------- navigation bar (HIG Toolbars) ---------- */
@@ -383,7 +395,8 @@ input[type=search]::-webkit-search-decoration, input[type=search]::-webkit-searc
 
 @media (prefers-reduced-motion: reduce) {
   .aether-rise, .liquid-dock { animation: none; }
-  .liquid-dock, .dock-mini, .dock-pill, .dock-icon { transition: none !important; }
+  .liquid-dock, .dock-mini, .dock-pill, .dock-icon, .dock-glass, .dock-tab, .dock-logo { transition: none !important; transition-delay: 0s !important; }
+  .dock-wrap[data-min="true"] .dock-glass { animation: none; }
   .dock-lens { display: none; }
   .aether-sheen::after { display: none; }
   .logo-stage, .logo-piece, .logo-float { animation: none; }

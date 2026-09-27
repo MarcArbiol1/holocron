@@ -2,6 +2,11 @@
 
 Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 
+## 27 Sep 2026, night: collapse/expand morph — pushed
+
+- The bar and the circle are now one piece of glass: `.dock-glass` animates `left/right` into a 62 px circle (spring-smooth, a squash as it lands via `dock-land`), tabs fold in from the edges (`--d` stagger), the logo pops in after 300 ms; expansion uses spring-bouncy and deals tabs out from the centre. `.dock-mini` no longer has its own glass. Width (not clip-path) is animated so the rims and shadow survive.
+- Note: a verification command that included `rm -f` on scratch screenshots was rejected by Marc's permission prompt; use fresh folders instead of deleting.
+
 ## 27 Sep 2026, evening: tab bar v2 from research — pushed
 
 - Marc: "not exactly as the one I sent… research how developers recreate it… open source?" Three research agents: Apple documents the tab bar only in words (no numbers); the real material (`-apple-visual-effect`) is private to Apple's WKWebViews; `backdrop-filter: url()` refraction is still unsupported in WebKit (bug 245510, fix PR #68614 unmerged). Best open-source bases: **rdlabo-team/ionic-theme-ios26** (UIKit-sampled motion) and **konstaui/konsta** (glass tokens), both MIT; credited in `THIRD_PARTY_NOTICES.md`.
