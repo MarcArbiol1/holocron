@@ -2,6 +2,11 @@
 
 Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 
+## 27 Sep 2026, later: Liquid Glass tab bar + accidental-start fix — pushed
+
+- **Tab bar** rebuilt from Marc's screen recording of Reddit's iOS 26 bar (frames extracted with ffmpeg into scratch/vid/): glass capsule with specular rim (`.glass-rim`), selected tab in a darker glass pill, labels under icons (the recording has them; Marc had asked for icons only on 16 Sep), selected = teal tint. Touch lifts the pill into a clear lens (scale 1.45 x 1.26, taller than the bar, conic rainbow rim, backdrop brightness) that tracks the finger via per-frame `--lens-x` writes, magnifies the icon under it, ticks when crossing tabs, springs onto the release tab; a tap carries the lifted lens across before it sinks (`LiquidDock` in `ui.tsx`). Pointer taps are handled on the bar with pointer capture; button onClick only handles keyboard (`detail === 0`). Minimised circle now shows the logo.
+- **Start Workout fired while scrolling:** the invisible iOS haptic switch flips on a swipe. `HapticSwitch` now tracks the touch and swallows the click if the finger moved > 8 px or the page scrolled.
+
 ## 27 Sep 2026: Apple (HIG) restyle, Marc chose "full iOS feel" — pushed
 
 - Research: Apple HIG pages read via `developer.apple.com/tutorials/data/design/human-interface-guidelines/<page>.json` (the site itself is JS-rendered).

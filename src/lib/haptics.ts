@@ -26,7 +26,14 @@ export function haptic(kind: HapticKind = 'tap'): void {
  * Invisible native switch that covers its (position: relative) parent button.
  * Renders nothing outside iOS. The parent's onClick still fires because the
  * click bubbles; do not call preventDefault in that handler or iOS drops the tick.
+ *
+ * A native switch also flips when a finger SLIDES across it, so a scroll that starts on the
+ * button used to "click" it. The touch is tracked here: if the finger moved more than a few
+ * pixels, or the page scrolled, between touch-down and the click, the click is swallowed.
  */
+const touch = { x: 0, y: 0, scrollY: 0, moved: false }
+const SLOP = 8 // px a finger may drift and still count as a tap (UIKit uses about 10 pt)
+
 export function HapticSwitch() {
   if (!isIOS) return null
   return createElement('input', {
@@ -36,5 +43,21 @@ export function HapticSwitch() {
     tabIndex: -1,
     className: 'haptic-switch',
     onChange: () => {},
+    onTouchStart: (e: TouchEvent) => {
+      const t = e.touches[0]
+      touch.x = t.clientX; touch.y = t.clientY; touch.scrollY = window.scrollY; touch.moved = false
+    },
+    onTouchMove: (e: TouchEvent) => {
+      const t = e.touches[0]
+      if (Math.abs(t.clientX - touch.x) > SLOP || Math.abs(t.clientY - touch.y) > SLOP) touch.moved = true
+    },
+    onClick: (e: MouseEvent) => {
+      if (touch.moved || Math.abs(window.scrollY - touch.scrollY) > 2) {
+        // A swipe, not a tap: stop it here so the button underneath does nothing.
+        e.stopPropagation()
+        e.preventDefault()
+      }
+      touch.moved = false
+    },
   } as Record<string, unknown>)
 }
