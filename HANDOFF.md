@@ -2,6 +2,12 @@
 
 Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 
+## 27 Sep 2026, evening: tab bar v2 from research — pushed
+
+- Marc: "not exactly as the one I sent… research how developers recreate it… open source?" Three research agents: Apple documents the tab bar only in words (no numbers); the real material (`-apple-visual-effect`) is private to Apple's WKWebViews; `backdrop-filter: url()` refraction is still unsupported in WebKit (bug 245510, fix PR #68614 unmerged). Best open-source bases: **rdlabo-team/ionic-theme-ios26** (UIKit-sampled motion) and **konstaui/konsta** (glass tokens), both MIT; credited in `THIRD_PARTY_NOTICES.md`.
+- `LiquidDock` v2: 62 px bar (54 px tabs + 4 px padding, 21 px side inset), frost blur 9 px / saturate 180 % / brightness 1.05 over rgba(40,40,43,.58), Konsta dark rim shadows; bar scales 1.038 while pressed with UIKit's linear() curves; hold (130 ms) or slide lifts the pill into a clear lens (tab + 16 pt, ×(1+14.14/W)) that follows the finger with velocity stretch min(16, 32 v²); release = UIKit RELEASE samples (450 ms, fade into pill over the last 200 ms); quick tap = UIKit TAP samples (800 ms blob travel with squash). Everything per-frame in rAF so the **frost gets a hole under the lens** (`.dock-glass.holed` radial mask) and the page shows through clear. White icons/labels, selected tab filled + semibold.
+- Still not possible on iOS web: true refraction/magnification of the page (would need a scroll-synced DOM copy + CPU SVG filter; left out for smoothness).
+
 ## 27 Sep 2026, later: Liquid Glass tab bar + accidental-start fix — pushed
 
 - **Tab bar** rebuilt from Marc's screen recording of Reddit's iOS 26 bar (frames extracted with ffmpeg into scratch/vid/): glass capsule with specular rim (`.glass-rim`), selected tab in a darker glass pill, labels under icons (the recording has them; Marc had asked for icons only on 16 Sep), selected = teal tint. Touch lifts the pill into a clear lens (scale 1.45 x 1.26, taller than the bar, conic rainbow rim, backdrop brightness) that tracks the finger via per-frame `--lens-x` writes, magnifies the icon under it, ticks when crossing tabs, springs onto the release tab; a tap carries the lifted lens across before it sinks (`LiquidDock` in `ui.tsx`). Pointer taps are handled on the bar with pointer capture; button onClick only handles keyboard (`detail === 0`). Minimised circle now shows the logo.
