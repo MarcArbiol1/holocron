@@ -48,13 +48,15 @@ export interface Pose {
   bob: number; tilt: number; bsx: number; bsy: number
   bun: number
   // hands: offset from rest in body space, plus extra glove rotation (deg)
-  hl: V; hr: V; hlr: number; hrr: number
-  /** 0..1: how much hlr/hrr are absolute glove angles instead of extra turn on top of the arm's direction */
-  hlLock: number; hrLock: number
+  hl: V; hr: V
+  /** extra glove turn (deg) on top of the auto-rotation that follows the end of the arm */
+  hlr: number; hrr: number
+  /** bend direction of each arm, −1..1 (1 = elbow out to her side; smaller values flatten the bend) */
+  dirL: number; dirR: number
   /** a little bicep bump on the right arm (flex), 0..1 */
   bicep: number
-  /** which way each arm bows (1 = natural; −1 = elbow pushed the other way, for a flex) */
-  bendL: number; bendR: number
+  /** > 0.5: that glove is tucked behind the body (hands on hips) */
+  tuckL: number; tuckR: number
   // feet: offset from rest, plus rotation (deg)
   fl: V; fr: V; flr: number; frr: number
   // face
@@ -71,7 +73,7 @@ export interface Pose {
 export const neutral = (): Pose => ({
   x: 0, y: 0, hop: 0, lean: 0, spin: 0, sx: 1, sy: 1, alpha: 1, shrink: 0,
   bob: 0, tilt: 0, bsx: 1, bsy: 1, bun: 0,
-  hl: [0, 0], hr: [0, 0], hlr: 0, hrr: 0, hlLock: 0, hrLock: 0, bicep: 0, bendL: 1, bendR: 1,
+  hl: [0, 0], hr: [0, 0], hlr: 0, hrr: 0, dirL: 1, dirR: 1, bicep: 0, tuckL: 0, tuckR: 0,
   fl: [0, 0], fr: [0, 0], flr: 0, frr: 0,
   lookX: 0, lookY: 0, blink: 0, squint: 0,
   browL: 0, browR: 0, browTilt: 0,
@@ -87,26 +89,60 @@ const S = (sx: number, sy: number, ox: number, oy: number): M => mul(mul(T(ox, o
 const Rd = (deg: number, ox: number, oy: number): M => { const r = (deg * Math.PI) / 180, c = Math.cos(r), s = Math.sin(r); return mul(mul(T(ox, oy), [c, s, -s, c, 0, 0]), T(-ox, -oy)) }
 const ap = (m: M, p: V): V => [m[0] * p[0] + m[2] * p[1] + m[4], m[1] * p[0] + m[3] * p[1] + m[5]]
 
-/** A rubber-hose limb from `a` to `b`: returns the curve's control point, bowing outward when the limb is "shorter" than its length. */
-function hose(a: V, b: V, len: number, side: number): V {
-  const dx = b[0] - a[0], dy = b[1] - a[1]
-  const dist = Math.hypot(dx, dy) || 1
-  const sag = Math.sqrt(Math.max(0, len * len - dist * dist)) * 0.55 + 6
-  return [(a[0] + b[0]) / 2 + (-dy / dist) * side * sag, (a[1] + b[1]) / 2 + (dx / dist) * side * sag]
+/**
+ * A rubber-hose limb, the way Battle Axe's RubberHose builds one: a hose of constant length L bent into
+ * a circular arc between the socket `a` and the end `b`. When b is nearly L away the hose eases straight
+ * (soft IK, so it never "pops"); beyond L the end is pulled back to L, so a limb can never come apart.
+ * `dir` (−1..1) picks which way it bows; values near 0 flatten the bend. Returns sample points along the
+ * hose and the heading at the end, which the glove or sneaker follows (auto-rotate).
+ */
+export interface Hose { pts: V[]; end: V; heading: number }
+const SAMPLES = 14
+function hose(a: V, target: V, L: number, dir: number): Hose {
+  let dx = target[0] - a[0], dy = target[1] - a[1]
+  let d = Math.hypot(dx, dy) || 1e-6
+  const phi = Math.atan2(dy, dx)
+  // soft IK: the effective reach approaches L smoothly instead of snapping straight
+  const k = 0.08 * L
+  if (d > L - k) d = L - k * Math.exp(-(d - (L - k)) / k)
+  dx = Math.cos(phi) * d; dy = Math.sin(phi) * d
+  const end: V = [a[0] + dx, a[1] + dy]
+  const flat = Math.min(1, Math.abs(dir)), sgn = dir >= 0 ? 1 : -1
+  // solve sin(t)/t = d/L for the half bend angle t (Newton)
+  const kk = Math.min(0.9999, d / L)
+  let t = Math.min(3, Math.sqrt(6 * (1 - kk)))
+  for (let i = 0; i < 12; i++) { const f = Math.sin(t) / t - kk, fp = (t * Math.cos(t) - Math.sin(t)) / (t * t); t = Math.min(Math.PI - 1e-4, Math.max(1e-4, t - f / fp)) }
+  t *= flat // flattening = less bend
+  const r = t > 1e-4 ? (d / 2) / Math.sin(t) : 1e9
+  const a0 = phi - sgn * t
+  const pts: V[] = []
+  for (let i = 0; i <= SAMPLES; i++) {
+    const u = i / SAMPLES
+    if (t <= 1e-4) { pts.push([a[0] + dx * u, a[1] + dy * u]); continue }
+    const h = a0 + sgn * 2 * t * u
+    pts.push([a[0] + r * sgn * (Math.sin(h) - Math.sin(a0)), a[1] - r * sgn * (Math.cos(h) - Math.cos(a0))])
+  }
+  pts[SAMPLES] = end
+  return { pts, end, heading: ((phi + sgn * t) * 180) / Math.PI }
 }
-const angle = (from: V, to: V) => (Math.atan2(to[1] - from[1], to[0] - from[0]) * 180) / Math.PI
 
 // Glove/sneaker anchor points inside their images (art pixels from the image's top-left).
 const GLOVE_AT = { L: [REST.handL[0] - BOX.gloveL[0], REST.handL[1] - BOX.gloveL[1]] as V, R: [REST.handR[0] - BOX.gloveR[0], REST.handR[1] - BOX.gloveR[1]] as V }
 const SHOE_AT = { L: [REST.footL[0] - BOX.shoeL[0], REST.footL[1] - BOX.shoeL[1]] as V, R: [REST.footR[0] - BOX.shoeR[0], REST.footR[1] - BOX.shoeR[1]] as V }
-const REST_ARM_L = angle(hose(REST.shoulderL, REST.handL, ARM_LEN, 1), REST.handL)
-const REST_ARM_R = angle(hose(REST.shoulderR, REST.handR, ARM_LEN, -1), REST.handR)
+// Bend sides: her right arm (on our left) bows outward to the left, the other to the right.
+const SIDE = { L: -1, R: 1 }
+const REST_HEAD = {
+  armL: hose(REST.shoulderL, REST.handL, ARM_LEN, SIDE.L).heading, armR: hose(REST.shoulderR, REST.handR, ARM_LEN, SIDE.R).heading,
+  legL: hose(REST.hipL, REST.footL, LEG_LEN, SIDE.L).heading, legR: hose(REST.hipR, REST.footR, LEG_LEN, SIDE.R).heading,
+}
 
 // ---------- the face, in ball space ----------
-const EYE = { L: [398, 470] as V, R: [592, 472] as V, rx: 52, ry: 74 }
-const PUPIL = { rx: 30, ry: 46 }
-const MOUTH: V = [494, 622]
-const CREAM = '#f2ead8', INK = '#141312', BLUSH = '#d9644e', SKIN = '#2b2926', TEAL = '#5cdcce'
+// Proportions measured on Marc's reference: tall eyes set close, big pupils sitting low, a pie-cut highlight,
+// lashes on the outer corners, heavy short brows, big low blush, an open grin with a tongue.
+const EYE = { L: [408, 478] as V, R: [584, 478] as V, rx: 54, ry: 80 }
+const PUPIL = { rx: 38, ry: 55, drop: 12 }
+const MOUTH: V = [496, 612]
+const CREAM = '#f2ead8', INK = '#141312', BLUSH = '#e5705d', SKIN = '#2b2926', TEAL = '#5cdcce', MOUTH_IN = '#3a0d0a'
 
 /** The images, loaded once and shared by every Miss Belle on the page. */
 export type Images = Record<PartName, { img: HTMLImageElement; edge: HTMLImageElement }>
@@ -122,47 +158,53 @@ export function loadImages(base: string): Promise<Images> {
 /** The geometry of one frame, computed once and drawn twice (cream edge pass, then colour pass). */
 interface Frame {
   root: M; body: M; bun: M
-  sL: V; sR: V; hL: V; hR: V; cL: V; cR: V; pL: V; pR: V; fL: V; fR: V; kL: V; kR: V
+  armL: Hose; armR: Hose; legL: Hose; legR: Hose
   glove: { L: M; R: M }; shoe: { L: M; R: M }
   bicep: V
 }
 
 function geometry(p: Pose, base: M): Frame {
-  // whole body: spin around her middle, lean over her feet, squash around the feet
+  // one hierarchy: root (feet on the floor) → body → shoulder sockets; hips ride the body too.
+  // spin turns her around her middle, lean tips her over her feet, squash is about the feet.
   const root = mul(base, mul(mul(mul(T(p.x, p.y + p.hop), Rd(p.spin, BALL.cx, 700)), Rd(p.lean, 500, FEET_Y)), S(p.sx, p.sy, 500, FEET_Y)))
   const bodyLocal = mul(mul(T(0, p.bob), Rd(p.tilt, BALL.cx, BALL.cy)), S(p.bsx, p.bsy, BALL.cx, BALL.cy + BALL.r))
   const body = mul(root, bodyLocal)
-  // arms in root space: shoulders ride with the body, hands are placed in body space
+  // arms: sockets sit inside the ball's silhouette and ride the body; hands are placed in body space
   const sL = ap(bodyLocal, REST.shoulderL), sR = ap(bodyLocal, REST.shoulderR)
   const hL = ap(bodyLocal, [REST.handL[0] + p.hl[0], REST.handL[1] + p.hl[1]])
   const hR = ap(bodyLocal, [REST.handR[0] + p.hr[0], REST.handR[1] + p.hr[1]])
-  const cL = hose(sL, hL, ARM_LEN, p.bendL >= 0 ? 1 : -1), cR = hose(sR, hR, ARM_LEN, p.bendR >= 0 ? -1 : 1)
-  const autoL = angle(cL, hL) - REST_ARM_L, autoR = angle(cR, hR) - REST_ARM_R
-  const gl = (autoL + p.hlr) * (1 - p.hlLock) + p.hlr * p.hlLock
-  const gr = (autoR + p.hrr) * (1 - p.hrLock) + p.hrr * p.hrLock
+  const armL = hose(sL, hL, ARM_LEN, SIDE.L * p.dirL), armR = hose(sR, hR, ARM_LEN, SIDE.R * p.dirR)
+  // gloves sit exactly on the hose end and turn with it (auto-rotate), plus the pose's own offset
+  const gl = armL.heading - REST_HEAD.armL + p.hlr, gr = armR.heading - REST_HEAD.armR + p.hrr
   const glove = {
-    L: mul(root, mul(T(hL[0] - GLOVE_AT.L[0], hL[1] - GLOVE_AT.L[1]), Rd(gl, GLOVE_AT.L[0], GLOVE_AT.L[1]))),
-    R: mul(root, mul(T(hR[0] - GLOVE_AT.R[0], hR[1] - GLOVE_AT.R[1]), Rd(gr, GLOVE_AT.R[0], GLOVE_AT.R[1]))),
+    L: mul(root, mul(T(armL.end[0] - GLOVE_AT.L[0], armL.end[1] - GLOVE_AT.L[1]), Rd(gl, GLOVE_AT.L[0], GLOVE_AT.L[1]))),
+    R: mul(root, mul(T(armR.end[0] - GLOVE_AT.R[0], armR.end[1] - GLOVE_AT.R[1]), Rd(gr, GLOVE_AT.R[0], GLOVE_AT.R[1]))),
   }
-  // legs: hips ride with the body (but not its squash), feet stay put unless a move lifts them
-  const hipM = mul(T(0, p.bob * 0.6), Rd(p.tilt * 0.4, BALL.cx, BALL.cy))
+  // legs: hip sockets ride the body (not its squash); feet stay planted unless a move lifts them
+  const hipM = mul(T(0, p.bob), Rd(p.tilt * 0.5, BALL.cx, BALL.cy))
   const pL = ap(hipM, REST.hipL), pR = ap(hipM, REST.hipR)
-  const fL: V = [REST.footL[0] + p.fl[0], REST.footL[1] + p.fl[1]]
-  const fR: V = [REST.footR[0] + p.fr[0], REST.footR[1] + p.fr[1]]
-  const kL = hose(pL, fL, LEG_LEN, 1), kR = hose(pR, fR, LEG_LEN, -1)
+  const legL = hose(pL, [REST.footL[0] + p.fl[0], REST.footL[1] + p.fl[1]], LEG_LEN, SIDE.L)
+  const legR = hose(pR, [REST.footR[0] + p.fr[0], REST.footR[1] + p.fr[1]], LEG_LEN, SIDE.R)
+  // sneakers follow the leg a little (they mostly stay flat on the floor)
+  const sl = (legL.heading - REST_HEAD.legL) * 0.35 + p.flr, sr = (legR.heading - REST_HEAD.legR) * 0.35 + p.frr
   const shoe = {
-    L: mul(root, mul(T(fL[0] - SHOE_AT.L[0], fL[1] - SHOE_AT.L[1]), Rd(p.flr, SHOE_AT.L[0] - 60, SHOE_AT.L[1] + 150))),
-    R: mul(root, mul(T(fR[0] - SHOE_AT.R[0], fR[1] - SHOE_AT.R[1]), Rd(p.frr, SHOE_AT.R[0] - 40, SHOE_AT.R[1] + 150))),
+    L: mul(root, mul(T(legL.end[0] - SHOE_AT.L[0], legL.end[1] - SHOE_AT.L[1]), Rd(sl, SHOE_AT.L[0], SHOE_AT.L[1]))),
+    R: mul(root, mul(T(legR.end[0] - SHOE_AT.R[0], legR.end[1] - SHOE_AT.R[1]), Rd(sr, SHOE_AT.R[0], SHOE_AT.R[1]))),
   }
   const bun = mul(body, Rd(p.bun, REST.bunPivot[0], REST.bunPivot[1]))
-  // the bicep sits on the outside of the right arm's bend
-  const mx = (sR[0] + 2 * cR[0] + hR[0]) / 4, my = (sR[1] + 2 * cR[1] + hR[1]) / 4
-  const ox = cR[0] - mx, oy = cR[1] - my, ol = Math.hypot(ox, oy) || 1
-  return { root, body, bun, sL, sR, hL, hR, cL, cR, pL, pR, fL, fR, kL, kR, glove, shoe, bicep: [mx + (ox / ol) * 16, my + (oy / ol) * 16] }
+  // the bicep bulges from the middle of the right arm, on the outside of its bend
+  const mid = armR.pts[Math.floor(armR.pts.length / 2)]
+  const chordMid: V = [(armR.pts[0][0] + armR.end[0]) / 2, (armR.pts[0][1] + armR.end[1]) / 2]
+  const ox = mid[0] - chordMid[0], oy = mid[1] - chordMid[1], ol = Math.hypot(ox, oy) || 1
+  return { root, body, bun, armL, armR, legL, legR, glove, shoe, bicep: [mid[0] + (ox / ol) * 14, mid[1] + (oy / ol) * 14] }
 }
 
 const setM = (ctx: CanvasRenderingContext2D, m: M) => ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5])
-function limb(ctx: CanvasRenderingContext2D, a: V, c: V, b: V) { ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(c[0], c[1], b[0], b[1]); ctx.stroke() }
+function limb(ctx: CanvasRenderingContext2D, h: Hose) {
+  ctx.beginPath(); ctx.moveTo(h.pts[0][0], h.pts[0][1])
+  for (let i = 1; i < h.pts.length; i++) ctx.lineTo(h.pts[i][0], h.pts[i][1])
+  ctx.stroke()
+}
 function part(ctx: CanvasRenderingContext2D, im: Images, k: PartName, m: M, edge: boolean, placed: boolean) {
   setM(ctx, m)
   const b = BOX[k]
@@ -180,94 +222,130 @@ export function draw(ctx: CanvasRenderingContext2D, im: Images, p: Pose, base: M
   // pass 1: the cream sticker outline, every part grown by EDGE
   ctx.strokeStyle = CREAM; ctx.fillStyle = CREAM
   setM(ctx, g.root)
-  ctx.lineWidth = 46 + EDGE * 2; limb(ctx, g.pL, g.kL, g.fL); limb(ctx, g.pR, g.kR, g.fR)
-  ctx.lineWidth = 38 + EDGE * 2; limb(ctx, g.sL, g.cL, g.hL); limb(ctx, g.sR, g.cR, g.hR)
-  if (p.bicep > 0.01) { ctx.beginPath(); ctx.ellipse(g.bicep[0], g.bicep[1], (50 + EDGE) * p.bicep, (40 + EDGE) * p.bicep, 0, 0, Math.PI * 2); ctx.fill() }
+  ctx.lineWidth = 46 + EDGE * 2; limb(ctx, g.legL); limb(ctx, g.legR)
+  ctx.lineWidth = 38 + EDGE * 2; limb(ctx, g.armL); limb(ctx, g.armR)
+  if (p.bicep > 0.01) { ctx.beginPath(); ctx.ellipse(g.bicep[0], g.bicep[1], (48 + EDGE) * p.bicep, (38 + EDGE) * p.bicep, 0, 0, Math.PI * 2); ctx.fill() }
   part(ctx, im, 'shoeL', g.shoe.L, true, true); part(ctx, im, 'shoeR', g.shoe.R, true, true)
   part(ctx, im, 'bun', g.bun, true, false); part(ctx, im, 'ball', g.body, true, false)
   part(ctx, im, 'gloveL', g.glove.L, true, true); part(ctx, im, 'gloveR', g.glove.R, true, true)
 
-  // pass 2: the character
+  // pass 2: back to front: legs, sneakers, arms (sockets hidden behind the ball), bun, ball, face, gloves
   ctx.strokeStyle = INK; ctx.fillStyle = INK
   setM(ctx, g.root)
-  ctx.lineWidth = 46; limb(ctx, g.pL, g.kL, g.fL); limb(ctx, g.pR, g.kR, g.fR)
+  ctx.lineWidth = 46; limb(ctx, g.legL); limb(ctx, g.legR)
   part(ctx, im, 'shoeL', g.shoe.L, false, true); part(ctx, im, 'shoeR', g.shoe.R, false, true)
   setM(ctx, g.root)
-  ctx.lineWidth = 38; limb(ctx, g.sL, g.cL, g.hL); limb(ctx, g.sR, g.cR, g.hR)
-  if (p.bicep > 0.01) { ctx.beginPath(); ctx.ellipse(g.bicep[0], g.bicep[1], 50 * p.bicep, 40 * p.bicep, 0, 0, Math.PI * 2); ctx.fill() }
+  ctx.lineWidth = 38; limb(ctx, g.armL); limb(ctx, g.armR)
+  if (p.bicep > 0.01) { ctx.beginPath(); ctx.ellipse(g.bicep[0], g.bicep[1], 48 * p.bicep, 38 * p.bicep, 0, 0, Math.PI * 2); ctx.fill() }
+  // a glove tucked behind the body (hands on hips) is drawn before the ball, so only the wrist shows
+  if (p.tuckL > 0.5) part(ctx, im, 'gloveL', g.glove.L, false, true)
+  if (p.tuckR > 0.5) part(ctx, im, 'gloveR', g.glove.R, false, true)
   part(ctx, im, 'bun', g.bun, false, false)
   part(ctx, im, 'ball', g.body, false, false)
   setM(ctx, g.body)
   face(ctx, p)
-  part(ctx, im, 'gloveL', g.glove.L, false, true); part(ctx, im, 'gloveR', g.glove.R, false, true)
+  if (p.tuckL <= 0.5) part(ctx, im, 'gloveL', g.glove.L, false, true)
+  if (p.tuckR <= 0.5) part(ctx, im, 'gloveR', g.glove.R, false, true)
 
   effects(ctx, p, g.root, t)
 }
 
 function face(ctx: CanvasRenderingContext2D, p: Pose) {
   const a0 = ctx.globalAlpha
-  // blush
-  ctx.globalAlpha = a0 * Math.min(1, p.blush * 0.9)
+  // blush: big soft ovals, low and to the outside
+  ctx.globalAlpha = a0 * Math.min(1, p.blush * 0.85)
   ctx.fillStyle = BLUSH
-  ctx.beginPath(); ctx.arc(322, 556, 33, 0, Math.PI * 2); ctx.moveTo(699, 560); ctx.arc(666, 560, 33, 0, Math.PI * 2); ctx.fill()
+  ctx.beginPath(); ctx.ellipse(318, 590, 42, 32, 0, 0, Math.PI * 2); ctx.moveTo(716, 590); ctx.ellipse(674, 590, 42, 32, 0, 0, Math.PI * 2); ctx.fill()
   ctx.globalAlpha = a0
   // eyes: open (with lids) → shut curves when the lids are fully down → happy arcs when squinting
-  const shut = Math.max(0, Math.min(1, (p.blink - 0.82) / 0.18)) * (1 - p.squint)
-  const open = (1 - p.squint) * (1 - shut)
-  const lx = p.lookX * 16, ly = p.lookY * 20
+  // eye shapes swap instantly, as in hand-drawn cartoons (a cross-fade shows two pairs of eyes at once)
+  const happy = p.squint > 0.5 ? 1 : 0
+  const shut = p.blink > 0.9 && !happy ? 1 : 0
+  const open = !happy && !shut ? 1 : 0
+  const lx = p.lookX * 14, ly = p.lookY * 16
   const lid = Math.max(0, Math.min(1, p.blink)) * (EYE.ry * 2 + 8)
-  if (open > 0.01) {
-    ctx.globalAlpha = a0 * open
-    for (const e of [EYE.L, EYE.R]) {
+  if (open) {
+    ctx.globalAlpha = a0
+    for (const [e, side] of [[EYE.L, -1], [EYE.R, 1]] as const) {
       ctx.save()
       ctx.beginPath(); ctx.ellipse(e[0], e[1], EYE.rx, EYE.ry, 0, 0, Math.PI * 2)
       ctx.fillStyle = CREAM; ctx.fill(); ctx.clip()
+      const px = e[0] + lx, py = e[1] + PUPIL.drop + ly
       ctx.fillStyle = INK
-      ctx.beginPath(); ctx.ellipse(e[0] + lx, e[1] + 4 + ly, PUPIL.rx, PUPIL.ry, 0, 0, Math.PI * 2); ctx.fill()
-      ctx.fillStyle = CREAM // the pie-cut highlight of 1930s cartoon eyes
-      ctx.beginPath(); ctx.moveTo(e[0] + 4 + lx, e[1] - 8 + ly); ctx.lineTo(e[0] + 36 + lx, e[1] - 32 + ly); ctx.lineTo(e[0] + 36 + lx, e[1] + 2 + ly); ctx.closePath(); ctx.fill()
+      ctx.beginPath(); ctx.ellipse(px, py, PUPIL.rx, PUPIL.ry, 0, 0, Math.PI * 2); ctx.fill()
+      // the pie-cut highlight: a cream wedge from the pupil's centre to its upper edge, plus a small glint
+      ctx.fillStyle = CREAM
+      ctx.beginPath(); ctx.moveTo(px + 2, py - 6); ctx.lineTo(px - 30, py - 50); ctx.lineTo(px + 8, py - 58); ctx.closePath(); ctx.fill()
+      ctx.beginPath(); ctx.arc(px + 16, py + 22, 7, 0, Math.PI * 2); ctx.fill()
       if (lid > 0.5) { ctx.fillStyle = SKIN; ctx.fillRect(e[0] - EYE.rx - 4, e[1] - EYE.ry - 4, EYE.rx * 2 + 8, lid) }
       ctx.restore()
-      ctx.strokeStyle = INK; ctx.lineWidth = 7
+      ctx.strokeStyle = INK; ctx.lineWidth = 8
       ctx.beginPath(); ctx.ellipse(e[0], e[1], EYE.rx, EYE.ry, 0, 0, Math.PI * 2); ctx.stroke()
+      // lashes ride on the upper lid: three flicks at the outer corner
+      const lidY = e[1] - EYE.ry + Math.max(0, lid - 4)
+      lashes(ctx, e, side, lidY)
     }
   }
-  ctx.strokeStyle = INK; ctx.lineWidth = 9
-  if (shut > 0.01) {
-    ctx.globalAlpha = a0 * shut
-    for (const e of [EYE.L, EYE.R]) { ctx.beginPath(); ctx.moveTo(e[0] - 42, e[1] + 4); ctx.quadraticCurveTo(e[0], e[1] + 40, e[0] + 42, e[1] + 4); ctx.stroke() }
+  ctx.strokeStyle = INK; ctx.lineWidth = 10
+  if (shut) {
+    ctx.globalAlpha = a0
+    for (const [e, side] of [[EYE.L, -1], [EYE.R, 1]] as const) {
+      ctx.beginPath(); ctx.moveTo(e[0] - 46, e[1] + 6); ctx.quadraticCurveTo(e[0], e[1] + 42, e[0] + 46, e[1] + 6); ctx.stroke()
+      // closed-eye lashes hang from the outer end of the lid line
+      const ox = e[0] + side * 46
+      ctx.lineWidth = 8
+      for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(ox - side * i * 12, e[1] + 8 + i * 6); ctx.lineTo(ox + side * (14 - i * 4), e[1] + 26 + i * 8); ctx.stroke() }
+      ctx.lineWidth = 10
+    }
   }
-  if (p.squint > 0.01) {
-    ctx.globalAlpha = a0 * p.squint
-    for (const e of [EYE.L, EYE.R]) { ctx.beginPath(); ctx.moveTo(e[0] - 40, e[1] + 14); ctx.quadraticCurveTo(e[0], e[1] - 40, e[0] + 40, e[1] + 14); ctx.stroke() }
+  if (happy) {
+    ctx.globalAlpha = a0
+    for (const e of [EYE.L, EYE.R]) { ctx.beginPath(); ctx.moveTo(e[0] - 44, e[1] + 16); ctx.quadraticCurveTo(e[0], e[1] - 44, e[0] + 44, e[1] + 16); ctx.stroke() }
   }
   ctx.globalAlpha = a0
-  // brows
-  ctx.lineWidth = 8
+  // brows: short and heavy, arched
+  ctx.lineWidth = 12
   for (const [e, raise, side] of [[EYE.L, p.browL, -1], [EYE.R, p.browR, 1]] as const) {
-    const y = e[1] - 100 - raise * 24
-    const inner = side === -1 ? e[0] + 36 : e[0] - 36, outer = side === -1 ? e[0] - 40 : e[0] + 40
-    ctx.beginPath(); ctx.moveTo(outer, y - p.browTilt * 8); ctx.quadraticCurveTo(e[0], y - 18, inner, y + p.browTilt * 16); ctx.stroke()
+    const y = e[1] - EYE.ry - 30 - raise * 22
+    const inner = e[0] - side * 30, outer = e[0] + side * 34
+    ctx.beginPath(); ctx.moveTo(inner, y + p.browTilt * 14); ctx.quadraticCurveTo(e[0], y - 20, outer, y - p.browTilt * 6 + 4); ctx.stroke()
   }
-  // nose
-  ctx.lineWidth = 6
-  ctx.beginPath(); ctx.moveTo(478, 548); ctx.quadraticCurveTo(492, 532, 506, 548); ctx.stroke()
-  // mouth
-  const w = 72 * p.mouthW, cx = MOUTH[0], cy = MOUTH[1], lift = p.smile * 20
+  // nose: a small hook
+  ctx.lineWidth = 7
+  ctx.beginPath(); ctx.moveTo(482, 566); ctx.quadraticCurveTo(496, 550, 510, 566); ctx.stroke()
+  // mouth: a wide grin; closed it is a smile line, open it is a "D" with teeth on top and a tongue
+  const w = 88 * p.mouthW, cx = MOUTH[0], cy = MOUTH[1], lift = p.smile * 22
   const L: V = [cx - w, cy - lift - p.smirk * 14], R: V = [cx + w, cy - lift + p.smirk * 10]
   if (p.mouthOpen <= 0.06) {
-    ctx.lineWidth = 8
-    ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.quadraticCurveTo(cx, cy + p.smile * 34, R[0], R[1]); ctx.stroke()
+    ctx.lineWidth = 9
+    ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.quadraticCurveTo(cx, cy + p.smile * 32, R[0], R[1]); ctx.stroke()
   } else {
-    const top = cy - lift * 0.15 + (p.smile < 0 ? -p.smile * 10 : 0)
-    const bottom = cy + 12 + p.mouthOpen * 92 + Math.max(0, p.smile) * 20
-    ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.quadraticCurveTo(cx, top, R[0], R[1]); ctx.quadraticCurveTo(cx, bottom, L[0], L[1]); ctx.closePath()
-    ctx.fillStyle = INK; ctx.fill()
+    const top = cy - lift * 0.35 + (p.smile < 0 ? -p.smile * 10 : 0)
+    const bottom = cy + 18 + p.mouthOpen * 130 + Math.max(0, p.smile) * 22
+    const lowY = 0.5 * (L[1] + R[1]) / 2 + 0.5 * bottom // the lowest point of the bottom curve
+    const shape = () => { ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.quadraticCurveTo(cx, top, R[0], R[1]); ctx.quadraticCurveTo(cx, bottom, L[0], L[1]); ctx.closePath() }
+    shape()
+    ctx.fillStyle = MOUTH_IN; ctx.fill()
     ctx.save(); ctx.clip()
-    ctx.fillStyle = CREAM; ctx.fillRect(cx - 90, cy - 40, 180, 34 + 16 * Math.min(1, p.mouthOpen))
-    ctx.fillStyle = BLUSH; ctx.beginPath(); ctx.ellipse(cx + 12, bottom - 6, 38, 10 + 26 * Math.min(1, p.mouthOpen) * p.tongue, 0, 0, Math.PI * 2); ctx.fill()
+    // teeth: a cream band under the top lip; tongue: resting in the bottom of the mouth
+    ctx.fillStyle = CREAM; ctx.fillRect(cx - 120, Math.min(L[1], R[1]) - 30, 240, 30 + (top - Math.min(L[1], R[1])) * 0.5 + 12 + 8 * Math.min(1, p.mouthOpen))
+    ctx.fillStyle = BLUSH; ctx.beginPath(); ctx.ellipse(cx + 12, lowY + 6, 50 * p.mouthW, (16 + 30 * Math.min(1, p.mouthOpen)) * p.tongue, 0, 0, Math.PI * 2); ctx.fill()
     ctx.restore()
-    ctx.lineWidth = 6; ctx.stroke()
+    shape() // the outline follows the mouth, not the last shape drawn inside it
+    ctx.lineWidth = 8; ctx.stroke()
+  }
+}
+
+/** Three curled lashes at the eye's outer top corner (side −1 = her right eye, on our left). */
+function lashes(ctx: CanvasRenderingContext2D, e: V, side: number, lidY: number) {
+  ctx.strokeStyle = INK; ctx.lineWidth = 8; ctx.lineCap = 'round'
+  for (let i = 0; i < 3; i++) {
+    const a = (-Math.PI / 2) + side * (0.55 + i * 0.32) // around the upper outer arc
+    const bx = e[0] + Math.cos(a) * EYE.rx * 0.98
+    const by = Math.max(lidY, e[1] + Math.sin(a) * EYE.ry * 0.98)
+    const len = 24 - i * 3
+    const dx = Math.cos(a) * len + side * 6, dy = Math.sin(a) * len - 6
+    ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx + dx * 0.6, by + dy * 0.2, bx + dx, by + dy); ctx.stroke()
   }
 }
 
