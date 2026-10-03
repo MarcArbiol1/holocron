@@ -7,7 +7,7 @@
  */
 import { useEffect, useImperativeHandle, useRef, type Ref } from 'react'
 import { subscribe } from '../anim/ticker'
-import { draw, type M } from '../avatar/rig'
+import { draw, loadImages, type Images, type M } from '../avatar/rig'
 import { Director, type ClipName } from '../avatar/clips'
 import { reducedMotion } from '../lib/motion'
 
@@ -18,6 +18,7 @@ export interface BelleApi {
   stop: () => void
 }
 
+const base = `${import.meta.env.BASE_URL}belle/`
 // Her layout box in art pixels, and the extra room the canvas keeps around it (jumps, waves, sparkles).
 const VIEW = { x: 110, y: 40, w: 780, h: 1060 }
 const PAD = { top: 430, side: 280, bottom: 40 }
@@ -50,20 +51,23 @@ export function MissBelle({ height = 120, apiRef, onTap, className = '' }: { hei
     const baseM: M = [k, 0, 0, k, (PAD.side - VIEW.x) * k, (PAD.top - VIEW.y) * k]
     const d = director.current
     const still = reducedMotion()
+    let images: Images | null = null
+    let alive = true
+    loadImages(base).then((im) => { if (alive) images = im })
     let visible = true
     const io = typeof IntersectionObserver !== 'undefined' ? new IntersectionObserver(([e]) => { visible = e.isIntersecting }, { rootMargin: '120px' }) : null
     io?.observe(box)
     let shown = -1
     const unsub = subscribe((now) => {
-      if (!visible) return
+      if (!visible || !images) return
       const pose = d.frame(now)
       // development only: a test can set window.__belleLog = [] to record the big one's poses frame by frame
       if (import.meta.env.DEV && height > 200) { const w = window as unknown as { __belleLog?: object[] }; if (w.__belleLog && w.__belleLog.length < 6000) w.__belleLog.push({ t: now, ...pose }) }
       if (still) { pose.hop = 0; pose.spin = 0; pose.lean = 0; pose.sx = 1; pose.sy = 1; pose.bob = 0; pose.tilt = 0; pose.bun = 0; pose.x = 0; pose.y = 0 }
-      draw(ctx, pose, baseM, now / 1000)
+      draw(ctx, images, pose, baseM, now / 1000)
       if (textCb.current && d.shown !== shown) { shown = d.shown; textCb.current(d.lineText.slice(0, shown)) }
     })
-    return () => { unsub(); io?.disconnect() }
+    return () => { alive = false; unsub(); io?.disconnect() }
   }, [cssW, cssH, scale, height])
 
   return (
