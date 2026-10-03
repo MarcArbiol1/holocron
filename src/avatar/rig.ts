@@ -11,6 +11,8 @@
  * here. All coordinates are in the original art's pixels (928 × 1140).
  */
 
+import { SoftLimb } from './limb'
+
 export type V = [number, number]
 
 /** The ball (the kettlebell's round body) as a circle in art pixels. */
@@ -38,7 +40,6 @@ export const REST = {
   footL: [388, 914] as V, footR: [609, 916] as V,
   bunPivot: [503, 330] as V,
 }
-const ARM_LEN = Math.hypot(REST.handL[0] - REST.shoulderL[0], REST.handL[1] - REST.shoulderL[1]) * 1.08
 const LEG_LEN = Math.hypot(REST.footL[0] - REST.hipL[0], REST.footL[1] - REST.hipL[1]) * 1.05
 
 export interface Pose {
@@ -87,20 +88,9 @@ const S = (sx: number, sy: number, ox: number, oy: number): M => mul(mul(T(ox, o
 const Rd = (deg: number, ox: number, oy: number): M => { const r = (deg * Math.PI) / 180, c = Math.cos(r), s = Math.sin(r); return mul(mul(T(ox, oy), [c, s, -s, c, 0, 0]), T(-ox, -oy)) }
 const ap = (m: M, p: V): V => [m[0] * p[0] + m[2] * p[1] + m[4], m[1] * p[0] + m[3] * p[1] + m[5]]
 
-/** A rubber-hose limb from `a` to `b`: returns the curve's control point, bowing outward when the limb is "shorter" than its length. */
-function hose(a: V, b: V, len: number, side: number): V {
-  const dx = b[0] - a[0], dy = b[1] - a[1]
-  const dist = Math.hypot(dx, dy) || 1
-  const sag = Math.sqrt(Math.max(0, len * len - dist * dist)) * 0.55 + 6
-  return [(a[0] + b[0]) / 2 + (-dy / dist) * side * sag, (a[1] + b[1]) / 2 + (dx / dist) * side * sag]
-}
-const angle = (from: V, to: V) => (Math.atan2(to[1] - from[1], to[0] - from[0]) * 180) / Math.PI
-
 // Glove/sneaker anchor points inside their images (art pixels from the image's top-left).
 const GLOVE_AT = { L: [REST.handL[0] - BOX.gloveL[0], REST.handL[1] - BOX.gloveL[1]] as V, R: [REST.handR[0] - BOX.gloveR[0], REST.handR[1] - BOX.gloveR[1]] as V }
 const SHOE_AT = { L: [REST.footL[0] - BOX.shoeL[0], REST.footL[1] - BOX.shoeL[1]] as V, R: [REST.footR[0] - BOX.shoeR[0], REST.footR[1] - BOX.shoeR[1]] as V }
-const REST_ARM_L = angle(hose(REST.shoulderL, REST.handL, ARM_LEN, 1), REST.handL)
-const REST_ARM_R = angle(hose(REST.shoulderR, REST.handR, ARM_LEN, -1), REST.handR)
 
 // ---------- the face, in ball space ----------
 const EYE = { L: [398, 470] as V, R: [592, 472] as V, rx: 52, ry: 74 }
@@ -122,47 +112,78 @@ export function loadImages(base: string): Promise<Images> {
 /** The geometry of one frame, computed once and drawn twice (cream edge pass, then colour pass). */
 interface Frame {
   root: M; body: M; bun: M
-  sL: V; sR: V; hL: V; hR: V; cL: V; cR: V; pL: V; pR: V; fL: V; fR: V; kL: V; kR: V
+  armL: SoftLimb; armR: SoftLimb; legL: SoftLimb; legR: SoftLimb
   glove: { L: M; R: M }; shoe: { L: M; R: M }
   bicep: V
 }
 
-function geometry(p: Pose, base: M): Frame {
+// Rubber-hose arms are long and always curved: the arm is a soft chain this long (art px), and a pose
+// that asks the hand to reach further is pulled back so the arm keeps a bend (never a straight stick).
+const ARM_SOFT = 205
+const LEG_SOFT = LEG_LEN * 1.06
+const REACH = 0.86
+
+/** The four soft limbs of one Miss Belle (they carry their own motion between frames). */
+export class Limbs {
+  armL = SoftLimb.make({ length: ARM_SOFT, gravity: 1400, bow: 2600, damping: 0.982, stiffness: 0.55 }, REST.shoulderL, REST.handL)
+  armR = SoftLimb.make({ length: ARM_SOFT, gravity: 1400, bow: -2600, damping: 0.982, stiffness: 0.55 }, REST.shoulderR, REST.handR)
+  legL = SoftLimb.make({ length: LEG_SOFT, segments: 8, gravity: 300, bow: 1800, damping: 0.95, stiffness: 0.85 }, REST.hipL, REST.footL)
+  legR = SoftLimb.make({ length: LEG_SOFT, segments: 8, gravity: 300, bow: -1800, damping: 0.95, stiffness: 0.85 }, REST.hipR, REST.footR)
+  rest: { armL: number; armR: number; legL: number; legR: number }
+  constructor() {
+    // let them settle into their resting curve, and remember how each end points at rest
+    for (let i = 0; i < 240; i++) {
+      this.armL.update(1 / 120, REST.shoulderL, REST.handL); this.armR.update(1 / 120, REST.shoulderR, REST.handR)
+      this.legL.update(1 / 120, REST.hipL, REST.footL); this.legR.update(1 / 120, REST.hipR, REST.footR)
+    }
+    this.rest = { armL: this.armL.endHeading(), armR: this.armR.endHeading(), legL: this.legL.endHeading(), legR: this.legR.endHeading() }
+  }
+}
+const within = (from: V, to: V, max: number): V => {
+  const dx = to[0] - from[0], dy = to[1] - from[1], d = Math.hypot(dx, dy)
+  return d <= max ? to : [from[0] + (dx / d) * max, from[1] + (dy / d) * max]
+}
+
+function geometry(p: Pose, base: M, limbs: Limbs, dt: number): Frame {
   // whole body: spin around her middle, lean over her feet, squash around the feet
   const root = mul(base, mul(mul(mul(T(p.x, p.y + p.hop), Rd(p.spin, BALL.cx, 700)), Rd(p.lean, 500, FEET_Y)), S(p.sx, p.sy, 500, FEET_Y)))
   const bodyLocal = mul(mul(T(0, p.bob), Rd(p.tilt, BALL.cx, BALL.cy)), S(p.bsx, p.bsy, BALL.cx, BALL.cy + BALL.r))
   const body = mul(root, bodyLocal)
-  // arms in root space: shoulders ride with the body, hands are placed in body space
+  // arms: sockets ride with the body; the hand target is placed in body space and kept within reach
   const sL = ap(bodyLocal, REST.shoulderL), sR = ap(bodyLocal, REST.shoulderR)
-  const hL = ap(bodyLocal, [REST.handL[0] + p.hl[0], REST.handL[1] + p.hl[1]])
-  const hR = ap(bodyLocal, [REST.handR[0] + p.hr[0], REST.handR[1] + p.hr[1]])
-  const cL = hose(sL, hL, ARM_LEN, p.bendL >= 0 ? 1 : -1), cR = hose(sR, hR, ARM_LEN, p.bendR >= 0 ? -1 : 1)
-  const autoL = angle(cL, hL) - REST_ARM_L, autoR = angle(cR, hR) - REST_ARM_R
+  const hL = within(sL, ap(bodyLocal, [REST.handL[0] + p.hl[0], REST.handL[1] + p.hl[1]]), ARM_SOFT * REACH)
+  const hR = within(sR, ap(bodyLocal, [REST.handR[0] + p.hr[0], REST.handR[1] + p.hr[1]]), ARM_SOFT * REACH)
+  limbs.armL.update(dt, sL, hL); limbs.armR.update(dt, sR, hR)
+  // gloves sit on the end of the arm and turn with it
+  const eL = limbs.armL.pts[limbs.armL.pts.length - 1], eR = limbs.armR.pts[limbs.armR.pts.length - 1]
+  const autoL = limbs.armL.endHeading() - limbs.rest.armL, autoR = limbs.armR.endHeading() - limbs.rest.armR
   const gl = (autoL + p.hlr) * (1 - p.hlLock) + p.hlr * p.hlLock
   const gr = (autoR + p.hrr) * (1 - p.hrLock) + p.hrr * p.hrLock
   const glove = {
-    L: mul(root, mul(T(hL[0] - GLOVE_AT.L[0], hL[1] - GLOVE_AT.L[1]), Rd(gl, GLOVE_AT.L[0], GLOVE_AT.L[1]))),
-    R: mul(root, mul(T(hR[0] - GLOVE_AT.R[0], hR[1] - GLOVE_AT.R[1]), Rd(gr, GLOVE_AT.R[0], GLOVE_AT.R[1]))),
+    L: mul(root, mul(T(eL[0] - GLOVE_AT.L[0], eL[1] - GLOVE_AT.L[1]), Rd(gl, GLOVE_AT.L[0], GLOVE_AT.L[1]))),
+    R: mul(root, mul(T(eR[0] - GLOVE_AT.R[0], eR[1] - GLOVE_AT.R[1]), Rd(gr, GLOVE_AT.R[0], GLOVE_AT.R[1]))),
   }
   // legs: hips ride with the body (but not its squash), feet stay put unless a move lifts them
   const hipM = mul(T(0, p.bob * 0.6), Rd(p.tilt * 0.4, BALL.cx, BALL.cy))
   const pL = ap(hipM, REST.hipL), pR = ap(hipM, REST.hipR)
   const fL: V = [REST.footL[0] + p.fl[0], REST.footL[1] + p.fl[1]]
   const fR: V = [REST.footR[0] + p.fr[0], REST.footR[1] + p.fr[1]]
-  const kL = hose(pL, fL, LEG_LEN, 1), kR = hose(pR, fR, LEG_LEN, -1)
+  limbs.legL.update(dt, pL, within(pL, fL, LEG_SOFT * 0.97)); limbs.legR.update(dt, pR, within(pR, fR, LEG_SOFT * 0.97))
+  const kL = limbs.legL.pts[limbs.legL.pts.length - 1], kR = limbs.legR.pts[limbs.legR.pts.length - 1]
+  const sl = (limbs.legL.endHeading() - limbs.rest.legL) * 0.3 + p.flr, sr = (limbs.legR.endHeading() - limbs.rest.legR) * 0.3 + p.frr
   const shoe = {
-    L: mul(root, mul(T(fL[0] - SHOE_AT.L[0], fL[1] - SHOE_AT.L[1]), Rd(p.flr, SHOE_AT.L[0] - 60, SHOE_AT.L[1] + 150))),
-    R: mul(root, mul(T(fR[0] - SHOE_AT.R[0], fR[1] - SHOE_AT.R[1]), Rd(p.frr, SHOE_AT.R[0] - 40, SHOE_AT.R[1] + 150))),
+    L: mul(root, mul(T(kL[0] - SHOE_AT.L[0], kL[1] - SHOE_AT.L[1]), Rd(sl, SHOE_AT.L[0] - 60, SHOE_AT.L[1] + 150))),
+    R: mul(root, mul(T(kR[0] - SHOE_AT.R[0], kR[1] - SHOE_AT.R[1]), Rd(sr, SHOE_AT.R[0] - 40, SHOE_AT.R[1] + 150))),
   }
   const bun = mul(body, Rd(p.bun, REST.bunPivot[0], REST.bunPivot[1]))
-  // the bicep sits on the outside of the right arm's bend
-  const mx = (sR[0] + 2 * cR[0] + hR[0]) / 4, my = (sR[1] + 2 * cR[1] + hR[1]) / 4
-  const ox = cR[0] - mx, oy = cR[1] - my, ol = Math.hypot(ox, oy) || 1
-  return { root, body, bun, sL, sR, hL, hR, cL, cR, pL, pR, fL, fR, kL, kR, glove, shoe, bicep: [mx + (ox / ol) * 16, my + (oy / ol) * 16] }
+  // the bicep bulges from the middle of the right arm, on the outside of its bend
+  const m = limbs.armR.middle(), mx = (sR[0] + eR[0]) / 2, my = (sR[1] + eR[1]) / 2
+  const ox = m[0] - mx, oy = m[1] - my, ol = Math.hypot(ox, oy) || 1
+  return { root, body, bun, armL: limbs.armL, armR: limbs.armR, legL: limbs.legL, legR: limbs.legR, glove, shoe, bicep: [m[0] + (ox / ol) * 16, m[1] + (oy / ol) * 16] }
 }
 
 const setM = (ctx: CanvasRenderingContext2D, m: M) => ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5])
-function limb(ctx: CanvasRenderingContext2D, a: V, c: V, b: V) { ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(c[0], c[1], b[0], b[1]); ctx.stroke() }
+function limb(ctx: CanvasRenderingContext2D, l: SoftLimb) { l.trace(ctx); ctx.stroke() }
 function part(ctx: CanvasRenderingContext2D, im: Images, k: PartName, m: M, edge: boolean, placed: boolean) {
   setM(ctx, m)
   const b = BOX[k]
@@ -170,8 +191,8 @@ function part(ctx: CanvasRenderingContext2D, im: Images, k: PartName, m: M, edge
 }
 
 /** Draw one frame. `base` maps art pixels to canvas pixels; `t` (s) drives decorative effects. */
-export function draw(ctx: CanvasRenderingContext2D, im: Images, p: Pose, base: M, t: number) {
-  const g = geometry(p, base)
+export function draw(ctx: CanvasRenderingContext2D, im: Images, p: Pose, base: M, t: number, limbs: Limbs, dt: number) {
+  const g = geometry(p, base, limbs, dt)
   ctx.setTransform(1, 0, 0, 1, 0, 0)
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
   ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha))
@@ -180,8 +201,8 @@ export function draw(ctx: CanvasRenderingContext2D, im: Images, p: Pose, base: M
   // pass 1: the cream sticker outline, every part grown by EDGE
   ctx.strokeStyle = CREAM; ctx.fillStyle = CREAM
   setM(ctx, g.root)
-  ctx.lineWidth = 46 + EDGE * 2; limb(ctx, g.pL, g.kL, g.fL); limb(ctx, g.pR, g.kR, g.fR)
-  ctx.lineWidth = 38 + EDGE * 2; limb(ctx, g.sL, g.cL, g.hL); limb(ctx, g.sR, g.cR, g.hR)
+  ctx.lineWidth = 46 + EDGE * 2; limb(ctx, g.legL); limb(ctx, g.legR)
+  ctx.lineWidth = 38 + EDGE * 2; limb(ctx, g.armL); limb(ctx, g.armR)
   if (p.bicep > 0.01) { ctx.beginPath(); ctx.ellipse(g.bicep[0], g.bicep[1], (50 + EDGE) * p.bicep, (40 + EDGE) * p.bicep, 0, 0, Math.PI * 2); ctx.fill() }
   part(ctx, im, 'shoeL', g.shoe.L, true, true); part(ctx, im, 'shoeR', g.shoe.R, true, true)
   part(ctx, im, 'bun', g.bun, true, false); part(ctx, im, 'ball', g.body, true, false)
@@ -190,10 +211,10 @@ export function draw(ctx: CanvasRenderingContext2D, im: Images, p: Pose, base: M
   // pass 2: the character
   ctx.strokeStyle = INK; ctx.fillStyle = INK
   setM(ctx, g.root)
-  ctx.lineWidth = 46; limb(ctx, g.pL, g.kL, g.fL); limb(ctx, g.pR, g.kR, g.fR)
+  ctx.lineWidth = 46; limb(ctx, g.legL); limb(ctx, g.legR)
   part(ctx, im, 'shoeL', g.shoe.L, false, true); part(ctx, im, 'shoeR', g.shoe.R, false, true)
   setM(ctx, g.root)
-  ctx.lineWidth = 38; limb(ctx, g.sL, g.cL, g.hL); limb(ctx, g.sR, g.cR, g.hR)
+  ctx.lineWidth = 38; limb(ctx, g.armL); limb(ctx, g.armR)
   if (p.bicep > 0.01) { ctx.beginPath(); ctx.ellipse(g.bicep[0], g.bicep[1], 50 * p.bicep, 40 * p.bicep, 0, 0, Math.PI * 2); ctx.fill() }
   part(ctx, im, 'bun', g.bun, false, false)
   part(ctx, im, 'ball', g.body, false, false)
@@ -212,12 +233,14 @@ function face(ctx: CanvasRenderingContext2D, p: Pose) {
   ctx.beginPath(); ctx.arc(322, 556, 33, 0, Math.PI * 2); ctx.moveTo(699, 560); ctx.arc(666, 560, 33, 0, Math.PI * 2); ctx.fill()
   ctx.globalAlpha = a0
   // eyes: open (with lids) → shut curves when the lids are fully down → happy arcs when squinting
-  const shut = Math.max(0, Math.min(1, (p.blink - 0.82) / 0.18)) * (1 - p.squint)
-  const open = (1 - p.squint) * (1 - shut)
+  // eye shapes swap instantly, as in hand-drawn cartoons (a cross-fade shows two pairs of eyes at once)
+  const happy = p.squint > 0.5
+  const shut = !happy && p.blink > 0.9
+  const open = !happy && !shut
   const lx = p.lookX * 16, ly = p.lookY * 20
   const lid = Math.max(0, Math.min(1, p.blink)) * (EYE.ry * 2 + 8)
-  if (open > 0.01) {
-    ctx.globalAlpha = a0 * open
+  if (open) {
+    ctx.globalAlpha = a0
     for (const e of [EYE.L, EYE.R]) {
       ctx.save()
       ctx.beginPath(); ctx.ellipse(e[0], e[1], EYE.rx, EYE.ry, 0, 0, Math.PI * 2)
@@ -233,12 +256,12 @@ function face(ctx: CanvasRenderingContext2D, p: Pose) {
     }
   }
   ctx.strokeStyle = INK; ctx.lineWidth = 9
-  if (shut > 0.01) {
-    ctx.globalAlpha = a0 * shut
+  if (shut) {
+    ctx.globalAlpha = a0
     for (const e of [EYE.L, EYE.R]) { ctx.beginPath(); ctx.moveTo(e[0] - 42, e[1] + 4); ctx.quadraticCurveTo(e[0], e[1] + 40, e[0] + 42, e[1] + 4); ctx.stroke() }
   }
-  if (p.squint > 0.01) {
-    ctx.globalAlpha = a0 * p.squint
+  if (happy) {
+    ctx.globalAlpha = a0
     for (const e of [EYE.L, EYE.R]) { ctx.beginPath(); ctx.moveTo(e[0] - 40, e[1] + 14); ctx.quadraticCurveTo(e[0], e[1] - 40, e[0] + 40, e[1] + 14); ctx.stroke() }
   }
   ctx.globalAlpha = a0
@@ -267,6 +290,8 @@ function face(ctx: CanvasRenderingContext2D, p: Pose) {
     ctx.fillStyle = CREAM; ctx.fillRect(cx - 90, cy - 40, 180, 34 + 16 * Math.min(1, p.mouthOpen))
     ctx.fillStyle = BLUSH; ctx.beginPath(); ctx.ellipse(cx + 12, bottom - 6, 38, 10 + 26 * Math.min(1, p.mouthOpen) * p.tongue, 0, 0, Math.PI * 2); ctx.fill()
     ctx.restore()
+    // re-trace the mouth: after the clip the current path is the tongue's, which drew a stray oval
+    ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.quadraticCurveTo(cx, top, R[0], R[1]); ctx.quadraticCurveTo(cx, bottom, L[0], L[1]); ctx.closePath()
     ctx.lineWidth = 6; ctx.stroke()
   }
 }

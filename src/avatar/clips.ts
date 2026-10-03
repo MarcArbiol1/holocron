@@ -48,7 +48,7 @@ const CLIPS: Record<ClipName, Clip> = {
       const w = env(t, 2.3, 0.4, 0.45)
       const antic = Math.sin(Math.PI * seg(t, 0, 0.14)) // a small dip before the raise
       g.hr = toward(g.hr, [10, 26], antic * (1 - seg(t, 0.1, 0.2)))
-      g.hr = toward(g.hr, [64, -350], w)
+      g.hr = toward(g.hr, [138, -262], w) // up and out to the side, so the bent arm reads clearly
       // the swing eases in (no sudden start) and each swing's size blends into the next
       const ramp = smooth(seg(t, 0.36, 0.62))
       const swing = Math.sin(2 * Math.PI * 2.9 * Math.max(0, t - 0.36)) * d.swingAmp(t) * ramp
@@ -75,7 +75,7 @@ const CLIPS: Record<ClipName, Clip> = {
       const pull = Math.sin(Math.PI * seg(t, 0, 0.16))
       const over = Math.sin(Math.PI * seg(t, 0.14, 0.42)) * 0.18 // shoots ~18 % past, then settles
       g.hl = toward(g.hl, [40, 30], pull * 0.6)
-      g.hl = toward(g.hl, [-175 * (1 + over), -205 * (1 + over * 0.5)], w * (1 - pull * 0.6))
+      g.hl = toward(g.hl, [-166 * (1 + over), -176 * (1 + over * 0.5)], w * (1 - pull * 0.6))
       g.hlr += 70 * w
       g.lean += -4 * w; g.tilt += -6 * w
       g.lookX = lerp(g.lookX, -0.9, smooth(seg(t, 0, 0.1)) * w); g.lookY = lerp(g.lookY, 0.25, w)
@@ -91,7 +91,7 @@ const CLIPS: Record<ClipName, Clip> = {
       g.hop = -h * 300
       g.spin = smooth(seg(t, 0.3, 0.7)) * 360
       g.squash += -0.22 * crouch + 0.16 * Math.sin(Math.PI * seg(t, 0.2, 0.42)) - 0.3 * Math.sin(Math.PI * seg(t, 0.72, 0.86))
-      g.hl = toward(g.hl, [-40, -330], Math.max(h, crouch * 0.4)); g.hr = toward(g.hr, [40, -330], Math.max(h, crouch * 0.4))
+      g.hl = toward(g.hl, [-100, -315], Math.max(h, crouch * 0.4)); g.hr = toward(g.hr, [106, -315], Math.max(h, crouch * 0.4))
       g.fl = [g.fl[0] + 10 * h, g.fl[1] - 40 * h]; g.fr = [g.fr[0] - 10 * h, g.fr[1] - 40 * h]
       g.squint = clamp(h * 2 + seg(t, 0.72, 0.8) * (1 - seg(t, 1.4, 1.75)))
       g.mouthOpen = 0.75 * Math.max(h, Math.sin(Math.PI * seg(t, 0.72, 1))); g.smile = 1
@@ -146,7 +146,7 @@ const CLIPS: Record<ClipName, Clip> = {
     apply(g, t) {
       const w = env(t, 2.5, 0.3, 0.45)
       const pump = Math.max(0, Math.sin(2 * Math.PI * 1.4 * Math.max(0, t - 0.35)))
-      g.hr = toward(g.hr, [8, -225 + pump * 16], w); g.hrr = (165 + pump * 8) * w; g.hrLock = w
+      g.hr = toward(g.hr, [-2, -300 + pump * 16], w); g.hrr = (165 + pump * 8) * w; g.hrLock = w
       g.bendR = w > 0.5 ? -1 : 1
       g.bicep = w * (0.75 + 0.45 * pump)
       g.bodySquash += 0.03 * w; g.tilt += 6 * w
@@ -175,7 +175,7 @@ const CLIPS: Record<ClipName, Clip> = {
       g.hop = -(1 - easeIn(fall)) * 900
       g.alpha = clamp(t * 6)
       g.squash += 0.15 * (1 - fall) - 0.34 * Math.sin(Math.PI * seg(t, 0.42, 0.6))
-      g.hl = toward(g.hl, [-40, -280], 1 - fall); g.hr = toward(g.hr, [40, -280], 1 - fall)
+      g.hl = toward(g.hl, [-100, -300], 1 - fall); g.hr = toward(g.hr, [106, -300], 1 - fall)
       g.mouthOpen = 0.6 * (1 - seg(t, 0.4, 0.8)); g.smile = 1
     },
   },

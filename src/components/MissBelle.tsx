@@ -7,7 +7,7 @@
  */
 import { useEffect, useImperativeHandle, useRef, type Ref } from 'react'
 import { subscribe } from '../anim/ticker'
-import { draw, loadImages, type Images, type M } from '../avatar/rig'
+import { draw, loadImages, Limbs, type Images, type M } from '../avatar/rig'
 import { Director, type ClipName } from '../avatar/clips'
 import { reducedMotion } from '../lib/motion'
 
@@ -58,13 +58,17 @@ export function MissBelle({ height = 120, apiRef, onTap, className = '' }: { hei
     const io = typeof IntersectionObserver !== 'undefined' ? new IntersectionObserver(([e]) => { visible = e.isIntersecting }, { rootMargin: '120px' }) : null
     io?.observe(box)
     let shown = -1
+    const limbs = new Limbs()
+    let last = 0
     const unsub = subscribe((now) => {
       if (!visible || !images) return
       const pose = d.frame(now)
       // development only: a test can set window.__belleLog = [] to record the big one's poses frame by frame
       if (import.meta.env.DEV && height > 200) { const w = window as unknown as { __belleLog?: object[] }; if (w.__belleLog && w.__belleLog.length < 6000) w.__belleLog.push({ t: now, ...pose }) }
       if (still) { pose.hop = 0; pose.spin = 0; pose.lean = 0; pose.sx = 1; pose.sy = 1; pose.bob = 0; pose.tilt = 0; pose.bun = 0; pose.x = 0; pose.y = 0 }
-      draw(ctx, images, pose, baseM, now / 1000)
+      const dt = last ? Math.min(0.05, (now - last) / 1000) : 1 / 60
+      last = now
+      draw(ctx, images, pose, baseM, now / 1000, limbs, dt)
       if (textCb.current && d.shown !== shown) { shown = d.shown; textCb.current(d.lineText.slice(0, shown)) }
     })
     return () => { alive = false; unsub(); io?.disconnect() }
