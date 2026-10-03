@@ -2,6 +2,12 @@
 
 Pick-up notes for whoever opens this repo next (usually Marc + Claude).
 
+## 3 Oct 2026: Miss Belle (animated TVA kettlebell companion) — rehearsal page live, not on app pages yet
+
+- Art: Gemini green-screen layers → `public/belle/*.png` (+ `*-edge.png` cream outline silhouettes). Rig + canvas renderer `src/avatar/rig.ts`; springs/noise `src/avatar/dyn.ts`; behaviour (idle life, saccades, blinks, lip-sync, moves) `src/avatar/clips.ts`; component `src/components/MissBelle.tsx`; rehearsal page `#/belle` (`src/pages/BelleLab.tsx`, reachable from Settings → App, works without a profile).
+- Performance lessons: no SVG filters for anything animated on iOS (CPU-rendered); canvas + pre-baked outline; fixed 1/120 s physics steps **must** be interpolated or ~26 % of frames freeze. Dev-only pose recorder: set `window.__belleLog = []` on #/belle (big copy), read back after a move.
+- Still to do: place her at the top right of every page (taller title row, peek bubble on scroll), the quote pool (all Marvel/X-Men/Star Wars/LOTR lines, gym parodies, Codex facts, page-matched TVA lines), reminder logic.
+
 ## 27 Sep 2026, night: collapse/expand morph — pushed
 
 - The bar and the circle are now one piece of glass: `.dock-glass` animates `left/right` into a 62 px circle (spring-smooth, a squash as it lands via `dock-land`), tabs fold in from the edges (`--d` stagger), the logo pops in after 300 ms; expansion uses spring-bouncy and deals tabs out from the centre. `.dock-mini` no longer has its own glass. Width (not clip-path) is animated so the rims and shadow survive.
