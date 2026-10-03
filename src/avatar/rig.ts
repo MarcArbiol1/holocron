@@ -11,24 +11,13 @@
  * here. All coordinates are in the original art's pixels (928 × 1140).
  */
 
+import { CREAM, INK, layer, bodyPieces, bodyDetail, drawBun, glovePieces, gloveDetail, shoePieces, shoeDetail, type GloveOpts, type Pass } from './vector'
+
 export type V = [number, number]
 
 /** The ball (the kettlebell's round body) as a circle in art pixels. */
 export const BALL = { cx: 503, cy: 568, r: 255 }
 const FEET_Y = 1080 // the floor line, for whole-body squash and lean
-const EDGE = 16 // art pixels of cream outline (matches the -edge images)
-
-/** Where each image sits in art pixels: [x, y, w, h] (images include their padding for the outline). */
-export const BOX = {
-  ball: [224, 289, 559, 559],
-  bun: [222, 42, 566, 424],
-  gloveL: [122, 718, 194, 236],
-  gloveR: [675, 721, 195, 236],
-  shoeL: [204, 894, 280, 208],
-  shoeR: [525, 898, 269, 206],
-} as const
-const FILES = { ball: 'ball', bun: 'bun', gloveL: 'glove-l', gloveR: 'glove-r', shoeL: 'shoe-l', shoeR: 'shoe-r' } as const
-type PartName = keyof typeof BOX
 
 /** Rest positions of the joints, measured on the drawing. */
 export const REST = {
@@ -57,6 +46,8 @@ export interface Pose {
   bicep: number
   /** > 0.5: that glove is tucked behind the body (hands on hips) */
   tuckL: number; tuckR: number
+  /** gloves: fingers fanned open (0..1) and curled into a fist (0..1) */
+  spreadL: number; spreadR: number; curlL: number; curlR: number
   // feet: offset from rest, plus rotation (deg)
   fl: V; fr: V; flr: number; frr: number
   // face
@@ -73,7 +64,7 @@ export interface Pose {
 export const neutral = (): Pose => ({
   x: 0, y: 0, hop: 0, lean: 0, spin: 0, sx: 1, sy: 1, alpha: 1, shrink: 0,
   bob: 0, tilt: 0, bsx: 1, bsy: 1, bun: 0,
-  hl: [0, 0], hr: [0, 0], hlr: 0, hrr: 0, dirL: 1, dirR: 1, bicep: 0, tuckL: 0, tuckR: 0,
+  hl: [0, 0], hr: [0, 0], hlr: 0, hrr: 0, dirL: 1, dirR: 1, bicep: 0, tuckL: 0, tuckR: 0, spreadL: 0, spreadR: 0, curlL: 0, curlR: 0,
   fl: [0, 0], fr: [0, 0], flr: 0, frr: 0,
   lookX: 0, lookY: 0, blink: 0, squint: 0,
   browL: 0, browR: 0, browTilt: 0,
@@ -127,8 +118,6 @@ function hose(a: V, target: V, L: number, dir: number): Hose {
 }
 
 // Glove/sneaker anchor points inside their images (art pixels from the image's top-left).
-const GLOVE_AT = { L: [REST.handL[0] - BOX.gloveL[0], REST.handL[1] - BOX.gloveL[1]] as V, R: [REST.handR[0] - BOX.gloveR[0], REST.handR[1] - BOX.gloveR[1]] as V }
-const SHOE_AT = { L: [REST.footL[0] - BOX.shoeL[0], REST.footL[1] - BOX.shoeL[1]] as V, R: [REST.footR[0] - BOX.shoeR[0], REST.footR[1] - BOX.shoeR[1]] as V }
 // Bend sides: her right arm (on our left) bows outward to the left, the other to the right.
 const SIDE = { L: -1, R: 1 }
 const REST_HEAD = {
@@ -142,18 +131,7 @@ const REST_HEAD = {
 const EYE = { L: [408, 478] as V, R: [584, 478] as V, rx: 54, ry: 80 }
 const PUPIL = { rx: 38, ry: 55, drop: 12 }
 const MOUTH: V = [496, 612]
-const CREAM = '#f2ead8', INK = '#141312', BLUSH = '#e5705d', SKIN = '#2b2926', TEAL = '#5cdcce', MOUTH_IN = '#3a0d0a'
-
-/** The images, loaded once and shared by every Miss Belle on the page. */
-export type Images = Record<PartName, { img: HTMLImageElement; edge: HTMLImageElement }>
-let shared: Promise<Images> | null = null
-export function loadImages(base: string): Promise<Images> {
-  if (shared) return shared
-  const load = (src: string) => new Promise<HTMLImageElement>((res, rej) => { const i = new Image(); i.decoding = 'async'; i.onload = () => res(i); i.onerror = rej; i.src = src })
-  shared = Promise.all((Object.keys(BOX) as PartName[]).map(async (k) => [k, { img: await load(`${base}${FILES[k]}.png`), edge: await load(`${base}${FILES[k]}-edge.png`) }] as const))
-    .then((pairs) => Object.fromEntries(pairs) as Images)
-  return shared
-}
+const BLUSH = '#e5705d', SKIN = '#2e2b28', TEAL = '#5cdcce', MOUTH_IN = '#3a0d0a'
 
 /** The geometry of one frame, computed once and drawn twice (cream edge pass, then colour pass). */
 interface Frame {
@@ -175,10 +153,10 @@ function geometry(p: Pose, base: M): Frame {
   const hR = ap(bodyLocal, [REST.handR[0] + p.hr[0], REST.handR[1] + p.hr[1]])
   const armL = hose(sL, hL, ARM_LEN, SIDE.L * p.dirL), armR = hose(sR, hR, ARM_LEN, SIDE.R * p.dirR)
   // gloves sit exactly on the hose end and turn with it (auto-rotate), plus the pose's own offset
-  const gl = armL.heading - REST_HEAD.armL + p.hlr, gr = armR.heading - REST_HEAD.armR + p.hrr
+  // gloves: wrist on the hose end, fingers continuing the arm's direction (auto-rotate), plus the pose's offset
   const glove = {
-    L: mul(root, mul(T(armL.end[0] - GLOVE_AT.L[0], armL.end[1] - GLOVE_AT.L[1]), Rd(gl, GLOVE_AT.L[0], GLOVE_AT.L[1]))),
-    R: mul(root, mul(T(armR.end[0] - GLOVE_AT.R[0], armR.end[1] - GLOVE_AT.R[1]), Rd(gr, GLOVE_AT.R[0], GLOVE_AT.R[1]))),
+    L: mul(root, mul(T(armL.end[0], armL.end[1]), Rd(armL.heading - 90 + p.hlr, 0, 0))),
+    R: mul(root, mul(T(armR.end[0], armR.end[1]), Rd(armR.heading - 90 + p.hrr, 0, 0))),
   }
   // legs: hip sockets ride the body (not its squash); feet stay planted unless a move lifts them
   const hipM = mul(T(0, p.bob), Rd(p.tilt * 0.5, BALL.cx, BALL.cy))
@@ -188,8 +166,8 @@ function geometry(p: Pose, base: M): Frame {
   // sneakers follow the leg a little (they mostly stay flat on the floor)
   const sl = (legL.heading - REST_HEAD.legL) * 0.35 + p.flr, sr = (legR.heading - REST_HEAD.legR) * 0.35 + p.frr
   const shoe = {
-    L: mul(root, mul(T(legL.end[0] - SHOE_AT.L[0], legL.end[1] - SHOE_AT.L[1]), Rd(sl, SHOE_AT.L[0], SHOE_AT.L[1]))),
-    R: mul(root, mul(T(legR.end[0] - SHOE_AT.R[0], legR.end[1] - SHOE_AT.R[1]), Rd(sr, SHOE_AT.R[0], SHOE_AT.R[1]))),
+    L: mul(root, mul(T(legL.end[0], legL.end[1]), Rd(sl, 0, 0))),
+    R: mul(root, mul(T(legR.end[0], legR.end[1]), Rd(sr, 0, 0))),
   }
   const bun = mul(body, Rd(p.bun, REST.bunPivot[0], REST.bunPivot[1]))
   // the bicep bulges from the middle of the right arm, on the outside of its bend
@@ -199,55 +177,53 @@ function geometry(p: Pose, base: M): Frame {
   return { root, body, bun, armL, armR, legL, legR, glove, shoe, bicep: [mid[0] + (ox / ol) * 14, mid[1] + (oy / ol) * 14] }
 }
 
-const setM = (ctx: CanvasRenderingContext2D, m: M) => ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5])
-function limb(ctx: CanvasRenderingContext2D, h: Hose) {
-  ctx.beginPath(); ctx.moveTo(h.pts[0][0], h.pts[0][1])
-  for (let i = 1; i < h.pts.length; i++) ctx.lineTo(h.pts[i][0], h.pts[i][1])
-  ctx.stroke()
-}
-function part(ctx: CanvasRenderingContext2D, im: Images, k: PartName, m: M, edge: boolean, placed: boolean) {
-  setM(ctx, m)
-  const b = BOX[k]
-  ctx.drawImage(edge ? im[k].edge : im[k].img, placed ? 0 : b[0], placed ? 0 : b[1], b[2], b[3])
-}
-
 /** Draw one frame. `base` maps art pixels to canvas pixels; `t` (s) drives decorative effects. */
-export function draw(ctx: CanvasRenderingContext2D, im: Images, p: Pose, base: M, t: number) {
+export function draw(ctx: CanvasRenderingContext2D, p: Pose, base: M, t: number) {
   const g = geometry(p, base)
   ctx.setTransform(1, 0, 0, 1, 0, 0)
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
   ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha))
   ctx.lineCap = 'round'; ctx.lineJoin = 'round'
+  const gL: GloveOpts = { thumb: 1, spread: p.spreadL, curl: p.curlL }, gR: GloveOpts = { thumb: -1, spread: p.spreadR, curl: p.curlR }
+  const limbs = (pass: Pass) => {
+    const pieces = (hs: Hose[], w: number) => hs.map((h) => ({ kind: 'tube' as const, path: hosePath(h), width: w, color: INK }))
+    setM(ctx, g.root)
+    layer(ctx, pass, [...pieces([g.legL, g.legR], 46)])
+  }
+  const arms = (pass: Pass) => {
+    setM(ctx, g.root)
+    const pcs: Parameters<typeof layer>[2] = [g.armL, g.armR].map((h) => ({ kind: 'tube' as const, path: hosePath(h), width: 38, color: INK }))
+    if (p.bicep > 0.01) { const b = new Path2D(); b.ellipse(g.bicep[0], g.bicep[1], 48 * p.bicep, 38 * p.bicep, 0, 0, Math.PI * 2); pcs.push({ kind: 'fill', path: b, color: INK }) }
+    layer(ctx, pass, pcs)
+  }
+  const shoes = (pass: Pass) => {
+    for (const [m, toe] of [[g.shoe.L, -1], [g.shoe.R, 1]] as const) { setM(ctx, m); layer(ctx, pass, shoePieces(toe), () => shoeDetail(ctx, toe)) }
+  }
+  const glove = (side: 'L' | 'R', pass: Pass) => { const o = side === 'L' ? gL : gR; setM(ctx, g.glove[side]); layer(ctx, pass, glovePieces(o), () => gloveDetail(ctx, o)) }
+  const body = (pass: Pass) => { setM(ctx, g.body); layer(ctx, pass, bodyPieces(ctx), () => bodyDetail(ctx)) }
+  const bun = (pass: Pass) => { setM(ctx, g.bun); drawBun(ctx, pass) }
 
-  // pass 1: the cream sticker outline, every part grown by EDGE
-  ctx.strokeStyle = CREAM; ctx.fillStyle = CREAM
-  setM(ctx, g.root)
-  ctx.lineWidth = 46 + EDGE * 2; limb(ctx, g.legL); limb(ctx, g.legR)
-  ctx.lineWidth = 38 + EDGE * 2; limb(ctx, g.armL); limb(ctx, g.armR)
-  if (p.bicep > 0.01) { ctx.beginPath(); ctx.ellipse(g.bicep[0], g.bicep[1], (48 + EDGE) * p.bicep, (38 + EDGE) * p.bicep, 0, 0, Math.PI * 2); ctx.fill() }
-  part(ctx, im, 'shoeL', g.shoe.L, true, true); part(ctx, im, 'shoeR', g.shoe.R, true, true)
-  part(ctx, im, 'bun', g.bun, true, false); part(ctx, im, 'ball', g.body, true, false)
-  part(ctx, im, 'gloveL', g.glove.L, true, true); part(ctx, im, 'gloveR', g.glove.R, true, true)
-
-  // pass 2: back to front: legs, sneakers, arms (sockets hidden behind the ball), bun, ball, face, gloves
-  ctx.strokeStyle = INK; ctx.fillStyle = INK
-  setM(ctx, g.root)
-  ctx.lineWidth = 46; limb(ctx, g.legL); limb(ctx, g.legR)
-  part(ctx, im, 'shoeL', g.shoe.L, false, true); part(ctx, im, 'shoeR', g.shoe.R, false, true)
-  setM(ctx, g.root)
-  ctx.lineWidth = 38; limb(ctx, g.armL); limb(ctx, g.armR)
-  if (p.bicep > 0.01) { ctx.beginPath(); ctx.ellipse(g.bicep[0], g.bicep[1], 48 * p.bicep, 38 * p.bicep, 0, 0, Math.PI * 2); ctx.fill() }
-  // a glove tucked behind the body (hands on hips) is drawn before the ball, so only the wrist shows
-  if (p.tuckL > 0.5) part(ctx, im, 'gloveL', g.glove.L, false, true)
-  if (p.tuckR > 0.5) part(ctx, im, 'gloveR', g.glove.R, false, true)
-  part(ctx, im, 'bun', g.bun, false, false)
-  part(ctx, im, 'ball', g.body, false, false)
+  // pass 1: the cream sticker edge around everything at once
+  limbs('edge'); shoes('edge'); arms('edge'); bun('edge'); body('edge'); glove('L', 'edge'); glove('R', 'edge')
+  // then back to front, each layer outlined and filled: legs, sneakers, arms, (tucked gloves), bun, ball, face, gloves
+  limbs('ink'); limbs('fill')
+  shoes('ink'); shoes('fill')
+  arms('ink'); arms('fill')
+  for (const s of ['L', 'R'] as const) if ((s === 'L' ? p.tuckL : p.tuckR) > 0.5) { glove(s, 'ink'); glove(s, 'fill') }
+  bun('fill')
+  body('ink'); body('fill')
   setM(ctx, g.body)
   face(ctx, p)
-  if (p.tuckL <= 0.5) part(ctx, im, 'gloveL', g.glove.L, false, true)
-  if (p.tuckR <= 0.5) part(ctx, im, 'gloveR', g.glove.R, false, true)
+  for (const s of ['L', 'R'] as const) if ((s === 'L' ? p.tuckL : p.tuckR) <= 0.5) { glove(s, 'ink'); glove(s, 'fill') }
 
   effects(ctx, p, g.root, t)
+}
+
+const setM = (ctx: CanvasRenderingContext2D, m: M) => ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5])
+function hosePath(h: Hose): Path2D {
+  const path = new Path2D(); path.moveTo(h.pts[0][0], h.pts[0][1])
+  for (let i = 1; i < h.pts.length; i++) path.lineTo(h.pts[i][0], h.pts[i][1])
+  return path
 }
 
 function face(ctx: CanvasRenderingContext2D, p: Pose) {

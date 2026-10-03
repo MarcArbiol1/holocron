@@ -69,11 +69,11 @@ const CLIPS: Record<ClipName, Clip> = {
     dur: 2.3,
     keys: [
       { at: 0.14, set: { squash: -0.07, hr: [4, 28], tilt: 2, mouthOpen: 0.3 }, ease: 'out' }, // anticipation
-      { at: 0.38, set: { squash: 0.04, hr: [70, -350], tilt: -6, lean: 2, mouthOpen: 0.65, browL: 0.5, browR: 0.55, smile: 1 }, ease: 'back' },
+      { at: 0.38, set: { squash: 0.04, hr: [70, -350], spreadR: 1, tilt: -6, lean: 2, mouthOpen: 0.65, browL: 0.5, browR: 0.55, smile: 1 }, ease: 'back' },
       { at: 0.58, set: { hr: [112, -336], squash: 0 } }, { at: 0.78, set: { hr: [34, -350] } },
       { at: 0.98, set: { hr: [112, -336] } }, { at: 1.18, set: { hr: [34, -350] } },
       { at: 1.38, set: { hr: [98, -340] } }, { at: 1.62, set: { hr: [70, -350] } },
-      { at: 1.85, set: { tilt: -6, lean: 2, mouthOpen: 0.65, browL: 0.5, browR: 0.55, smile: 1 } },
+      { at: 1.85, set: { tilt: -6, lean: 2, mouthOpen: 0.65, browL: 0.5, browR: 0.55, smile: 1, spreadR: 1 } },
     ],
   },
   talk: { dur: Infinity, keys: [] }, // gestures are made live from the words (see Director)
@@ -81,16 +81,16 @@ const CLIPS: Record<ClipName, Clip> = {
     dur: 2.6,
     keys: [
       { at: 0.15, set: { hl: [34, 26], squash: -0.05, lean: 1 }, ease: 'out' }, // pull back
-      { at: 0.4, set: { hl: [-205, -215], hlr: 20, lean: -4, tilt: -7, squash: 0.03, lookX: -0.9, lookY: 0.25, browR: 0.75, smirk: 0.5, mouthOpen: 0.55, smile: 1 }, ease: 'back' },
+      { at: 0.4, set: { hl: [-205, -215], hlr: 20, spreadL: 0.7, lean: -4, tilt: -7, squash: 0.03, lookX: -0.9, lookY: 0.25, browR: 0.75, smirk: 0.5, mouthOpen: 0.55, smile: 1 }, ease: 'back' },
       { at: 0.6, set: { squash: 0 } },
-      { at: 2.05, set: { hl: [-198, -210], hlr: 20, lean: -4, tilt: -7, lookX: -0.9, lookY: 0.25, browR: 0.75, smirk: 0.5, mouthOpen: 0.45, smile: 1 } },
+      { at: 2.05, set: { hl: [-198, -210], hlr: 20, spreadL: 0.7, lean: -4, tilt: -7, lookX: -0.9, lookY: 0.25, browR: 0.75, smirk: 0.5, mouthOpen: 0.45, smile: 1 } },
     ],
   },
   jump: {
     dur: 1.8,
     keys: [
       { at: 0.2, set: { squash: -0.22, hl: [-6, -40], hr: [6, -40], mouthOpen: 0.2 }, ease: 'out' }, // crouch
-      { at: 0.28, set: { squash: 0.18, hop: -110, hl: [-40, -330], hr: [40, -330], fl: [8, -20], fr: [-8, -20], mouthOpen: 0.8, squint: 1, spin: 0 }, ease: 'linear' }, // launch
+      { at: 0.28, set: { squash: 0.18, hop: -110, hl: [-40, -330], hr: [40, -330], spreadL: 1, spreadR: 1, fl: [8, -20], fr: [-8, -20], mouthOpen: 0.8, squint: 1, spin: 0 }, ease: 'linear' }, // launch
       { at: 0.5, set: { squash: 0.04, hop: -300, fl: [10, -45], fr: [-10, -45] }, ease: 'out' }, // rise
       { at: 0.72, set: { hop: 0, squash: 0.08, spin: 360, sparkle: 0 }, ease: 'in' }, // fall
       { at: 0.8, set: { squash: -0.26, fl: [0, 0], fr: [0, 0], hl: [-30, -140], hr: [30, -140], sparkle: 1 }, ease: 'out' }, // land
@@ -128,10 +128,10 @@ const CLIPS: Record<ClipName, Clip> = {
     dur: 2.6,
     keys: [
       { at: 0.2, set: { hr: [20, -60], squash: -0.04 }, ease: 'out' },
-      { at: 0.42, set: { hr: [10, -228], hrr: 150, dirR: -1, bicep: 0.8, tilt: 6, squash: 0.02, lookX: 0.9, lookY: -0.55, browL: 0.5, browR: 0.7, smirk: 0.8, mouthOpen: 0 }, ease: 'back' },
+      { at: 0.42, set: { hr: [10, -228], hrr: 150, dirR: -1, curlR: 1, bicep: 0.8, tilt: 6, squash: 0.02, lookX: 0.9, lookY: -0.55, browL: 0.5, browR: 0.7, smirk: 0.8, mouthOpen: 0 }, ease: 'back' },
       { at: 0.7, set: { bicep: 1.25, squash: 0 }, ease: 'back' }, { at: 0.95, set: { bicep: 0.85 } },
       { at: 1.2, set: { bicep: 1.25 }, ease: 'back' }, { at: 1.45, set: { bicep: 0.85 } },
-      { at: 2.05, set: { hr: [10, -228], hrr: 150, dirR: -1, bicep: 0.85, tilt: 6, lookX: 0.9, lookY: -0.55, browL: 0.5, browR: 0.7, smirk: 0.8, mouthOpen: 0 } },
+      { at: 2.05, set: { hr: [10, -228], hrr: 150, dirR: -1, curlR: 1, bicep: 0.85, tilt: 6, lookX: 0.9, lookY: -0.55, browL: 0.5, browR: 0.7, smirk: 0.8, mouthOpen: 0 } },
     ],
   },
   bored: {
