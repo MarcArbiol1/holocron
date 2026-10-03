@@ -11,7 +11,7 @@
  * open slowly), breathing with a jittered rhythm, noise drift, weight shifts, little idle fidgets,
  * and lip-sync that holds each mouth shape long enough to read and closes on pauses.
  */
-import { neutral, type Pose, type V } from './rig'
+import { neutral, armAt, type Pose, type V } from './rig'
 import { Spring, fbm, clamp, seg, easeIn, easeOut, smooth, rand } from './dyn'
 
 export type ClipName = 'wave' | 'talk' | 'point' | 'jump' | 'sleep' | 'sass' | 'giggle' | 'flex' | 'bored' | 'enter' | 'exit'
@@ -19,12 +19,14 @@ export type ClipName = 'wave' | 'talk' | 'point' | 'jump' | 'sleep' | 'sass' | '
 // ---------- spring settings per channel: [f Hz, damping, response] ----------
 type Cfg = [number, number, number]
 const CFG = {
-  x: [2, 0.6, 0], y: [2.2, 0.55, 0], lean: [1.7, 0.55, 0],
-  bob: [2.4, 0.45, 0], tilt: [2.4, 0.5, 0.4],
-  hand: [3.2, 0.5, 0], glove: [2, 0.35, 0], foot: [5, 0.6, 0], footRot: [6, 0.5, 0],
-  squash: [3.4, 0.3, 0], bodySquash: [3, 0.35, 0],
+  // limbs and body are close to critically damped: they arrive with a little overshoot, never wobble.
+  // Only the bun (a soft thing on top) keeps a loose, bouncy spring.
+  x: [2, 0.7, 0], y: [2.2, 0.7, 0], lean: [1.8, 0.7, 0],
+  bob: [2.6, 0.62, 0], tilt: [2.4, 0.68, 0.3],
+  hand: [4, 0.74, 0], glove: [3.2, 0.62, 0], foot: [5, 0.7, 0], footRot: [6, 0.6, 0],
+  squash: [3.6, 0.45, 0], bodySquash: [3.2, 0.55, 0],
   brow: [4.5, 0.6, 1], smile: [5, 0.6, 0.5], mouthW: [8, 0.75, 0], smirk: [4, 0.6, 0], squint: [7, 0.8, 0],
-  mouthOpen: [10, 0.7, 0], blush: [2, 1, 0], gaze: [11, 0.95, 1.4], bicep: [4, 0.4, 0], bun: [1.8, 0.2, 0], fx: [3, 1, 0],
+  mouthOpen: [10, 0.7, 0], blush: [2, 1, 0], gaze: [11, 0.95, 1.4], bicep: [5, 0.55, 0], bun: [1.8, 0.22, 0], fx: [3, 1, 0],
 } satisfies Record<string, Cfg>
 const sp = (k: keyof typeof CFG, x0 = 0) => { const c = CFG[k]; return new Spring(c[0], c[1], c[2], x0) }
 const STEP = 1 / 120
@@ -48,12 +50,12 @@ const CLIPS: Record<ClipName, Clip> = {
       const w = env(t, 2.3, 0.4, 0.45)
       const antic = Math.sin(Math.PI * seg(t, 0, 0.14)) // a small dip before the raise
       g.hr = toward(g.hr, [10, 26], antic * (1 - seg(t, 0.1, 0.2)))
-      g.hr = toward(g.hr, [138, -262], w) // up and out to the side, so the bent arm reads clearly
-      // the swing eases in (no sudden start) and each swing's size blends into the next
+      // upper arm out to the side, forearm up; the forearm swings around the elbow like a metronome.
+      // The swing eases in (no sudden start) and each swing's size blends into the next.
       const ramp = smooth(seg(t, 0.36, 0.62))
       const swing = Math.sin(2 * Math.PI * 2.9 * Math.max(0, t - 0.36)) * d.swingAmp(t) * ramp
-      g.hr = [g.hr[0] + swing * 46 * w, g.hr[1] - (1 - Math.cos(2 * Math.PI * 2.9 * Math.max(0, t - 0.36))) * 5 * ramp * w]
-      g.lean += 2.5 * w; g.tilt += -5 * w
+      g.hr = toward(g.hr, armAt('R', 12 + 4 * swing, 92 - 24 * swing), w)
+      g.lean += 2.5 * w; g.tilt += (-5 + 1.8 * swing) * w // the body answers each swing a little
       g.smile = lerp(g.smile, 1, w); g.mouthOpen = 0.3 * w; g.browL += 0.4 * w; g.browR += 0.45 * w
     },
   },
@@ -75,8 +77,8 @@ const CLIPS: Record<ClipName, Clip> = {
       const pull = Math.sin(Math.PI * seg(t, 0, 0.16))
       const over = Math.sin(Math.PI * seg(t, 0.14, 0.42)) * 0.18 // shoots ~18 % past, then settles
       g.hl = toward(g.hl, [40, 30], pull * 0.6)
-      g.hl = toward(g.hl, [-166 * (1 + over), -176 * (1 + over * 0.5)], w * (1 - pull * 0.6))
-      g.hlr += 70 * w
+      g.hl = toward(g.hl, armAt('L', 22 + 14 * over, 38 + 26 * over), w * (1 - pull * 0.6))
+      g.hlr += 25 * w
       g.lean += -4 * w; g.tilt += -6 * w
       g.lookX = lerp(g.lookX, -0.9, smooth(seg(t, 0, 0.1)) * w); g.lookY = lerp(g.lookY, 0.25, w)
       g.smile = 1; g.browR += 0.65 * w; g.smirk = 0.45 * w
@@ -91,7 +93,7 @@ const CLIPS: Record<ClipName, Clip> = {
       g.hop = -h * 300
       g.spin = smooth(seg(t, 0.3, 0.7)) * 360
       g.squash += -0.22 * crouch + 0.16 * Math.sin(Math.PI * seg(t, 0.2, 0.42)) - 0.3 * Math.sin(Math.PI * seg(t, 0.72, 0.86))
-      g.hl = toward(g.hl, [-100, -315], Math.max(h, crouch * 0.4)); g.hr = toward(g.hr, [106, -315], Math.max(h, crouch * 0.4))
+      g.hl = toward(g.hl, armAt('L', 62, 84), Math.max(h, crouch * 0.4)); g.hr = toward(g.hr, armAt('R', 62, 84), Math.max(h, crouch * 0.4))
       g.fl = [g.fl[0] + 10 * h, g.fl[1] - 40 * h]; g.fr = [g.fr[0] - 10 * h, g.fr[1] - 40 * h]
       g.squint = clamp(h * 2 + seg(t, 0.72, 0.8) * (1 - seg(t, 1.4, 1.75)))
       g.mouthOpen = 0.75 * Math.max(h, Math.sin(Math.PI * seg(t, 0.72, 1))); g.smile = 1
@@ -117,9 +119,10 @@ const CLIPS: Record<ClipName, Clip> = {
     dur: 3.6,
     apply(g, t) {
       const w = env(t, 3.6, 0.32, 0.45)
-      const arc = Math.sin(Math.PI * seg(t, 0, 0.32)) // hands travel out on an arc, not a straight line
-      g.hl = toward(g.hl, [34 - 60 * arc, -88 + 20 * arc], w); g.hlr = -95 * w; g.hlLock = w
-      g.hr = toward(g.hr, [-34 + 60 * arc, -88 + 20 * arc], w); g.hrr = 95 * w; g.hrLock = w
+      const arc = Math.sin(Math.PI * seg(t, 0, 0.32)) // the elbows swing out first, then the hands land
+      g.hl = toward(g.hl, armAt('L', -12 + 30 * arc, 222 - 50 * arc), w)
+      g.hr = toward(g.hr, armAt('R', -12 + 30 * arc, 222 - 50 * arc), w)
+      g.tuckL = w; g.tuckR = w
       g.bodySquash += -0.05 * Math.sin(Math.PI * seg(t, 0.3, 0.5))
       g.lean += 3 * w; g.tilt += 8 * w
       g.browL += 0.95 * w; g.browR += -0.35 * w
@@ -146,12 +149,14 @@ const CLIPS: Record<ClipName, Clip> = {
     apply(g, t) {
       const w = env(t, 2.5, 0.3, 0.45)
       const pump = Math.max(0, Math.sin(2 * Math.PI * 1.4 * Math.max(0, t - 0.35)))
-      g.hr = toward(g.hr, [-2, -300 + pump * 16], w); g.hrr = (165 + pump * 8) * w; g.hrLock = w
-      g.bendR = w > 0.5 ? -1 : 1
-      g.bicep = w * (0.75 + 0.45 * pump)
+      // upper arm out level, forearm up: the classic double-biceps half
+      // double biceps: both upper arms out level, forearms up, fists up and out; the bumps pop on each pump
+      g.hr = toward(g.hr, armAt('R', -10 + pump * 4, 94 + pump * 10), w); g.hrr = 195 + pump * 8; g.hrLock = w
+      g.hl = toward(g.hl, armAt('L', -10 + pump * 4, 94 + pump * 10), w); g.hlr = -195 - pump * 8; g.hlLock = w
+      g.bicep = w * (0.9 + 0.5 * pump)
       g.bodySquash += 0.03 * w; g.tilt += 6 * w
-      g.lookX = lerp(g.lookX, 0.9, w); g.lookY = lerp(g.lookY, -0.55, w)
-      g.browL += 0.5 * w; g.browR += 0.7 * w; g.smirk = 0.8 * w
+      g.lookX = lerp(g.lookX, 0.9 * Math.sign(Math.sin(t * 1.4 * Math.PI)), w); g.lookY = lerp(g.lookY, -0.45, w) // admires one arm, then the other
+      g.browL += 0.5 * w; g.browR += 0.7 * w; g.smirk = 0.8 * w; g.squash += 0.04 * pump * w
     },
   },
   // Waiting on you: hand on hip, flat mouth, a foot tapping, half-lidded stare.
@@ -163,7 +168,7 @@ const CLIPS: Record<ClipName, Clip> = {
       g.frr += -14 * tap; g.fr = [g.fr[0], g.fr[1] - 6 * tap]
       g.lookX = lerp(g.lookX, 0, w); g.lookY = lerp(g.lookY, 0.12, w)
       g.browTilt = -0.45 * w; g.smile = lerp(g.smile, 0.05, w); g.mouthW = lerp(1, 0.65, w)
-      g.hl = toward(g.hl, [34, -88], w); g.hlr = -95 * w; g.hlLock = w
+      g.hl = toward(g.hl, armAt('L', -12, 222), w); g.tuckL = w
       d.lidHold = Math.max(d.lidHold, 0.32 * w)
     },
   },
@@ -175,7 +180,7 @@ const CLIPS: Record<ClipName, Clip> = {
       g.hop = -(1 - easeIn(fall)) * 900
       g.alpha = clamp(t * 6)
       g.squash += 0.15 * (1 - fall) - 0.34 * Math.sin(Math.PI * seg(t, 0.42, 0.6))
-      g.hl = toward(g.hl, [-100, -300], 1 - fall); g.hr = toward(g.hr, [106, -300], 1 - fall)
+      g.hl = toward(g.hl, armAt('L', 62, 84), 1 - fall); g.hr = toward(g.hr, armAt('R', 62, 84), 1 - fall)
       g.mouthOpen = 0.6 * (1 - seg(t, 0.4, 0.8)); g.smile = 1
     },
   },
@@ -256,7 +261,7 @@ export class Director {
   private mouthShape: Viseme = { open: 0, w: 1 }
   private shapeSince = 0
   private emphasis = 0
-  gesture: V = [-60, -70]
+  gesture: V = armAt('L', -40, 35)
   private gestureAt = 0
   private swing: number[] = []
   shown = 0
@@ -363,7 +368,7 @@ export class Director {
       this.emphasis = Math.max(0, this.emphasis - dt * 3)
       g.browL += 0.35 * this.emphasis; g.browR += 0.35 * this.emphasis; g.tilt += 3 * this.emphasis
       // a new hand beat every so often
-      if (now > this.gestureAt) { this.gesture = [rand(-80, -45), rand(-110, -50)]; this.gestureAt = now + rand(0.6, 1.3) }
+      if (now > this.gestureAt) { { const up = rand(-55, -20); this.gesture = armAt('L', up, up + rand(60, 95)) }; this.gestureAt = now + rand(0.6, 1.3) }
       if (done && t > this.times[this.times.length - 1] + 0.5) { this.text = ''; if (this.clip === 'talk') this.stop(now) }
     }
 
@@ -394,8 +399,8 @@ export class Director {
     p.hl = [s.hlx.update(dt, g.hl[0]), s.hly.update(dt, g.hl[1])]
     p.hr = [s.hrx.update(dt, g.hr[0]), s.hry.update(dt, g.hr[1])]
     // gloves drag behind the hands' motion (wrist follow-through), then spring back
-    p.hlr = s.hlr.update(dt, g.hlr - s.hlx.yd * 0.06)
-    p.hrr = s.hrr.update(dt, g.hrr - s.hrx.yd * 0.06)
+    p.hlr = s.hlr.update(dt, g.hlr - s.hlx.yd * 0.04)
+    p.hrr = s.hrr.update(dt, g.hrr - s.hrx.yd * 0.04)
     p.fl = [s.flx.update(dt, g.fl[0]), s.fly.update(dt, g.fl[1])]
     p.fr = [s.frx.update(dt, g.fr[0]), s.fry.update(dt, g.fr[1])]
     p.flr = s.flr.update(dt, g.flr); p.frr = s.frr.update(dt, g.frr)
@@ -412,7 +417,7 @@ export class Director {
     p.zzz = clamp(s.zzz.update(dt, g.zzz)); p.sparkle = clamp(s.sparkle.update(dt, g.sparkle))
     // direct channels
     p.hop = g.hop; p.spin = g.spin; p.alpha = g.alpha; p.shrink = g.shrink
-    p.hlLock = g.hlLock; p.hrLock = g.hrLock; p.bendL = g.bendL; p.bendR = g.bendR; p.tongue = g.tongue
+    p.hlLock = g.hlLock; p.hrLock = g.hrLock; p.tuckL = g.tuckL; p.tuckR = g.tuckR; p.tongue = g.tongue
     // the bun hangs on a loose spring driven by the body's vertical acceleration and head tilt
     const bodyY = p.y + p.hop + p.bob
     const vy = (bodyY - this.lastBodyY) / dt
