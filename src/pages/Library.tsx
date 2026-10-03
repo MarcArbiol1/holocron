@@ -24,7 +24,7 @@ export default function Library() {
     return l
   }, [q, f])
   return (
-    <Page title={NAMES.pages.library} kicker={`${EXERCISES.length} exercises, every one animated`}>
+    <Page belle="library" title={NAMES.pages.library} kicker={`${EXERCISES.length} exercises, every one animated`}>
       <div className="aether-rise rise-1 relative">
         <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-dim" />
         <input type="search" enterKeyHint="search" autoCapitalize="off" autoCorrect="off" className="input pl-10" placeholder="Search by name or muscle" value={q} onChange={(e) => setQ(e.target.value)} />

@@ -22,7 +22,7 @@ export default function ExerciseDetail() {
   const best = bestE1rm(sessions, ex.id)
   const last = lastLog(sessions, ex.id)
   return (
-    <Page title={ex.name} kicker={`${LEVEL[ex.level]} · ${ex.category}`} back>
+    <Page belle="exercise" title={ex.name} kicker={`${LEVEL[ex.level]} · ${ex.category}`} back>
       <div className="aether-rise rise-1 metric-panel overflow-hidden p-1.5">
         <Figure animId={ex.anim} size="100%" className="h-auto w-full rounded-2xl" />
       </div>

@@ -76,7 +76,7 @@ export default function Session() {
   }
 
   return (
-    <Page title={active.title} kicker="Session" sub={`${fmtDuration(active.startedAt)} · ${hardSets} set${hardSets === 1 ? '' : 's'} done`} right={
+    <Page belle="session" belleSmall title={active.title} kicker="Session" sub={`${fmtDuration(active.startedAt)} · ${hardSets} set${hardSets === 1 ? '' : 's'} done`} right={
       <button className="nav-action relative" onClick={() => { haptic(); setConfirm('finish') }}>Finish<HapticSwitch /></button>
     }>
       {active.reason && <p className="aether-rise -mt-3 px-1 text-footnote text-dim">{active.reason}</p>}

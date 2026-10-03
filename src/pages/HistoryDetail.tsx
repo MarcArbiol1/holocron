@@ -17,7 +17,7 @@ export default function HistoryDetail() {
   if (!s) return <Navigate to="/palantir" replace />
   const setsDone = s.exercises.reduce((a, e) => a + e.sets.filter((x) => x.done).length, 0)
   return (
-    <Page title={s.title} kicker={fmtDate(s.endedAt ?? s.startedAt)} sub={`${fmtDuration(s.startedAt, s.endedAt)} · ${setsDone} sets · +${s.xp ?? 0} XP`} back>
+    <Page belle="history" title={s.title} kicker={fmtDate(s.endedAt ?? s.startedAt)} sub={`${fmtDuration(s.startedAt, s.endedAt)} · ${setsDone} sets · +${s.xp ?? 0} XP`} back>
       {s.reason && <p className="aether-rise text-xs leading-relaxed text-dim">{s.reason}</p>}
       <div className="aether-rise rise-1 space-y-3">
         {s.exercises.map((e, i) => {

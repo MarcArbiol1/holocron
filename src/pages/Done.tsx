@@ -33,7 +33,7 @@ export default function Done() {
   const intoShown = useCountUp(lv.into, { from: levelled ? 0 : before.into, ms: 1200, delay: 500 })
   if (!xp) return <Navigate to="/" replace />
   return (
-    <Page title="Session archived" kicker="Nice work.">
+    <Page belle="done" title="Session archived" kicker="Nice work.">
       <div className="metric-panel aether-rise rise-1 relative space-y-2 p-6 text-center">
         <div className="kicker">Experience</div>
         <div className="relative inline-block">

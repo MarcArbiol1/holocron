@@ -272,11 +272,12 @@ export class Director {
     if (name === 'wave') this.swing = [rand(0.85, 1.15), rand(0.85, 1.15), rand(0.7, 0.95)]
   }
   stop(now: number) { if (this.clip && CLIPS[this.clip].dur === Infinity && !this.clipStop) this.clipStop = now }
-  say(text: string, now: number) {
+  /** Talk; with `move`, she performs that move while she talks (lip-sync runs on top of any move). */
+  say(text: string, now: number, move?: ClipName) {
     this.text = text; this.lineText = text; this.textStart = now
     let t = 0
     this.times = Array.from(text).map((ch) => { const at = t; t += CHAR_S + pause(ch); return at })
-    this.play('talk', now)
+    this.play(move && CLIPS[move].dur !== Infinity ? move : 'talk', now)
   }
   get current() { return this.clip }
   /** Wave amplitude for the swing at time t (each swing a little different, the last one smaller). */

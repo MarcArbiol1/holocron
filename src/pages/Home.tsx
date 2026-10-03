@@ -13,6 +13,7 @@ import { LogoMark } from '../components/LogoLoader'
 import { HapticSwitch, haptic } from '../lib/haptics'
 import { useCountUp } from '../lib/motion'
 import type { RoutineDay } from '../data/types'
+import { homeLines } from '../avatar/lines'
 
 const MODE_LABEL: Record<string, string> = { plan: 'Next in your rotation', health: 'Health first', recovery: 'Recovery day', cardio: 'Cardio day', done: 'Week complete' }
 
@@ -71,6 +72,8 @@ export default function Home() {
   if (!rec) return null
   const streak = weekStreak(sessions, profile, now)
   const recent = [...sessions].filter((s) => s.endedAt).sort((a, b) => new Date(b.endedAt!).getTime() - new Date(a.endedAt!).getTime()).slice(0, 3)
+  const daysAway = recent[0] ? Math.floor((now.getTime() - new Date(recent[0].endedAt!).getTime()) / 86_400_000) : undefined
+  const belleLines = homeLines({ active: active?.title, today: dayTitle(rec.day), mode: rec.mode, daysAway, streak })
   const minutes = rec.day.minutes + rec.extraCardio
   const cardioTotal = rec.day.cardioMinutes + rec.extraCardio
 
@@ -82,7 +85,7 @@ export default function Home() {
 
   const EX_ICON = { background: 'color-mix(in srgb, var(--glow) 16%, transparent)', color: 'var(--glow)' }
   return (
-    <Page title="Today" sub={`${todayLabel()} · ${lv.name}${streak > 0 ? ` · ${streak}-week streak` : ''}`}
+    <Page belle="home" belleLines={belleLines} title="Today" sub={`${todayLabel()} · ${lv.name}${streak > 0 ? ` · ${streak}-week streak` : ''}`}
       leading={<LogoMark size={34} className="shrink-0" />}
       right={<ProfileButton />}>
 

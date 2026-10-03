@@ -22,7 +22,7 @@ export default function Routines() {
   const [lo, hi] = program.setsPerMuscleTarget
 
   return (
-    <Page title={NAMES.pages.routines} kicker="Your plan" sub={`${program.splitLabel} · ${profile.daysPerWeek} days a week`}>
+    <Page belle="routines" title={NAMES.pages.routines} kicker="Your plan" sub={`${program.splitLabel} · ${profile.daysPerWeek} days a week`}>
       <section className="aether-rise rise-1" aria-labelledby="days-title">
         <h2 id="days-title" className="px-1 text-xl font-bold">Your days</h2>
         <div className="mt-3 space-y-3">

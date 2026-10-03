@@ -46,7 +46,7 @@ export default function Palantir() {
   const toggle = <Segment value={range} options={[{ v: 'week', label: 'week' }, { v: 'month', label: 'month' }]} onChange={(k) => { setRange(k); setOffset(0); setPicked(null) }} />
 
   return (
-    <Page title={NAMES.pages.palantir} kicker="What the archive shows" right={toggle}>
+    <Page belle="palantir" title={NAMES.pages.palantir} kicker="What the archive shows" right={toggle}>
       <div className="aether-rise rise-1 flex items-center justify-between">
         <button onClick={() => { haptic(); setOffset(offset - 1); setPicked(null) }} aria-label="Previous period" className="primary-action grid size-9 place-items-center rounded-full text-ice"><ChevronLeft className="size-4" /></button>
         <div key={label} className="swap-in font-semibold">{label}</div>

@@ -7,13 +7,20 @@ import { useStore } from '../store/store'
 import { levelFor, totalXp } from '../engine/levels'
 import { HapticSwitch, haptic } from '../lib/haptics'
 import { reducedMotion } from '../lib/motion'
+import { BelleCorner } from './BelleCorner'
+import type { BelleSpot, Line } from '../avatar/lines'
 
 /**
  * Standard page in the iOS pattern (HIG Toolbars): a navigation bar with the back button and actions,
  * a Large Title under it that scrolls with the content, and a compact centred title that fades into the
  * bar once the large one has scrolled away. `kicker`/`sub` render as a subtitle under the large title.
  */
-export function Page({ title, sub, children, back, right, kicker, leading }: { title: string; sub?: string; children: ReactNode; back?: boolean; right?: ReactNode; kicker?: string; leading?: ReactNode }) {
+export function Page({ title, sub, children, back, right, kicker, leading, belle, belleLines, belleSmall }: {
+  title: string; sub?: string; children: ReactNode; back?: boolean; right?: ReactNode; kicker?: string; leading?: ReactNode
+  /** Miss Belle stands at the right of the title row and talks with lines for this page. */
+  belle?: BelleSpot; belleLines?: Line[]; belleSmall?: boolean
+}) {
+  const belleOn = useStore((s) => s.settings.belle !== false)
   const nav = useNavigate()
   const titleRef = useRef<HTMLHeadingElement>(null)
   const [compact, setCompact] = useState(false)
@@ -43,9 +50,12 @@ export function Page({ title, sub, children, back, right, kicker, leading }: { t
         </div>
       </div>
       <div className={`relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col px-4 pb-36 ${hasBar ? 'pt-[calc(env(safe-area-inset-top)+56px)]' : 'pt-[calc(env(safe-area-inset-top)+56px)]'}`}>
-        <header className="aether-rise px-1">
-          <h1 ref={titleRef} className="text-3xl font-bold break-words">{title}</h1>
-          {subtitle && <p className="mt-0.5 text-sm text-dim">{subtitle}</p>}
+        <header className="aether-rise flex flex-wrap items-end gap-x-3 px-1">
+          <div className="min-w-0 flex-1">
+            <h1 ref={titleRef} className="text-3xl font-bold break-words">{title}</h1>
+            {subtitle && <p className="mt-0.5 text-sm text-dim">{subtitle}</p>}
+          </div>
+          {belle && belleOn && <BelleCorner spot={belle} lines={belleLines} small={belleSmall} />}
         </header>
         <div className="mt-5 space-y-7">{children}</div>
       </div>

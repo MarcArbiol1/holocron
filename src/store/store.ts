@@ -18,6 +18,8 @@ export interface Settings {
   sound: boolean
   /** Show the rest countdown on the lock screen / Dynamic Island via a Now Playing card (opt-in, iOS is fragile). */
   liveTimer: boolean
+  /** Miss Belle in the page titles (missing in older saves = on). */
+  belle?: boolean
 }
 
 export interface State {

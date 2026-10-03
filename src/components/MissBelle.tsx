@@ -13,8 +13,8 @@ import { reducedMotion } from '../lib/motion'
 
 export interface BelleApi {
   play: (clip: ClipName) => void
-  /** Start talking; `onText` receives the visible part of the line as it types out. */
-  say: (text: string, onText?: (visible: string) => void) => void
+  /** Start talking (optionally while doing a move); `onText` receives the visible part of the line as it types out. */
+  say: (text: string, onText?: (visible: string) => void, move?: ClipName) => void
   stop: () => void
 }
 
@@ -31,7 +31,7 @@ export function MissBelle({ height = 120, apiRef, onTap, className = '' }: { hei
 
   useImperativeHandle(apiRef, () => ({
     play: (clip) => director.current.play(clip, performance.now() / 1000),
-    say: (text, onText) => { textCb.current = onText; director.current.say(text, performance.now() / 1000) },
+    say: (text, onText, move) => { textCb.current = onText; director.current.say(text, performance.now() / 1000, move) },
     stop: () => director.current.stop(performance.now() / 1000),
   }), [])
 

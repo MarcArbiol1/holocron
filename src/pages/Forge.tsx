@@ -17,7 +17,7 @@ export default function Forge() {
   const go = () => { haptic('success'); setForged(true); nav('/session', { replace: true }) }
 
   return (
-    <Page title={NAMES.pages.forge} kicker={`Before ${active.title}${warmup ? ` · about ${warmup.totalMinutes} min` : ''}`}>
+    <Page belle="forge" title={NAMES.pages.forge} kicker={`Before ${active.title}${warmup ? ` · about ${warmup.totalMinutes} min` : ''}`}>
       <div className="metric-panel aether-rise rise-1 flex items-start gap-3 p-4">
         <span className="grid size-11 shrink-0 place-items-center rounded-xl text-glow" style={{ background: 'color-mix(in oklab, var(--glow) 14%, transparent)' }}><Flame className="size-5" /></span>
         <p className="text-sm leading-relaxed text-ice">

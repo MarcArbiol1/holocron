@@ -60,7 +60,7 @@ export default function Settings() {
     try { await navigator.clipboard.writeText(json); setMsg('Backup copied to the clipboard. Paste it somewhere safe (Notes, a file).') } catch { setMsg('Could not access the clipboard. Select the text below and copy it.'); setImp(json) }
   }
   return (
-    <Page title={NAMES.pages.settings} kicker="Profile, session, backup" back>
+    <Page belle="settings" title={NAMES.pages.settings} kicker="Profile, session, backup" back>
       {profile && (
         <section className="aether-rise rise-1" aria-labelledby="profile-title">
           <h2 id="profile-title" className="list-header">Profile</h2>
@@ -122,12 +122,20 @@ export default function Settings() {
         </div>
       </section>
 
+      <section className="aether-rise rise-3" aria-labelledby="belle-title">
+        <h2 id="belle-title" className="list-header">Miss Belle</h2>
+        <div className="metric-panel space-y-1 p-4 text-sm">
+          <Toggle label="Show Miss Belle" checked={settings.belle !== false} onChange={(v) => setSettings({ belle: v })} />
+          <Link to="/belle" onClick={() => haptic()} className="btn-ghost mt-2 w-full">Rehearsal room</Link>
+        </div>
+        <p className="list-footer">She stands at the top right of each page. Tap her for a line; tap the bubble to close it.</p>
+      </section>
+
       <section className="aether-rise rise-4" aria-labelledby="app-title">
         <h2 id="app-title" className="list-header">App</h2>
         <div className="metric-panel space-y-3 p-4 text-sm">
           <p className="text-dim">Build {__BUILD__} · plan rules v{PROGRAM_VERSION}</p>
           <button className="btn-ghost w-full" disabled={updating} onClick={update}>Update Now</button>
-          <Link to="/belle" onClick={() => haptic()} className="btn-ghost w-full">Meet Miss Belle (preview)</Link>
         </div>
       </section>
 

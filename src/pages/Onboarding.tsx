@@ -54,7 +54,7 @@ export default function Onboarding() {
   if (building) return <LogoLoader label={building === 'rebuild' ? 'Rebuilding your plan' : 'Forging your plan'} />
 
   return (
-    <Page title={existing ? 'Edit your profile' : `Welcome to ${NAMES.app}`} kicker={existing ? 'The plan rebuilds when you save.' : 'Six honest answers build your plan.'} back={!!existing}>
+    <Page belle="onboarding" title={existing ? 'Edit your profile' : `Welcome to ${NAMES.app}`} kicker={existing ? 'The plan rebuilds when you save.' : 'Six honest answers build your plan.'} back={!!existing}>
       <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); if (!valid) return; haptic('success'); build() }}>
         <div className="metric-panel aether-rise rise-1 space-y-4 p-4">
           <div>

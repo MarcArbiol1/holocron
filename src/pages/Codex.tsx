@@ -15,7 +15,7 @@ export default function Codex() {
   const [area, setArea] = useState<Area | 'all'>('all')
   const rules = area === 'all' ? CODEX : CODEX.filter((r) => r.area === area)
   return (
-    <Page title={NAMES.pages.codex} kicker="Why the app does what it does" sub={`${CODEX.length} rules, each with its paper`} back>
+    <Page belle="codex" title={NAMES.pages.codex} kicker="Why the app does what it does" sub={`${CODEX.length} rules, each with its paper`} back>
       <div className="aether-rise flex gap-1.5 overflow-x-auto pb-1 -mx-6 px-6">
         {(['all', ...Object.keys(AREAS)] as (Area | 'all')[]).map((a) => (
           <button key={a} onClick={() => { haptic(); setArea(a) }} aria-pressed={area === a} className={`press chip shrink-0 ${area === a ? 'bg-glow text-night' : 'chip-dim'}`}>{a === 'all' ? 'All' : AREAS[a]}</button>

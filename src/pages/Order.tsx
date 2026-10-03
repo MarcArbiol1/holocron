@@ -8,7 +8,7 @@ export default function Order() {
   const xp = totalXp(sessions)
   const lv = levelFor(xp)
   return (
-    <Page title={NAMES.pages.order} kicker={`${lv.name} · ${xp} XP`}>
+    <Page belle="order" title={NAMES.pages.order} kicker={`${lv.name} · ${xp} XP`}>
       <div className="aether-rise rise-1 metric-panel space-y-2.5 p-4">
         <div className="flex items-baseline justify-between text-sm">
           <span className="text-lg font-semibold">{lv.name}</span>
