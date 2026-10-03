@@ -1,323 +1,444 @@
 /**
- * Miss Belle's moves. A clip is a function of time that writes into a Pose; the Director runs the
- * idle life underneath (breathing, sway, blinks, glances, a bun on a spring) and blends one clip on
- * top, fading it in and out so nothing ever snaps.
+ * Miss Belle's behaviour.
+ *
+ * Every frame the Director builds a TARGET pose (rest + idle life + the current move), then each
+ * channel of the real pose follows its target through its own spring (dyn.ts). Heavy parts are
+ * slow, hands lag the body, gloves drag behind the hands, the bun wobbles longest: overlap and
+ * follow-through come from the springs, not from hand-written curves. Springs step at a fixed
+ * 1/120 s, so the motion is the same at 60 fps, 30 fps (Low Power Mode) or through a dropped frame.
+ *
+ * On top: eye saccades with fixations (and a blink on big glances), asymmetric blinks (shut fast,
+ * open slowly), breathing with a jittered rhythm, noise drift, weight shifts, little idle fidgets,
+ * and lip-sync that holds each mouth shape long enough to read and closes on pauses.
  */
-import { neutral, lerpPose, type Pose, type V } from './rig'
+import { neutral, type Pose, type V } from './rig'
+import { Spring, fbm, clamp, seg, easeIn, easeOut, smooth, rand } from './dyn'
 
 export type ClipName = 'wave' | 'talk' | 'point' | 'jump' | 'sleep' | 'sass' | 'giggle' | 'flex' | 'bored' | 'enter' | 'exit'
 
+// ---------- spring settings per channel: [f Hz, damping, response] ----------
+type Cfg = [number, number, number]
+const CFG = {
+  x: [2, 0.6, 0], y: [2.2, 0.55, 0], lean: [1.7, 0.55, 0],
+  bob: [2.4, 0.45, 0], tilt: [2.4, 0.5, 0.4],
+  hand: [3.2, 0.5, 0], glove: [2, 0.35, 0], foot: [5, 0.6, 0], footRot: [6, 0.5, 0],
+  squash: [3.4, 0.3, 0], bodySquash: [3, 0.35, 0],
+  brow: [4.5, 0.6, 1], smile: [5, 0.6, 0.5], mouthW: [8, 0.75, 0], smirk: [4, 0.6, 0], squint: [7, 0.8, 0],
+  mouthOpen: [10, 0.7, 0], blush: [2, 1, 0], gaze: [11, 0.95, 1.4], bicep: [4, 0.4, 0], bun: [1.8, 0.2, 0], fx: [3, 1, 0],
+} satisfies Record<string, Cfg>
+const sp = (k: keyof typeof CFG, x0 = 0) => { const c = CFG[k]; return new Spring(c[0], c[1], c[2], x0) }
+const STEP = 1 / 120
+
+/** The move layer: writes targets on top of idle. `t` = seconds since it started. */
 interface Clip {
-  /** seconds; Infinity loops until something else plays */
-  dur: number
-  apply: (p: Pose, t: number) => void
+  dur: number // Infinity loops until stopped
+  apply: (g: Pose, t: number, d: Director) => void
 }
 
-const clamp = (v: number, a = 0, b = 1) => Math.max(a, Math.min(b, v))
-const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2) // in-out cubic
-const out = (t: number) => 1 - Math.pow(1 - clamp(t), 3)
-/** progress of t through [a, b], 0..1 */
-const seg = (t: number, a: number, b: number) => clamp((t - a) / (b - a))
-const mixV = (a: V, b: V, w: number): V => [a[0] + (b[0] - a[0]) * w, a[1] + (b[1] - a[1]) * w]
+const lerp = (a: number, b: number, w: number) => a + (b - a) * w
+const toward = (v: V, to: V, w: number): V => [lerp(v[0], to[0], w), lerp(v[1], to[1], w)]
+/** 0 → 1 → 0 envelope: rises over `inn`, holds, falls over `out` before `dur`. */
+const env = (t: number, dur: number, inn = 0.25, out = 0.35) => smooth(seg(t, 0, inn)) * (1 - smooth(seg(t, dur - out, dur)))
 
 const CLIPS: Record<ClipName, Clip> = {
-  // Right hand up beside the head, the glove waggling; leaning into it.
+  // Anticipation dip, raise, 3 wrist-dragged swings of varying size, settle.
   wave: {
-    dur: 2.4,
-    apply(p, t) {
-      const up = out(seg(t, 0, 0.35)) * (1 - ease(seg(t, 2.0, 2.4)))
-      p.hr = mixV(p.hr, [70, -360], up)
-      p.hrr += up * (Math.sin(t * 13) * 26 - 10)
-      p.tilt += -4 * up
-      p.smile = 1; p.mouthOpen = 0.32 * up; p.browL += 0.35 * up; p.browR += 0.35 * up; p.lookX = 0
+    dur: 2.3,
+    apply(g, t, d) {
+      const w = env(t, 2.3, 0.4, 0.45)
+      const antic = Math.sin(Math.PI * seg(t, 0, 0.14)) // a small dip before the raise
+      g.hr = toward(g.hr, [10, 26], antic * (1 - seg(t, 0.1, 0.2)))
+      g.hr = toward(g.hr, [64, -350], w)
+      // the swing eases in (no sudden start) and each swing's size blends into the next
+      const ramp = smooth(seg(t, 0.36, 0.62))
+      const swing = Math.sin(2 * Math.PI * 2.9 * Math.max(0, t - 0.36)) * d.swingAmp(t) * ramp
+      g.hr = [g.hr[0] + swing * 46 * w, g.hr[1] - (1 - Math.cos(2 * Math.PI * 2.9 * Math.max(0, t - 0.36))) * 5 * ramp * w]
+      g.lean += 2.5 * w; g.tilt += -5 * w
+      g.smile = lerp(g.smile, 1, w); g.mouthOpen = 0.3 * w; g.browL += 0.4 * w; g.browR += 0.45 * w
     },
   },
-  // Talking is mostly the mouth (driven by the text in the Director); here, the hands and head.
+  // Open-palm beats that change every so often; head nods on emphasis (set by the lip-sync).
   talk: {
     dur: Infinity,
-    apply(p, t) {
-      const g = Math.sin(t * 3.4)
-      p.hl = mixV(p.hl, [-62 + g * 14, -70 + g * 18], 0.9)
-      p.hlr += g * 8
-      p.hr = mixV(p.hr, [6, -14 + Math.sin(t * 2.3 + 1) * 10], 0.6)
-      p.tilt += Math.sin(t * 3.1) * 3
-      p.bob += Math.abs(Math.sin(t * 6.2)) * -5
-      p.browL += Math.max(0, Math.sin(t * 2.3)) * 0.4; p.browR += Math.max(0, Math.sin(t * 2.3 + 0.4)) * 0.4
-      p.lookX = 0; p.lookY = 0.1
+    apply(g, t, d) {
+      const w = smooth(seg(t, 0, 0.3))
+      g.hl = toward(g.hl, d.gesture, w)
+      g.hr = toward(g.hr, [8, -12], 0.5 * w)
+      g.lean += 1 * w
     },
   },
-  // Presenting with the right hand, palm up, toward something on the left (the Start button, a card).
+  // Pull back, strike past the mark, settle, present; eyes lead toward it.
   point: {
     dur: 2.6,
-    apply(p, t) {
-      const w = out(seg(t, 0, 0.3)) * (1 - ease(seg(t, 2.2, 2.6)))
-      p.hl = mixV(p.hl, [-170, -200], w)
-      p.hlr += w * 70
-      p.lean += -5 * w; p.tilt += -6 * w
-      p.lookX = -1 * w + p.lookX * (1 - w); p.lookY = 0.3 * w
-      p.smile = 1; p.browR += 0.6 * w; p.smirk = 0.4 * w
+    apply(g, t) {
+      const w = env(t, 2.6, 0.12, 0.45)
+      const pull = Math.sin(Math.PI * seg(t, 0, 0.16))
+      const over = Math.sin(Math.PI * seg(t, 0.14, 0.42)) * 0.18 // shoots ~18 % past, then settles
+      g.hl = toward(g.hl, [40, 30], pull * 0.6)
+      g.hl = toward(g.hl, [-175 * (1 + over), -205 * (1 + over * 0.5)], w * (1 - pull * 0.6))
+      g.hlr += 70 * w
+      g.lean += -4 * w; g.tilt += -6 * w
+      g.lookX = lerp(g.lookX, -0.9, smooth(seg(t, 0, 0.1)) * w); g.lookY = lerp(g.lookY, 0.25, w)
+      g.smile = 1; g.browR += 0.65 * w; g.smirk = 0.45 * w
     },
   },
-  // Anticipation, launch, a full spin, land with a squash, sparkles.
+  // Crouch, launch (stretch), somersault, land (squash), settle; sparkles. Height and spin are direct.
   jump: {
-    dur: 1.7,
-    apply(p, t) {
-      const crouch = Math.sin(Math.PI * seg(t, 0, 0.22))
-      const air = seg(t, 0.2, 0.72)
-      const height = Math.sin(Math.PI * air)
-      const land = Math.sin(Math.PI * seg(t, 0.7, 0.92))
-      const settle = Math.sin(Math.PI * 2 * seg(t, 0.9, 1.25)) * (1 - seg(t, 0.9, 1.25))
-      p.y -= height * 300
-      p.sy *= 1 - 0.16 * crouch + 0.12 * height * (1 - air) - 0.18 * land + 0.05 * settle
-      p.sx *= 1 + 0.14 * crouch - 0.08 * height * (1 - air) + 0.16 * land - 0.04 * settle
-      p.spin += ease(seg(t, 0.28, 0.68)) * 360
-      const arms = Math.max(height, crouch * 0.3)
-      p.hl = mixV(p.hl, [-40, -330], arms); p.hr = mixV(p.hr, [40, -330], arms)
-      p.fl = [p.fl[0] + 10 * height, p.fl[1] - 40 * height]; p.fr = [p.fr[0] - 10 * height, p.fr[1] - 40 * height]
-      p.squint = clamp(height * 2 + seg(t, 0.7, 0.8) * (1 - seg(t, 1.4, 1.7)))
-      p.mouthOpen = 0.75 * Math.max(height, land); p.smile = 1
-      p.sparkle = Math.sin(Math.PI * seg(t, 0.7, 1.7))
+    dur: 1.75,
+    apply(g, t) {
+      const crouch = Math.sin(Math.PI * seg(t, 0, 0.24))
+      const h = Math.sin(Math.PI * seg(t, 0.22, 0.74))
+      g.hop = -h * 300
+      g.spin = smooth(seg(t, 0.3, 0.7)) * 360
+      g.squash += -0.22 * crouch + 0.16 * Math.sin(Math.PI * seg(t, 0.2, 0.42)) - 0.3 * Math.sin(Math.PI * seg(t, 0.72, 0.86))
+      g.hl = toward(g.hl, [-40, -330], Math.max(h, crouch * 0.4)); g.hr = toward(g.hr, [40, -330], Math.max(h, crouch * 0.4))
+      g.fl = [g.fl[0] + 10 * h, g.fl[1] - 40 * h]; g.fr = [g.fr[0] - 10 * h, g.fr[1] - 40 * h]
+      g.squint = clamp(h * 2 + seg(t, 0.72, 0.8) * (1 - seg(t, 1.4, 1.75)))
+      g.mouthOpen = 0.75 * Math.max(h, Math.sin(Math.PI * seg(t, 0.72, 1))); g.smile = 1
+      g.sparkle = Math.sin(Math.PI * seg(t, 0.72, 1.75))
     },
   },
-  // Eyes shut, head drooping, slow breaths, z's drifting up. Loops.
+  // Lids drift shut, head sinks, slow deep breaths, z's.
   sleep: {
     dur: Infinity,
-    apply(p, t) {
-      const w = out(seg(t, 0, 0.8))
-      p.blink = Math.max(p.blink, w)
-      p.tilt += 9 * w + Math.sin(t * 1.3) * 2 * w
-      p.bob += (6 + Math.sin(t * 1.3) * 6) * w
-      p.bsy *= 1 + Math.sin(t * 1.3) * 0.02 * w
-      p.mouthOpen = 0.12 * w; p.mouthW = 1 - 0.55 * w; p.smile = p.smile * (1 - w)
-      p.hl = mixV(p.hl, [10, 18], w); p.hr = mixV(p.hr, [-10, 18], w)
-      p.browL -= 0.3 * w; p.browR -= 0.3 * w
-      p.zzz = w
+    apply(g, t, d) {
+      const w = smooth(seg(t, 0, 1.2))
+      d.lidHold = Math.max(d.lidHold, smooth(seg(t, 0.2, 1.4)))
+      g.tilt += 10 * w; g.bob += 10 * w
+      g.bodySquash += 0.03 * Math.sin(t * 1.25) * w
+      g.mouthOpen = 0.12 * w; g.mouthW = lerp(1, 0.45, w); g.smile = lerp(g.smile, 0, w)
+      g.hl = toward(g.hl, [12, 20], w); g.hr = toward(g.hr, [-12, 20], w)
+      g.browL -= 0.3 * w; g.browR -= 0.3 * w
+      g.zzz = w
     },
   },
-  // Hands on hips, one eyebrow up, a smirk, a foot tapping. Miss Minutes energy.
+  // Hands swing out and land on the hips (a thump on contact), eyebrow up, smirk, toe tapping.
   sass: {
-    dur: 3.4,
-    apply(p, t) {
-      const w = out(seg(t, 0, 0.35)) * (1 - ease(seg(t, 3.0, 3.4)))
-      p.hl = mixV(p.hl, [34, -88], w); p.hlr = -95 * w; p.hlLock = w
-      p.hr = mixV(p.hr, [-34, -88], w); p.hrr = 95 * w; p.hrLock = w
-      p.lean += 3 * w; p.tilt += 7 * w
-      p.browL += 0.9 * w; p.browR += -0.35 * w
-      p.smirk = w; p.smile = 0.45; p.lookX = -0.2 * w; p.lookY = 0.15 * w
-      const tap = Math.max(0, Math.sin(t * 9)) * w
-      p.frr += -14 * tap; p.fr = [p.fr[0], p.fr[1] - 6 * tap]
+    dur: 3.6,
+    apply(g, t) {
+      const w = env(t, 3.6, 0.32, 0.45)
+      const arc = Math.sin(Math.PI * seg(t, 0, 0.32)) // hands travel out on an arc, not a straight line
+      g.hl = toward(g.hl, [34 - 60 * arc, -88 + 20 * arc], w); g.hlr = -95 * w; g.hlLock = w
+      g.hr = toward(g.hr, [-34 + 60 * arc, -88 + 20 * arc], w); g.hrr = 95 * w; g.hrLock = w
+      g.bodySquash += -0.05 * Math.sin(Math.PI * seg(t, 0.3, 0.5))
+      g.lean += 3 * w; g.tilt += 8 * w
+      g.browL += 0.95 * w; g.browR += -0.35 * w
+      g.smirk = w; g.smile = lerp(g.smile, 0.45, w); g.lookX = lerp(g.lookX, 0, w); g.lookY = 0.12 * w
+      const tap = Math.max(0, Math.sin(2 * Math.PI * 2 * Math.max(0, t - 0.6))) * w
+      g.frr += -16 * tap; g.fr = [g.fr[0], g.fr[1] - 7 * tap]
     },
   },
-  // Tapped: a wobbly giggle with happy eyes and a blush.
+  // Wobbly giggle: the body shakes, hands down, happy eyes, blush.
   giggle: {
-    dur: 1.2,
-    apply(p, t) {
-      const decay = 1 - seg(t, 0, 1.2)
-      p.tilt += Math.sin(t * 28) * 7 * decay
-      p.bob -= Math.abs(Math.sin(t * 14)) * 14 * decay
-      p.bsx *= 1 + Math.sin(t * 28) * 0.03 * decay
-      p.squint = clamp(decay * 2); p.mouthOpen = 0.55 * decay + 0.05; p.smile = 1; p.blush = 1.3
-      p.hl = mixV(p.hl, [-18, -24], decay); p.hr = mixV(p.hr, [18, -24], decay)
-      p.hlr += Math.sin(t * 28) * 10 * decay; p.hrr -= Math.sin(t * 28) * 10 * decay
+    dur: 1.3,
+    apply(g, t) {
+      const decay = 1 - seg(t, 0, 1.3)
+      g.tilt += Math.sin(t * 24) * 6 * decay
+      g.bob -= Math.abs(Math.sin(t * 12)) * 12 * decay
+      g.bodySquash += Math.sin(t * 24) * 0.035 * decay
+      g.squint = clamp(decay * 2.2); g.mouthOpen = 0.5 * decay + 0.05; g.smile = 1; g.blush = 1.35
+      g.hl = toward(g.hl, [-16, -22], decay); g.hr = toward(g.hr, [16, -22], decay)
     },
   },
-  // A tiny bicep flex with the right arm, then a kiss of approval at it.
+  // Elbow out, fist up by the head, the bicep pops twice; a satisfied look at it.
   flex: {
-    dur: 2.4,
-    apply(p, t) {
-      const w = out(seg(t, 0, 0.3)) * (1 - ease(seg(t, 2.0, 2.4)))
-      const pump = Math.sin(Math.PI * 2 * seg(t, 0.3, 1.5)) * w
-      // elbow out to the side, fist up by the head: the arm bows outward instead of in
-      p.hr = mixV(p.hr, [8, -225 + pump * 18], w); p.hrr = (165 + pump * 8) * w; p.hrLock = w
-      p.bendR = w > 0.5 ? -1 : 1
-      p.bicep = w * (0.8 + 0.4 * Math.max(0, pump))
-      p.bsx *= 1 + 0.03 * w; p.tilt += 6 * w
-      p.lookX = 1 * w; p.lookY = -0.6 * w
-      p.browL += 0.5 * w; p.browR += 0.7 * w; p.smirk = 0.8 * w; p.smile = 0.8
+    dur: 2.5,
+    apply(g, t) {
+      const w = env(t, 2.5, 0.3, 0.45)
+      const pump = Math.max(0, Math.sin(2 * Math.PI * 1.4 * Math.max(0, t - 0.35)))
+      g.hr = toward(g.hr, [8, -225 + pump * 16], w); g.hrr = (165 + pump * 8) * w; g.hrLock = w
+      g.bendR = w > 0.5 ? -1 : 1
+      g.bicep = w * (0.75 + 0.45 * pump)
+      g.bodySquash += 0.03 * w; g.tilt += 6 * w
+      g.lookX = lerp(g.lookX, 0.9, w); g.lookY = lerp(g.lookY, -0.55, w)
+      g.browL += 0.5 * w; g.browR += 0.7 * w; g.smirk = 0.8 * w
     },
   },
-  // Bored waiting: foot tapping, looking straight at you, flat mouth. Loops.
+  // Waiting on you: hand on hip, flat mouth, a foot tapping, half-lidded stare.
   bored: {
     dur: Infinity,
-    apply(p, t) {
-      const w = out(seg(t, 0, 0.5))
-      const tap = Math.max(0, Math.sin(t * 7)) * w
-      p.frr += -12 * tap; p.fr = [p.fr[0], p.fr[1] - 5 * tap]
-      p.lookX = 0; p.lookY = 0.15 * w
-      p.browTilt = -0.4 * w; p.smile = p.smile * (1 - w) + 0.05 * w; p.mouthW = 1 - 0.35 * w
-      p.hl = mixV(p.hl, [34, -88], w); p.hlr = -95 * w; p.hlLock = w
-      p.blink = Math.max(p.blink, 0.3 * w)
+    apply(g, t, d) {
+      const w = smooth(seg(t, 0, 0.6))
+      const tap = Math.max(0, Math.sin(2 * Math.PI * 1.6 * t)) * w
+      g.frr += -14 * tap; g.fr = [g.fr[0], g.fr[1] - 6 * tap]
+      g.lookX = lerp(g.lookX, 0, w); g.lookY = lerp(g.lookY, 0.12, w)
+      g.browTilt = -0.45 * w; g.smile = lerp(g.smile, 0.05, w); g.mouthW = lerp(1, 0.65, w)
+      g.hl = toward(g.hl, [34, -88], w); g.hlr = -95 * w; g.hlLock = w
+      d.lidHold = Math.max(d.lidHold, 0.32 * w)
     },
   },
-  // Drops in from above, lands with a squash and a bounce.
+  // Drops in, lands with a squash and a bounce, arms up on the way down.
   enter: {
-    dur: 1.1,
-    apply(p, t) {
-      const fall = seg(t, 0, 0.45)
-      p.y -= (1 - fall * fall) * 900
-      p.alpha = clamp(t * 6)
-      const land = Math.sin(Math.PI * seg(t, 0.45, 0.65))
-      const settle = Math.sin(Math.PI * 2 * seg(t, 0.62, 1.05)) * (1 - seg(t, 0.62, 1.05))
-      p.sy *= 1 + 0.12 * (1 - fall) * (fall > 0 ? 1 : 0) - 0.2 * land + 0.06 * settle
-      p.sx *= 1 - 0.06 * (1 - fall) + 0.18 * land - 0.05 * settle
-      p.y += -40 * settle
-      p.hl = mixV(p.hl, [-40, -260], 1 - fall); p.hr = mixV(p.hr, [40, -260], 1 - fall)
-      p.mouthOpen = 0.6 * (1 - seg(t, 0.4, 0.8)); p.smile = 1
+    dur: 1.2,
+    apply(g, t) {
+      const fall = seg(t, 0, 0.42)
+      g.hop = -(1 - easeIn(fall)) * 900
+      g.alpha = clamp(t * 6)
+      g.squash += 0.15 * (1 - fall) - 0.34 * Math.sin(Math.PI * seg(t, 0.42, 0.6))
+      g.hl = toward(g.hl, [-40, -280], 1 - fall); g.hr = toward(g.hr, [40, -280], 1 - fall)
+      g.mouthOpen = 0.6 * (1 - seg(t, 0.4, 0.8)); g.smile = 1
     },
   },
-  // A hop and a poof: shrinks away to nothing.
+  // Crouch, hop, shrink to nothing in a sparkle.
   exit: {
-    dur: 0.7,
-    apply(p, t) {
+    dur: 0.75,
+    apply(g, t) {
       const crouch = Math.sin(Math.PI * seg(t, 0, 0.25))
-      const go = ease(seg(t, 0.2, 0.7))
-      p.sy *= 1 - 0.15 * crouch; p.sx *= 1 + 0.12 * crouch
-      p.y -= go * 160
-      p.sx *= 1 - go; p.sy *= 1 - go
-      p.alpha = 1 - seg(t, 0.45, 0.7)
-      p.sparkle = Math.sin(Math.PI * seg(t, 0.3, 0.7))
-      p.squint = 1; p.smile = 1; p.mouthOpen = 0.3
+      const go = smooth(seg(t, 0.2, 0.75))
+      g.squash += -0.2 * crouch
+      g.hop = -go * 160
+      g.shrink = go
+      g.alpha = 1 - seg(t, 0.5, 0.75)
+      g.sparkle = Math.sin(Math.PI * seg(t, 0.3, 0.75))
+      g.squint = 1; g.smile = 1; g.mouthOpen = 0.3
     },
   },
 }
 
-/** Mouth openness for a character while talking. */
-function viseme(ch: string): { open: number; w: number } {
+// ---------- lip-sync ----------
+interface Viseme { open: number; w: number }
+function viseme(ch: string): Viseme {
   const c = ch.toLowerCase()
-  if ('ao'.includes(c)) return { open: 0.8, w: 0.85 }
-  if ('ei'.includes(c)) return { open: 0.45, w: 1.15 }
-  if ('uw'.includes(c)) return { open: 0.35, w: 0.6 }
-  if ('mbp'.includes(c)) return { open: 0, w: 0.9 }
-  if (/[a-z]/.test(c)) return { open: 0.22, w: 1 }
-  return { open: 0.02, w: 1 }
+  if (c === 'a') return { open: 0.85, w: 1 }
+  if (c === 'o') return { open: 0.7, w: 0.6 }
+  if ('ei'.includes(c)) return { open: 0.45, w: 1.18 }
+  if ('uwq'.includes(c)) return { open: 0.3, w: 0.5 }
+  if ('mbp'.includes(c)) return { open: 0, w: 0.92 } // lips fully closed, always
+  if ('fv'.includes(c)) return { open: 0.1, w: 1.05 }
+  if (/[a-z]/.test(c)) return { open: 0.28, w: 1 }
+  return { open: 0, w: 1 }
 }
+/** Seconds per typed character, and the pause after punctuation. */
+export const CHAR_S = 0.042
+const pause = (ch: string) => (ch === '.' || ch === '!' || ch === '?' ? 0.32 : ch === ',' ? 0.16 : ch === '…' ? 0.4 : 0)
+const MIN_HOLD = 0.08 // a mouth shape stays at least this long, or it never reads
 
-/** Seconds per typed character, and the extra pause after punctuation. */
-export const CHAR_S = 0.038
-const pause = (ch: string) => (ch === '.' || ch === '!' || ch === '?' ? 0.28 : ch === ',' ? 0.14 : 0)
-
-/**
- * Runs Miss Belle. Call `frame(now)` once per animation frame; it returns the pose to render.
- * `play` starts a clip; `say` starts talking (and reports how many characters are visible).
- */
+/** Runs Miss Belle. Call `frame(nowMs)` once per animation frame; it returns the pose to draw. */
 export class Director {
   private clip: ClipName | null = null
   private clipStart = 0
-  private clipEnd = 0 // when a looping clip was told to stop (for the fade-out)
+  private clipStop = 0
+  private lastT = 0
+  private carry = 0 // leftover time for the fixed-step springs
+  private pose = neutral()
+  private prev = neutral()
+  private s = {
+    x: sp('x'), y: sp('y'), lean: sp('lean'), bob: sp('bob'), tilt: sp('tilt'),
+    hlx: sp('hand'), hly: sp('hand'), hrx: sp('hand'), hry: sp('hand'),
+    hlr: sp('glove'), hrr: sp('glove'),
+    flx: sp('foot'), fly: sp('foot'), frx: sp('foot'), fry: sp('foot'), flr: sp('footRot'), frr: sp('footRot'),
+    squash: sp('squash'), bodySquash: sp('bodySquash'),
+    browL: sp('brow'), browR: sp('brow'), browTilt: sp('brow'),
+    smile: sp('smile', 0.7), mouthW: sp('mouthW', 1), smirk: sp('smirk'), squint: sp('squint'),
+    mouthOpen: sp('mouthOpen'), blush: sp('blush', 1), gx: sp('gaze'), gy: sp('gaze'), bicep: sp('bicep'),
+    bun: sp('bun'), zzz: sp('fx'), sparkle: sp('fx'),
+  }
+  // idle life
+  private breathPhase = 0
+  private breathRate = 0.26
+  private shiftAt = 3
+  private shift: V = [0, 0]
+  private fidgetAt = 4
+  private fidget: { kind: string; at: number } | null = null
+  private gazeAt = 1
+  private gaze: V = [0, 0]
+  private blinkAt = -10
+  private nextBlink = 1.8
+  private lastVy = 0
+  private lastBodyY = 0
+  /** a clip can hold the lids partly shut (sleep, bored) */
+  lidHold = 0
+  // talking
   private text = ''
-  /** the last line said (kept after talking ends, for the bubble) */
   lineText = ''
   private textStart = 0
-  private times: number[] = [] // the time each character appears
-  private nextBlink = 1.5
-  private blinkAt = -10
-  private glanceAt = 0
-  private look: V = [0, 0]
-  private lookTo: V = [0, 0]
-  private bunAngle = 0
-  private bunVel = 0
-  private lastY = 0
-  private lastVy = 0
-  private lastT = 0
-  /** characters of the current line that should be visible (for the speech bubble) */
+  private times: number[] = []
+  private mouthShape: Viseme = { open: 0, w: 1 }
+  private shapeSince = 0
+  private emphasis = 0
+  gesture: V = [-60, -70]
+  private gestureAt = 0
+  private swing: number[] = []
   shown = 0
   onClipEnd?: (name: ClipName) => void
 
   play(name: ClipName, now: number) {
-    this.clip = name
-    this.clipStart = now
-    this.clipEnd = 0
+    this.clip = name; this.clipStart = now; this.clipStop = 0
+    if (name === 'wave') this.swing = [rand(0.85, 1.15), rand(0.85, 1.15), rand(0.7, 0.95)]
   }
-  stop(now: number) {
-    if (this.clip && CLIPS[this.clip].dur === Infinity && !this.clipEnd) this.clipEnd = now
-  }
+  stop(now: number) { if (this.clip && CLIPS[this.clip].dur === Infinity && !this.clipStop) this.clipStop = now }
   say(text: string, now: number) {
-    this.text = text
-    this.lineText = text
-    this.textStart = now
+    this.text = text; this.lineText = text; this.textStart = now
     let t = 0
     this.times = Array.from(text).map((ch) => { const at = t; t += CHAR_S + pause(ch); return at })
     this.play('talk', now)
   }
-  get talking() { return this.text !== '' }
   get current() { return this.clip }
+  /** Wave amplitude for the swing at time t (each swing a little different, the last one smaller). */
+  swingAmp(t: number) {
+    const x = Math.max(0, t - 0.36) * 2.9, i = Math.floor(x), f = smooth(x - i)
+    const a = this.swing[Math.min(i, this.swing.length - 1)] ?? 1, b = this.swing[Math.min(i + 1, this.swing.length - 1)] ?? 1
+    return a + (b - a) * f
+  }
 
   frame(nowMs: number): Pose {
     const now = nowMs / 1000
-    const dt = Math.min(0.05, Math.max(0.001, now - (this.lastT || now)))
+    const dt = clamp(now - (this.lastT || now - 1 / 60), 0, 0.05) // a long stall does not make her jump
     this.lastT = now
-    const base = neutral()
+    const g = neutral() // the target pose
 
-    // --- idle life ---
-    base.bsy = 1 + 0.014 * Math.sin(now * 1.9)
-    base.bsx = 1 - 0.009 * Math.sin(now * 1.9)
-    base.bob = -5 * Math.sin(now * 1.9)
-    base.tilt = 1.6 * Math.sin(now * 1.15)
-    base.hl = [0, 5 * Math.sin(now * 1.9 + 0.6)]
-    base.hr = [0, 5 * Math.sin(now * 1.9 + 1.1)]
-    base.hlr = 3 * Math.sin(now * 1.3); base.hrr = -3 * Math.sin(now * 1.3 + 0.5)
-    // glances: she looks at you; every few seconds a short glance somewhere, then straight back
-    if (now > this.glanceAt) {
-      const away = this.lookTo[0] === 0 && this.lookTo[1] === 0 && Math.random() < 0.5
-      this.lookTo = away ? [Math.random() * 1.6 - 0.8, Math.random() * 0.5 - 0.25] : [0, 0]
-      this.glanceAt = now + (away ? 0.7 + Math.random() * 0.6 : 3 + Math.random() * 4)
+    // ---- idle: breathing (inhale 40 %, exhale 60 %, rhythm jittered every breath) ----
+    this.breathPhase += dt * this.breathRate
+    if (this.breathPhase >= 1) { this.breathPhase -= 1; this.breathRate = 0.26 * rand(0.88, 1.12) }
+    const ph = this.breathPhase
+    const breath = ph < 0.4 ? smooth(ph / 0.4) : 1 - smooth((ph - 0.4) / 0.6)
+    g.bodySquash = 0.02 * breath
+    g.bob = -5 * breath
+    // drift: layered noise per part, different speeds, never repeating
+    g.tilt = 2.4 * fbm(now, 0.22, 1)
+    g.lean = 1.2 * fbm(now, 0.15, 2) + this.shift[0]
+    g.x = this.shift[1]
+    g.hl = [3 * fbm(now, 0.5, 3), -3 * breath + 3 * fbm(now, 0.45, 4)]
+    g.hr = [3 * fbm(now, 0.5, 5), -3 * breath + 3 * fbm(now, 0.45, 6)]
+    // weight shifts every 4-10 s
+    if (now > this.shiftAt) { this.shift = [rand(-2.2, 2.2), rand(-10, 10)]; this.shiftAt = now + rand(4, 10) }
+    // little fidgets when nothing else is going on
+    if (!this.clip && !this.text && now > this.fidgetAt) {
+      this.fidget = { kind: ['brows', 'bounce', 'hands', 'smirk'][Math.floor(Math.random() * 4)], at: now }
+      this.fidgetAt = now + rand(3, 8)
     }
-    this.look = [this.look[0] + (this.lookTo[0] - this.look[0]) * Math.min(1, dt * 9), this.look[1] + (this.lookTo[1] - this.look[1]) * Math.min(1, dt * 9)]
-    base.lookX = this.look[0]; base.lookY = this.look[1]
-    // blinks: every 2-5 s, sometimes a double
-    if (now > this.nextBlink) {
-      this.blinkAt = now
-      this.nextBlink = now + (Math.random() < 0.18 ? 0.32 : 2 + Math.random() * 3)
+    if (this.fidget) {
+      const ft = now - this.fidget.at, e = Math.sin(Math.PI * seg(ft, 0, 0.9))
+      if (this.fidget.kind === 'brows') { g.browL += 0.45 * e; g.browR += 0.45 * e }
+      if (this.fidget.kind === 'bounce') g.squash += -0.08 * Math.sin(Math.PI * seg(ft, 0, 0.25)) + 0.05 * Math.sin(Math.PI * seg(ft, 0.25, 0.5))
+      if (this.fidget.kind === 'hands') { g.hl = [g.hl[0] - 14 * e, g.hl[1] - 10 * e]; g.hr = [g.hr[0] + 14 * e, g.hr[1] - 10 * e] }
+      if (this.fidget.kind === 'smirk') g.smirk = 0.6 * e
+      if (ft > 0.9) this.fidget = null
     }
-    const bt = now - this.blinkAt
-    base.blink = bt < 0.09 ? bt / 0.09 : bt < 0.13 ? 1 : bt < 0.27 ? 1 - (bt - 0.13) / 0.14 : 0
+    // ---- eyes: saccades with fixations; mostly back to you; blink on a big glance ----
+    if (now > this.gazeAt) {
+      const atYou = this.gaze[0] === 0 && this.gaze[1] === 0
+      const next: V = atYou && Math.random() < 0.55 ? [rand(-0.85, 0.85), rand(-0.35, 0.3)] : [0, 0]
+      if (Math.hypot(next[0] - this.gaze[0], next[1] - this.gaze[1]) > 0.7 && Math.random() < 0.6) this.blinkAt = now
+      this.gaze = next
+      this.gazeAt = now + (atYou ? rand(1.2, 3.5) : rand(0.4, 1.1))
+    }
+    g.lookX = this.gaze[0] + 0.03 * fbm(now, 2.5, 7) // micro-jitter while fixating
+    g.lookY = this.gaze[1] + 0.03 * fbm(now, 2.5, 8)
+    g.tilt += this.gaze[0] * 2.5 // the head follows the eyes (its spring is slower, so it trails)
 
-    // --- the clip on top ---
-    let pose = base
+    // ---- the move on top ----
+    this.lidHold = 0
     if (this.clip) {
       const c = CLIPS[this.clip]
       const t = now - this.clipStart
-      const p = { ...base, hl: [...base.hl] as V, hr: [...base.hr] as V, fl: [...base.fl] as V, fr: [...base.fr] as V }
-      c.apply(p, t)
-      let w = 1
-      if (c.dur === Infinity) {
-        if (this.clipEnd) w = 1 - clamp((now - this.clipEnd) / 0.35)
-      }
-      pose = w < 1 ? lerpPose(base, p, ease(w)) : p
-      const done = c.dur !== Infinity ? t >= c.dur : this.clipEnd && now - this.clipEnd >= 0.35
-      if (done) {
-        const name = this.clip
-        this.clip = null
-        this.onClipEnd?.(name)
+      if (c.dur === Infinity && this.clipStop) {
+        // a looping move fading out: blend its targets away over 0.4 s
+        const w = 1 - smooth(seg(now - this.clipStop, 0, 0.4))
+        const ref = { ...g, hl: [...g.hl] as V, hr: [...g.hr] as V, fl: [...g.fl] as V, fr: [...g.fr] as V }
+        c.apply(g, t, this)
+        blend(ref, g, w)
+        this.lidHold *= w
+        if (w <= 0) this.end()
+      } else {
+        c.apply(g, t, this)
+        if (t >= c.dur) this.end()
       }
     }
 
-    // --- talking: mouth shapes follow the characters as they appear ---
+    // ---- talking: shapes held long enough to read, closed on pauses, nod on emphasis ----
     if (this.text) {
       const t = now - this.textStart
       let i = 0
       while (i < this.times.length && this.times[i] <= t) i++
       this.shown = i
+      const done = i >= this.times.length
       const ch = this.text[Math.max(0, i - 1)] ?? ' '
-      const v = viseme(ch)
-      const flutter = 0.08 * Math.sin(t * 40)
-      const target = i >= this.times.length ? 0 : v.open + flutter
-      pose.mouthOpen = pose.mouthOpen + (target - pose.mouthOpen) * 0.85
-      pose.mouthW = v.w
-      if (i >= this.times.length && t > this.times[this.times.length - 1] + 0.6) {
-        this.text = ''
-        if (this.clip === 'talk') this.stop(now)
+      const wanted = done ? { open: 0, w: 1 } : viseme(ch)
+      if (now - this.shapeSince > MIN_HOLD || wanted.open === 0) {
+        if (wanted.open !== this.mouthShape.open || wanted.w !== this.mouthShape.w) { this.mouthShape = wanted; this.shapeSince = now }
       }
+      g.mouthOpen = this.mouthShape.open * (1 + this.emphasis * 0.25); g.mouthW = this.mouthShape.w
+      if ('!?'.includes(ch) || ch !== ch.toLowerCase()) this.emphasis = 1
+      this.emphasis = Math.max(0, this.emphasis - dt * 3)
+      g.browL += 0.35 * this.emphasis; g.browR += 0.35 * this.emphasis; g.tilt += 3 * this.emphasis
+      // a new hand beat every so often
+      if (now > this.gestureAt) { this.gesture = [rand(-80, -45), rand(-110, -50)]; this.gestureAt = now + rand(0.6, 1.3) }
+      if (done && t > this.times[this.times.length - 1] + 0.5) { this.text = ''; if (this.clip === 'talk') this.stop(now) }
     }
 
-    // --- secondary motion: the bun lags behind the body like it's on a spring ---
-    const vy = (pose.y + pose.bob - this.lastY) / dt
+    // ---- blinks: shut in 100 ms (accelerating), 50 ms closed, open in 200 ms (slowing) ----
+    if (now > this.nextBlink) { this.blinkAt = now; this.nextBlink = now + (Math.random() < 0.12 ? 0.35 : rand(2, 6)) }
+    const bt = now - this.blinkAt
+    const blink = bt < 0.1 ? easeIn(bt / 0.1) : bt < 0.15 ? 1 : bt < 0.35 ? 1 - easeOut((bt - 0.15) / 0.2) : 0
+    const lidFollow = Math.max(0, g.lookY) * 0.35 // looking down lowers the lids
+
+    // ---- springs, in fixed 1/120 s steps ----
+    this.carry += dt
+    while (this.carry >= STEP) { this.prev = this.pose; this.pose = this.follow(g, STEP); this.carry -= STEP }
+    // Screen frames rarely line up with the 1/120 s steps (some frames get 0 steps, the next 2), which
+    // judders. Draw the blend between the last two steps at the frame's exact time ("fix your timestep").
+    const out = interp(this.prev, this.pose, this.carry / STEP)
+    out.blink = Math.max(blink, this.lidHold, lidFollow)
+    return out
+  }
+
+  private end() { const n = this.clip!; this.clip = null; this.onClipEnd?.(n) }
+
+  /** Run every channel through its spring; direct channels (hop, spin, alpha, locks...) pass straight through. */
+  private follow(g: Pose, dt: number): Pose {
+    const s = this.s
+    const p = neutral()
+    p.x = s.x.update(dt, g.x); p.y = s.y.update(dt, g.y); p.lean = s.lean.update(dt, g.lean)
+    p.bob = s.bob.update(dt, g.bob); p.tilt = s.tilt.update(dt, g.tilt)
+    p.hl = [s.hlx.update(dt, g.hl[0]), s.hly.update(dt, g.hl[1])]
+    p.hr = [s.hrx.update(dt, g.hr[0]), s.hry.update(dt, g.hr[1])]
+    // gloves drag behind the hands' motion (wrist follow-through), then spring back
+    p.hlr = s.hlr.update(dt, g.hlr - s.hlx.yd * 0.06)
+    p.hrr = s.hrr.update(dt, g.hrr - s.hrx.yd * 0.06)
+    p.fl = [s.flx.update(dt, g.fl[0]), s.fly.update(dt, g.fl[1])]
+    p.fr = [s.frx.update(dt, g.fr[0]), s.fry.update(dt, g.fr[1])]
+    p.flr = s.flr.update(dt, g.flr); p.frr = s.frr.update(dt, g.frr)
+    // squash & stretch keep the volume: sx = 1/√sy
+    const sq = s.squash.update(dt, g.squash), bsq = s.bodySquash.update(dt, g.bodySquash)
+    p.sy = (1 + sq) * (1 - g.shrink); p.sx = (1 / Math.sqrt(Math.max(0.3, 1 + sq))) * (1 - g.shrink)
+    p.bsy = 1 + bsq; p.bsx = 1 / Math.sqrt(Math.max(0.3, 1 + bsq))
+    p.browL = s.browL.update(dt, g.browL); p.browR = s.browR.update(dt, g.browR); p.browTilt = s.browTilt.update(dt, g.browTilt)
+    p.smile = s.smile.update(dt, g.smile); p.mouthW = s.mouthW.update(dt, g.mouthW); p.smirk = s.smirk.update(dt, g.smirk)
+    p.squint = clamp(s.squint.update(dt, g.squint)); p.mouthOpen = Math.max(0, s.mouthOpen.update(dt, g.mouthOpen))
+    p.blush = s.blush.update(dt, g.blush)
+    p.lookX = s.gx.update(dt, g.lookX); p.lookY = s.gy.update(dt, g.lookY)
+    p.bicep = Math.max(0, s.bicep.update(dt, g.bicep))
+    p.zzz = clamp(s.zzz.update(dt, g.zzz)); p.sparkle = clamp(s.sparkle.update(dt, g.sparkle))
+    // direct channels
+    p.hop = g.hop; p.spin = g.spin; p.alpha = g.alpha; p.shrink = g.shrink
+    p.hlLock = g.hlLock; p.hrLock = g.hrLock; p.bendL = g.bendL; p.bendR = g.bendR; p.tongue = g.tongue
+    // the bun hangs on a loose spring driven by the body's vertical acceleration and head tilt
+    const bodyY = p.y + p.hop + p.bob
+    const vy = (bodyY - this.lastBodyY) / dt
     const ay = (vy - this.lastVy) / dt
-    this.lastY = pose.y + pose.bob; this.lastVy = vy
-    const target = -pose.tilt * 0.5 - clamp(ay / 900, -12, 12)
-    this.bunVel += ((target - this.bunAngle) * 140 - this.bunVel * 9) * dt
-    this.bunAngle += this.bunVel * dt
-    pose.bun = clamp(this.bunAngle, -18, 18)
-    return pose
+    this.lastBodyY = bodyY; this.lastVy = vy
+    p.bun = clamp(s.bun.update(dt, -p.tilt * 0.6 - clamp(ay / 700, -14, 14)), -20, 20)
+    return p
+  }
+}
+
+/** a + (b − a)·w for every channel, as a new pose. */
+function interp(a: Pose, b: Pose, w: number): Pose {
+  const out = { ...b }
+  for (const k of Object.keys(a) as (keyof Pose)[]) {
+    const va = a[k] as number | V, vb = b[k] as number | V
+    if (Array.isArray(va)) (out as unknown as Record<string, V>)[k] = [lerp(va[0], (vb as V)[0], w), lerp(va[1], (vb as V)[1], w)]
+    else (out as unknown as Record<string, number>)[k] = lerp(va, vb as number, w)
+  }
+  return out
+}
+
+/** Blend b toward a by (1 − w): used to fade a looping move's targets out. */
+function blend(a: Pose, b: Pose, w: number) {
+  for (const k of Object.keys(a) as (keyof Pose)[]) {
+    const va = a[k] as number | V, vb = b[k] as number | V
+    if (Array.isArray(va)) (b as unknown as Record<string, V>)[k] = [lerp(va[0], (vb as V)[0], w), lerp(va[1], (vb as V)[1], w)]
+    else (b as unknown as Record<string, number>)[k] = lerp(va, vb as number, w)
   }
 }

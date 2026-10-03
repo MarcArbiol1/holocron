@@ -40,7 +40,7 @@ export default function BelleLab() {
 
   return (
     <Page title="Miss Belle" sub="Rehearsal room" back>
-      <section className="metric-panel relative overflow-hidden px-4 pb-6 pt-10">
+      <section className="metric-panel relative px-4 pb-6 pt-24">
         <div className="flex items-end justify-center gap-6">
           <MissBelle height={260} apiRef={big} onTap={() => { haptic(); both((b) => b.play('giggle')) }} />
           <MissBelle height={96} apiRef={small} onTap={() => { haptic(); both((b) => b.play('giggle')) }} />
