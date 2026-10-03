@@ -19,6 +19,7 @@ import Order from './pages/Order'
 import Settings from './pages/Settings'
 import Codex from './pages/Codex'
 import Login from './pages/Login'
+import BelleLab from './pages/BelleLab'
 import { cloudEnabled } from './lib/cloud'
 import { startSync } from './lib/sync'
 
@@ -118,6 +119,7 @@ function Shell() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/codex" element={<Codex />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/belle" element={<BelleLab />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       </div>
