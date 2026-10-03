@@ -127,6 +127,7 @@ export default function Settings() {
         <div className="metric-panel space-y-3 p-4 text-sm">
           <p className="text-dim">Build {__BUILD__} · plan rules v{PROGRAM_VERSION}</p>
           <button className="btn-ghost w-full" disabled={updating} onClick={update}>Update Now</button>
+          <Link to="/belle" onClick={() => haptic()} className="btn-ghost w-full">Meet Miss Belle (preview)</Link>
         </div>
       </section>
 

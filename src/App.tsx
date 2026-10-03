@@ -93,7 +93,8 @@ function Shell() {
   }, [activeId])
 
   const hideNav = ['/onboarding', '/forge', '/done', '/login'].includes(loc.pathname)
-  if (!profile && loc.pathname !== '/onboarding' && loc.pathname !== '/login') {
+  // Miss Belle's rehearsal room opens without a profile (Safari and the home-screen app keep separate data).
+  if (!profile && loc.pathname !== '/onboarding' && loc.pathname !== '/login' && loc.pathname !== '/belle') {
     // First launch: offer an account (when the build has one) before building a plan; a sign-in
     // that is still fetching the archive stays on the login page until it lands.
     const wantLogin = cloudEnabled && !account && !loginSkipped
