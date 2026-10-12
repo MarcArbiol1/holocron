@@ -73,7 +73,12 @@ export default function Home() {
   const streak = weekStreak(sessions, profile, now)
   const recent = [...sessions].filter((s) => s.endedAt).sort((a, b) => new Date(b.endedAt!).getTime() - new Date(a.endedAt!).getTime()).slice(0, 3)
   const daysAway = recent[0] ? Math.floor((now.getTime() - new Date(recent[0].endedAt!).getTime()) / 86_400_000) : undefined
-  const belleLines = homeLines({ active: active?.title, today: dayTitle(rec.day), mode: rec.mode, daysAway, streak })
+  // the plan day you have stayed away from longest (only days you have done before, 9+ days ago)
+  const lastDone = (key: string) => Math.max(0, ...sessions.filter((s) => s.endedAt && (s.dayKey ?? s.dayId) === key).map((s) => new Date(s.endedAt!).getTime()))
+  const neglected = program.days.map((d) => ({ title: dayTitle(d), last: lastDone(d.key) })).filter((d) => d.last > 0)
+    .map((d) => ({ title: d.title, days: Math.floor((now.getTime() - d.last) / 86_400_000) })).filter((d) => d.days >= 9)
+    .sort((a, b) => b.days - a.days)[0]
+  const belleLines = homeLines({ active: active?.title, today: dayTitle(rec.day), mode: rec.mode, daysAway, streak, neglected })
   const minutes = rec.day.minutes + rec.extraCardio
   const cardioTotal = rec.day.cardioMinutes + rec.extraCardio
 

@@ -1,7 +1,8 @@
 /**
- * The logo, animated in place of a spinner: two cartoon jumps with squash and stretch, then the four
- * drawn pieces (open top face, star, left panel, right panel) drift apart, spin softly and snap back
- * together with a small overshoot. The pieces are the logo's own pixels, cut along the drawing's gaps,
+ * The logo, animated in place of a spinner: two cartoon jumps with squash and stretch, then the three
+ * drawn pieces (the roof with its star, left panel, right panel) drift apart, the roof spins a full turn
+ * around its star, and they snap back together with a small overshoot. The pieces are the logo's own
+ * pixels, split along the drawing's gaps,
  * so the reassembled state is the logo exactly. Everything is transform-only, so it stays smooth.
  */
 const base = import.meta.env.BASE_URL
@@ -18,7 +19,6 @@ export function LogoLoader({ label, size = 168 }: { label?: string; size?: numbe
           <img className="logo-piece piece-top" src={`${base}logo/top.png`} alt="" draggable={false} />
           <img className="logo-piece piece-left" src={`${base}logo/left.png`} alt="" draggable={false} />
           <img className="logo-piece piece-right" src={`${base}logo/right.png`} alt="" draggable={false} />
-          <img className="logo-piece piece-star" src={`${base}logo/star.png`} alt="" draggable={false} />
         </div>
         {label && <p className="logo-loader-label mt-8 text-center text-sm text-dim">{label}</p>}
       </div>

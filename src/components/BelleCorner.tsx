@@ -8,7 +8,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { MissBelle, type BelleApi } from './MissBelle'
-import { nextLine, type BelleSpot, type Line } from '../avatar/lines'
+import { nextLine, remember, type BelleSpot, type Line } from '../avatar/lines'
 import { CHAR_S } from '../avatar/clips'
 import { haptic } from '../lib/haptics'
 
@@ -21,7 +21,10 @@ export function BelleCorner({ spot, lines, small }: { spot: BelleSpot; lines?: L
   const [open, setOpen] = useState(false)
   const closeAt = useRef<ReturnType<typeof setTimeout>>(undefined)
 
+  // tapping her: the page's live lines not used for the greeting (once each), then the pool
+  const pending = useRef<Line[]>([...(lines ?? [])])
   const speak = ([line, move]: Line) => {
+    remember(line)
     clearTimeout(closeAt.current)
     setText('')
     setOpen(true)
@@ -38,14 +41,15 @@ export function BelleCorner({ spot, lines, small }: { spot: BelleSpot; lines?: L
     else if (first && spot === 'home') t = setTimeout(() => {
       greeted.add(spot)
       api.current?.play('enter')
-      t2 = setTimeout(() => speak(lines?.[0] ?? nextLine('home')), 1200)
+      // greeting: usually something about your plan (a random one of the live lines), sometimes just a quote
+      const live = pending.current
+      const greet = live.length && Math.random() < 0.65 ? live.splice(Math.floor(Math.random() * live.length), 1)[0] : nextLine('home')
+      t2 = setTimeout(() => speak(greet), 1200)
     }, 100)
     else if (first) t = setTimeout(() => { greeted.add(spot); if (!small) api.current?.play('wave') }, 450)
     return () => { clearTimeout(t); clearTimeout(t2); clearTimeout(closeAt.current) }
   }, []) // once per page visit
 
-  // tapping her: the page's live lines first (once each), then the shuffled pool
-  const pending = useRef<Line[]>(lines?.slice(1) ?? [])
   const tap = () => {
     haptic()
     speak(pending.current.shift() ?? nextLine(spot))
